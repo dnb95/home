@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DnB Reviz — Espace d'apprentissage</title>
+<title>DnB Reviz</title>
 <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f5f5f7">
@@ -61,17 +61,17 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 
 .btn-pill{background:var(--primary);color:#fff;font-size:15px;font-weight:600;border-radius:9999px;padding:10px 22px;display:inline-flex;align-items:center;gap:8px;letter-spacing:-.01em;text-decoration:none}
 .btn-pill:hover{background:var(--primary-f)}
-.btn-pill-van{background:var(--secondary);color:var(--ink);font-size:15px;font-weight:600;border-radius:9999px;padding:10px 22px;display:inline-flex;align-items:center;gap:8px}
+.btn-pill-van{background:var(--secondary);color:#1d1d1f !important;font-size:15px;font-weight:600;border-radius:9999px;padding:10px 22px;display:inline-flex;align-items:center;gap:8px}
 .btn-pill-van:hover{background:var(--secondary-d)}
 .btn-utility{background:var(--ink);color:var(--canvas);font-size:14px;font-weight:500;border-radius:8px;padding:8px 16px}
 [data-theme=dark] .btn-utility{background:var(--surface);color:var(--ink)}
-.btn-ghost{background:var(--filter-bg);color:var(--ink-m);font-size:14px;font-weight:500;border-radius:8px;padding:8px 16px}
+.btn-ghost{background:var(--filter-bg);color:var(--ink-m);font-size:14px;font-weight:500;border-radius:8px;padding:8px 16px;text-decoration:none}
 .btn-ghost:hover{background:var(--primary-l);color:var(--primary-f)}
 .btn-danger{background:var(--danger);color:#fff;font-size:13px;border-radius:7px;padding:6px 12px}
 .btn-sm{font-size:13px;padding:6px 14px;border-radius:8px}
 
 header{position:sticky;top:0;height:52px;background:var(--nav-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--hl);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:200;transition:background .3s}
-.header-left{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none}
 .header-left img{height:26px}
 .brand{font-weight:700;font-size:18px;letter-spacing:-.03em;color:var(--ink)}
 .brand span{color:var(--primary)}
@@ -88,7 +88,7 @@ header{position:sticky;top:0;height:52px;background:var(--nav-bg);backdrop-filte
 .dropdown.show{display:flex}
 .drop-head{padding:8px 8px 12px;border-bottom:1px solid var(--hl);margin-bottom:4px}
 .drop-name{font-weight:600;font-size:15px}
-.role-badge{display:inline-block;font-size:11px;font-weight:700;background:var(--secondary);color:var(--ink);padding:2px 8px;border-radius:4px;margin-top:4px;text-transform:uppercase}
+.role-badge{display:inline-block;font-size:11px;font-weight:700;background:var(--secondary);color:#1d1d1f;padding:2px 8px;border-radius:4px;margin-top:4px;text-transform:uppercase}
 .dropdown button{text-align:left;background:transparent;padding:9px 12px;border-radius:10px;font-size:14px;color:var(--ink);width:100%}
 .dropdown button:hover{background:var(--parchment)}
 .dropdown button.red{color:var(--danger)}
@@ -109,22 +109,21 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .card-del{position:absolute;top:12px;right:12px;background:var(--parchment);color:var(--ink-m);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;border:1px solid var(--hl)}
 .card-del:hover{background:var(--danger);color:#fff}
 
-.subject-nav{display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
-.back-btn{background:transparent;color:var(--primary);font-size:15px;font-weight:500;padding:0;display:flex;align-items:center;gap:5px}
-.subj-badge{font-size:19px;font-weight:700;display:flex;align-items:center;gap:8px}
 .filter-bar{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
 .filter-btn{background:var(--filter-bg);color:var(--ink-m);font-size:14px;font-weight:500;border-radius:9999px;padding:8px 18px;transition:background .15s,color .15s}
 .filter-btn:hover{background:var(--primary-l);color:var(--primary-f)}
 .filter-btn.active{background:var(--primary);color:#fff}
-.feed-wrap{display:flex;flex-direction:column;gap:18px}
+
+.feed-wrap{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;align-items:start}
 
 .post-card{background:var(--card-bg);border:1px solid var(--hl);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px;transition:border-color .2s}
 .post-card:hover{border-color:rgba(155,143,228,.3)}
 .post-header{display:flex;align-items:center;gap:12px}
-.post-av{width:38px;height:38px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid var(--primary-l)}
+.post-av{width:38px;height:38px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid var(--primary-l);text-decoration:none}
 .post-av img{width:100%;height:100%;object-fit:cover}
-.post-author-name{font-weight:600;font-size:14px;color:var(--ink)}
-.post-meta{font-size:12px;color:var(--ink-m);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.post-author-name{font-weight:600;font-size:15px;color:var(--ink);text-decoration:none}
+.post-author-name:hover{color:var(--primary);text-decoration:underline}
+.post-meta{font-size:12px;color:var(--ink-m);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 
 .rbadge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:capitalize}
 .rbadge.eleve,.rbadge\.élève{background:#34c759;color:#fff}
@@ -139,13 +138,19 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 [data-theme=dark] .type-tag.fiches{color:#34c759}
 [data-theme=dark] .type-tag.revisions{color:#ffd426}
 
+.subj-tag{font-size:11px;font-weight:600;background:var(--file-bg);color:var(--ink);padding:2px 8px;border-radius:4px;border:1px solid var(--hl2)}
+
 .post-title{font-size:18px;font-weight:700;color:var(--ink)}
 .post-desc{font-size:15px;color:var(--ink-m);line-height:1.5;margin-top:4px}
+.post-media-preview{width:100%;max-height:350px;border-radius:14px;overflow:hidden;background:var(--file-bg);display:flex;align-items:center;justify-content:center;border:1px solid var(--hl);margin-top:4px}
+.post-media-preview img{width:100%;height:100%;max-height:350px;object-fit:contain;cursor:pointer}
 .post-date{font-size:12px;color:var(--ink-m);margin-top:2px;border-top:1px solid var(--hl2);padding-top:10px}
 
-.file-chip{background:var(--file-bg);border:1px solid var(--hl);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.file-chip-info{font-size:14px;font-weight:500;color:var(--ink);display:flex;align-items:center;gap:8px}
-.ext-tag{font-size:10px;font-weight:700;background:var(--primary-l);color:var(--primary-f);padding:2px 6px;border-radius:4px;flex-shrink:0}
+.file-chip{background:var(--file-bg);border:1px solid var(--hl);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.file-chip-info{font-size:15px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.file-chip-info span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-download{font-size:13px;padding:8px 18px;background:var(--primary);color:#fff;font-weight:600;border-radius:9999px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+.btn-download:hover{background:var(--primary-f)}
 
 .post-actions{display:flex;gap:8px;border-top:1px solid var(--hl);padding-top:12px;flex-wrap:wrap}
 .like-btn{background:var(--filter-bg);color:var(--ink-m);font-size:14px;font-weight:500;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:5px;transition:background .15s}
@@ -154,24 +159,21 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
 .comments-box{background:var(--file-bg);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 .cmt-row{font-size:13px;color:var(--ink-m);line-height:1.4}
-.cmt-user{font-weight:600;color:var(--ink);margin-right:5px}
+.cmt-user{font-weight:600;color:var(--ink);margin-right:5px;text-decoration:none}
+.cmt-user:hover{text-decoration:underline}
 .cmt-form{display:flex;gap:8px;margin-top:2px}
 .cmt-form input{flex:1;background:var(--input-bg);border:1px solid var(--input-b);border-radius:9999px;padding:7px 14px;color:var(--ink);font-size:13px;font-family:inherit;outline:none}
 .cmt-form input:focus{border-color:var(--primary)}
 .cmt-send{background:var(--primary);color:#fff;border-radius:9999px;padding:7px 14px;font-size:13px;font-weight:600}
 
-.ann-section-title{font-size:16px;font-weight:700;color:var(--ink-m);letter-spacing:.02em;text-transform:uppercase;margin:32px 0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ann-section-title{grid-column:1/-1;font-size:16px;font-weight:700;color:var(--ink-m);letter-spacing:.02em;text-transform:uppercase;margin:32px 0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .ann-card{background:var(--ann-bg);border:1px solid var(--ann-b);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
 .ann-card-title{font-size:16px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}
 .ann-card-title::before{content:"📢";font-size:14px}
 .ann-card-body{font-size:14px;color:var(--ink-m);line-height:1.5}
 .ann-actions{display:flex;gap:8px}
 
-.empty{text-align:center;padding:52px 24px;background:var(--card-bg);border:1px dashed var(--hl);border-radius:20px;color:var(--ink-m)}
-.empty .ei{font-size:38px;margin-bottom:12px}
-.empty p{font-size:15px;font-weight:500;margin-bottom:6px}
-.empty span{font-size:13px}
-.empty-text{text-align:center;padding:60px 20px;color:var(--ink-m);font-size:15px;font-weight:500}
+.empty-text{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--ink-m);font-size:15px;font-weight:500}
 
 .depot-wrap{max-width:640px;background:var(--card-bg);border:1px solid var(--hl);border-radius:22px;padding:36px;margin-top:28px}
 .input-group{margin-bottom:18px;display:flex;flex-direction:column;gap:6px}
@@ -187,10 +189,38 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .or-div{display:flex;align-items:center;gap:12px;color:var(--ink-m);font-size:12px;font-weight:700;margin:6px 0;text-transform:uppercase;letter-spacing:.04em}
 .or-div::before,.or-div::after{content:"";flex:1;border-top:1px solid var(--hl)}
 
+.pub-banner-zone{height:240px;background-color:var(--primary-l);background-size:cover;background-position:center;border-radius:24px 24px 0 0;position:relative;z-index:1}
+.pub-chassis{background:var(--card-bg);border:1px solid var(--hl);border-top:0;border-radius:0 0 24px 24px;padding:0 32px 32px;display:flex;flex-direction:column;position:relative;z-index:2}
+.pub-av-overlap{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-top:-65px;margin-bottom:16px;position:relative;z-index:10}
+.pub-av-big{width:130px;height:130px;border-radius:50%;border:5px solid var(--card-bg);background:var(--primary-l);color:var(--primary);font-size:42px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.15);overflow:hidden;flex-shrink:0}
+.pub-av-big img{width:100%;height:100%;object-fit:cover}
+
+.pub-actions-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.contrib-pill-top{background:var(--primary-l);color:var(--ink);border:1px solid rgba(155,143,228,.4);padding:8px 16px;border-radius:9999px;display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.contrib-pill-top strong{color:var(--primary-f);font-size:16px;font-weight:800}
+
+.pub-main-info{display:flex;flex-direction:column;gap:6px}
+.pub-name-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pub-name-line h1{font-size:32px;line-height:1}
+.pub-uname{font-size:15px;color:var(--ink-m);font-weight:500}
+.pub-bio{font-size:15px;color:var(--ink);line-height:1.5;margin-top:4px;max-width:700px}
+.pub-metrics{display:flex;gap:16px;margin-top:8px;font-size:14px;color:var(--ink-m)}
+.pub-metrics span{cursor:pointer;transition:color .15s}
+.pub-metrics span:hover{color:var(--primary)}
+.pub-metrics strong{color:var(--ink);font-weight:700}
+.pub-social-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.soc-pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:6px 14px;border-radius:9999px;text-decoration:none;border:1px solid var(--hl);color:var(--ink);background:var(--file-bg);transition:transform .1s,background .15s}
+.soc-pill:hover{transform:scale(.97);background:var(--parchment)}
+.soc-pill.insta:hover{color:#e1306c;border-color:rgba(225,48,108,.3)}
+.soc-pill.linkedin:hover{color:#0a66c2;border-color:rgba(10,102,194,.3)}
+.soc-pill svg{width:16px;height:16px}
+.btn-following{background:var(--filter-bg);color:var(--ink);border:1px solid var(--input-b)}
+.btn-following:hover{background:rgba(255,59,48,.1);color:var(--danger);border-color:rgba(255,59,48,.3)}
+
 .prof-grid{display:grid;grid-template-columns:260px 1fr;gap:28px;background:var(--card-bg);border:1px solid var(--hl);border-radius:22px;padding:32px;margin-top:28px}
 .prof-left{display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;border-right:1px solid var(--hl);padding-right:28px}
-.prof-av-big{width:96px;height:96px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-weight:700;font-size:32px;display:flex;align-items:center;justify-content:center;border:3px solid var(--primary);overflow:hidden}
-.prof-av-big img{width:100%;height:100%;object-fit:cover;display:none}
+.prof-av-preview{width:96px;height:96px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-weight:700;font-size:32px;display:flex;align-items:center;justify-content:center;border:3px solid var(--primary);overflow:hidden}
+.prof-av-preview img{width:100%;height:100%;object-fit:cover;display:none}
 .stat-box{background:var(--file-bg);border:1px solid var(--hl);border-radius:14px;padding:14px 16px;width:100%;text-align:center}
 .stat-val{font-size:32px;font-weight:800;color:var(--primary)}
 
@@ -223,6 +253,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .mbox{background:var(--modal-bg);border-radius:24px;padding:36px;max-width:480px;width:100%;box-shadow:0 24px 80px var(--shadow-m);border:1px solid var(--hl);max-height:90vh;overflow-y:auto}
 .mbox h2{margin-bottom:22px}
 .mact{display:flex;justify-content:space-between;align-items:center;margin-top:24px}
+
+.follow-user-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;cursor:pointer;transition:background .15s}
+.follow-user-row:hover{background:var(--file-bg)}
 
 .tchat-chassis{position:fixed;bottom:24px;right:24px;z-index:500;display:flex;flex-direction:column;align-items:flex-end}
 .tchat-btn{position:relative;background:var(--primary);color:#fff;border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px var(--shadow-m);flex-shrink:0}
@@ -290,18 +323,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .drawer-av{width:36px;height:36px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid var(--primary-l)}
 .drawer-av img{width:100%;height:100%;object-fit:cover;display:none}
 
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--nav-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--hl);z-index:190;padding:0 4px;padding-bottom:env(safe-area-inset-bottom)}
-.bottom-nav-inner{display:flex;align-items:stretch;height:100%}
-.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;color:var(--ink-m);font-size:10px;font-weight:500;padding:6px 4px;border-radius:12px;transition:color .15s;min-width:0}
-.bnav-btn svg{width:22px;height:22px;flex-shrink:0}
-.bnav-btn.active{color:var(--primary)}
-.bnav-btn .bnav-label{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center}
-
-@media(max-width:760px){
+@media(max-width:850px){
+  .feed-wrap{grid-template-columns:1fr}
+  header{padding:0 16px;height:54px;display:flex;align-items:center;justify-content:center;position:relative}
+  .hamburger{display:flex;position:absolute;left:16px}
   .header-center{display:none}
-  .hamburger{display:flex}
-  header{padding:0 14px;height:52px}
   .header-right .avatar-btn{display:none}
+  .header-left{margin:0}
+
   main{margin:16px auto;padding:0 14px 100px}
   h1{font-size:26px}
   h2{font-size:22px}
@@ -314,21 +343,19 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   .prof-left{border-right:0;border-bottom:1px solid var(--hl);padding-right:0;padding-bottom:24px}
   .depot-wrap{padding:20px;margin-top:16px}
   .login-box{padding:28px 20px;border-radius:20px}
-  .toast{bottom:80px;left:16px;right:16px;text-align:center}
-  .tchat-chassis{bottom:76px;right:14px}
-  .bottom-nav{display:flex}
+  .toast{bottom:30px;left:16px;right:16px;text-align:center}
+  .tchat-chassis{bottom:20px;right:14px}
   .mbox{border-radius:18px;padding:24px 20px}
   .ph-row{flex-direction:column;align-items:flex-start;gap:12px}
   .admin-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .settings-wrap{margin-top:16px}
-  .filter-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
-  .filter-bar::-webkit-scrollbar{display:none}
+  .pub-chassis{padding:0 20px 24px}
+  .pub-av-overlap{gap:12px;margin-top:-55px}
+  .pub-av-big{width:95px;height:95px;border-width:4px}
+  .pub-banner-zone{height:150px}
 }
 @media(max-width:400px){
   .grid-matieres{grid-template-columns:1fr}
-  .bottom-nav{height:60px}
-  .bnav-btn .bnav-label{display:none}
-  .bnav-btn svg{width:24px;height:24px}
 }
 </style>
 </head>
@@ -360,16 +387,16 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
-    <div class="header-left">
+    <a href="#page-matieres" class="header-left">
       <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png" alt="DnB">
       <span class="brand">DnB <span>Reviz</span></span>
-    </div>
+    </a>
     <nav class="header-center">
-      <button class="nav-tab active"  onclick="switchTab('matieres')">Matières</button>
-      <button class="nav-tab"         onclick="switchTab('cours')">Cours</button>
-      <button class="nav-tab"         onclick="switchTab('fichesrev')">Fiches &amp; Révisions</button>
-      <button class="nav-tab hidden"  id="tab-depot" onclick="switchTab('depot')">Déposer un cours</button>
-      <button class="nav-tab hidden"  id="tab-admin" onclick="switchTab('admin')">Admin</button>
+      <button class="nav-tab active"  data-target="matieres"  onclick="switchTab('matieres')">Matières</button>
+      <button class="nav-tab"         data-target="cours"     onclick="switchTab('cours')">Cours</button>
+      <button class="nav-tab"         data-target="fichesrev" onclick="switchTab('fichesrev')">Fiches &amp; Révisions</button>
+      <button class="nav-tab hidden"  data-target="depot"     id="tab-depot" onclick="switchTab('depot')">Déposer un cours</button>
+      <button class="nav-tab hidden"  data-target="admin"     id="tab-admin" onclick="switchTab('admin')">Admin</button>
     </nav>
     <div class="header-right">
       <div class="avatar-btn" id="nav-avatar" onclick="toggleDropdown()">
@@ -437,31 +464,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     </div>
   </div>
 
-  <nav class="bottom-nav" id="bottom-nav">
-    <div class="bottom-nav-inner">
-      <button class="bnav-btn active" data-tab="matieres" onclick="switchTab('matieres')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span class="bnav-label">Matières</span>
-      </button>
-      <button class="bnav-btn" data-tab="cours" onclick="switchTab('cours')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span class="bnav-label">Cours</span>
-      </button>
-      <button class="bnav-btn" data-tab="fichesrev" onclick="switchTab('fichesrev')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-        <span class="bnav-label">Fiches</span>
-      </button>
-      <button class="bnav-btn hidden" id="bnav-depot" data-tab="depot" onclick="switchTab('depot')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        <span class="bnav-label">Déposer</span>
-      </button>
-      <button class="bnav-btn" data-tab="profil" onclick="switchTab('profil')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span class="bnav-label">Profil</span>
-      </button>
-    </div>
-  </nav>
-
   <main>
 
     <section id="page-matieres" class="page-view active">
@@ -474,7 +476,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       </div>
       <div class="grid-matieres" id="matieres-grid"></div>
 
-      <div id="annonces-zone"></div>
+      <div id="annonces-zone" class="mt-4"></div>
     </section>
 
 
@@ -556,13 +558,51 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       </div>
     </section>
 
+    <section id="page-pub-profil" class="page-view">
+      <div class="pub-banner-zone" id="pub-banner"></div>
+      <div class="pub-chassis">
+        <div class="pub-av-overlap">
+          <div class="pub-av-big" id="pub-av">
+            <span id="pub-av-init">?</span>
+            <img id="pub-av-img" alt="">
+          </div>
+          <div class="pub-actions-right">
+            <div class="contrib-pill-top">
+              <span>📁</span>
+              <strong id="pub-cnt-contribs-top">0</strong>
+              <span>contributions</span>
+            </div>
+            <button class="btn-pill" id="pub-follow-btn" onclick="toggleFollowCurrentProfile()">S'abonner</button>
+          </div>
+        </div>
+        <div class="pub-main-info">
+          <div class="pub-name-line">
+            <h1 id="pub-name">...</h1>
+            <span class="rbadge" id="pub-role">...</span>
+          </div>
+          <div class="pub-uname">@<span id="pub-id">...</span></div>
+          <p class="pub-bio" id="pub-bio">Aucune biographie.</p>
+          <div class="pub-metrics">
+            <span onclick="openFollowersModal('followers')"><strong id="pub-cnt-followers">0</strong> abonnés</span>
+            <span onclick="openFollowersModal('following')"><strong id="pub-cnt-following">0</strong> abonnements</span>
+          </div>
+          <div class="pub-social-row" id="pub-socials"></div>
+        </div>
+      </div>
+      <div style="margin:28px 0 16px">
+        <h3 style="margin-bottom:12px;color:var(--ink)">Ressources partagées</h3>
+        <div class="filter-bar" id="pub-subj-filter-bar"></div>
+      </div>
+      <div class="feed-wrap" id="pub-feed"></div>
+    </section>
+
 
     <section id="page-profil" class="page-view">
       <h1>Mon profil</h1>
-      <p class="tagline">Gère ton image et tes informations</p>
+      <p class="tagline">Gère ton image, ta bio et tes informations</p>
       <div class="prof-grid">
         <div class="prof-left">
-          <div class="prof-av-big" id="prof-av-big">
+          <div class="prof-av-preview" id="prof-av-preview">
             <span id="prof-initials">?</span>
             <img id="prof-av-img" alt="">
           </div>
@@ -586,7 +626,29 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
             <label>Nom d'affichage</label>
             <input type="text" id="prof-display" placeholder="Ton prénom et nom">
           </div>
-          <button class="btn-pill mt-2" onclick="saveProfile()">Enregistrer</button>
+          <div class="input-group">
+            <label>Biographie</label>
+            <textarea id="prof-bio-input" placeholder="Parle de tes spécialités, de ce que tu révises..."></textarea>
+          </div>
+          <div class="input-group">
+            <label>Compte Instagram</label>
+            <input type="text" id="prof-insta-input" placeholder="ex: @dan.bouillet">
+          </div>
+          <div class="input-group">
+            <label>Lien LinkedIn</label>
+            <input type="url" id="prof-linkedin-input" placeholder="https://www.linkedin.com/in/...">
+          </div>
+          <div class="input-group">
+            <label>Bannière de profil (Image ou GIF)</label>
+            <div style="display:flex;gap:8px">
+              <input type="url" id="prof-banner-input" placeholder="https://..." style="flex:1">
+              <label class="btn-utility" style="cursor:pointer;display:flex;align-items:center;white-space:nowrap">
+                📤 Cloudinary
+                <input type="file" accept="image/*" style="display:none" onchange="uploadMyBanner(event)">
+              </label>
+            </div>
+          </div>
+          <button class="btn-pill mt-2" onclick="saveProfile()">Enregistrer les modifications</button>
         </div>
       </div>
     </section>
@@ -681,7 +743,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
 <div class="toast" id="toast"></div>
 
-
+<div id="m-follows" class="moverlay" onclick="closeOnOut(event,'m-follows')">
+  <div class="mbox">
+    <h2 id="m-follows-title">Abonnés</h2>
+    <div style="display:flex;flex-direction:column;gap:4px" id="follows-list-box"></div>
+  </div>
+</div>
 
 <div id="m-force-pwd" class="moverlay">
   <div class="mbox">
@@ -800,12 +867,22 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 window.currentUser = null;
+window.usersMap    = new Map();
+window.subjectsMap = new Map();
 window._uploadedFile = null;
-window._coursUnsub = null;
-window._frUnsub    = null;
-window._frFilter   = "all";
+
+window._coursUnsub   = null;
+window._frUnsub      = null;
+window._pubFeedUnsub = null;
+window._currentViewedUser = null;
+
+window._frFilter        = "all";
 window._coursSubjFilter = "all";
 window._frSubjFilter    = "all";
+window._pubSubjFilter   = "all";
+
+const CLOUDINARY_CLOUD_NAME    = "dmtggmxrm";
+const CLOUDINARY_UPLOAD_PRESET = "iAcqTr_Pg13v5d-Es84wIkdUqaw";
 
 function loadTheme(){
   const dark = localStorage.getItem("dnb_theme")==="dark";
@@ -825,9 +902,57 @@ window.showToast = (msg)=>{
   setTimeout(()=>t.classList.remove("show"),3000);
 };
 
-signInAnonymously(auth).then(()=>{
-  const s=localStorage.getItem("dnb_reviz_session");
-  if(s) hydrateSession(JSON.parse(s));
+onSnapshot(collection(db, "users"), snap => {
+  snap.forEach(d => {
+    const u = d.data();
+    window.usersMap.set(u.username, { id: d.id, ...u });
+    if(currentUser && u.username === currentUser.username) Object.assign(currentUser, { id: d.id, ...u });
+  });
+  if(document.getElementById("page-cours").classList.contains("active")) loadCoursFeed();
+  if(document.getElementById("page-fichesrev").classList.contains("active")) loadFRFeed();
+  if(window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
+});
+
+window.addEventListener("hashchange", handleHashChange);
+window.addEventListener("DOMContentLoaded", () => setTimeout(handleHashChange, 50));
+
+function handleHashChange() {
+  const hash = window.location.hash.trim();
+  if(!hash || hash === "#") {
+    showInternalView('matieres'); return;
+  }
+  if(hash.startsWith("#page-")) {
+    showInternalView(hash.replace("#page-", "")); return;
+  }
+  const uname = decodeURIComponent(hash.substring(1)).toLowerCase().trim();
+  if(uname) renderPublicProfile(uname);
+}
+
+function showInternalView(target) {
+  document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
+  
+  const page = document.getElementById(`page-${target}`);
+  if(page) page.classList.add("active");
+
+  const tab = document.querySelector(`.nav-tab[data-target="${target}"]`);
+  if(tab) tab.classList.add("active");
+
+  document.querySelectorAll(".drawer-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === target));
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+signInAnonymously(auth).then(async ()=>{
+  const s = localStorage.getItem("dnb_reviz_session");
+  if(s){
+    const cached = JSON.parse(s);
+    hydrateSession(cached);
+    try {
+      const freshSnap = await getDoc(doc(db, "users", cached.id));
+      if(freshSnap.exists()) hydrateSession({ id: freshSnap.id, ...freshSnap.data() });
+    } catch(e){}
+  }
+  handleHashChange();
 }).catch(console.error);
 
 window.handleLogin = async()=>{
@@ -841,7 +966,9 @@ window.handleLogin = async()=>{
   if(snap.empty){
     if(id==="dan.bouillet"&&pwd==="1"){
       const u={username:"dan.bouillet",displayName:"Dan Bouillet",password:"1",
-               role:"admin",subRoles:["admin","volontaire"],avatar:"",isTempPassword:false};
+               role:"admin",subRoles:["admin","volontaire"],avatar:"",
+               bio:"",banner:"",instagram:"",linkedin:"",followers:[],following:[],
+               isTempPassword:false};
       const r=await addDoc(collection(db,"users"),u); u.id=r.id;
       await seedSubjects();
       hydrateSession(u); return;
@@ -858,6 +985,7 @@ document.getElementById("login-id").addEventListener("keydown",e=>{if(e.key==="E
 
 window.handleLogout = ()=>{
   localStorage.removeItem("dnb_reviz_session");
+  window.location.hash = "";
   window.location.reload();
 };
 
@@ -889,6 +1017,11 @@ function hydrateSession(u){
   document.getElementById("prof-id").value        = u.username;
   document.getElementById("prof-display").value   = u.displayName||u.username;
 
+  document.getElementById("prof-bio-input").value      = u.bio||"";
+  document.getElementById("prof-insta-input").value    = u.instagram||"";
+  document.getElementById("prof-linkedin-input").value = u.linkedin||"";
+  document.getElementById("prof-banner-input").value   = u.banner||"";
+
   const isAdmin  = u.role==="admin"||(u.subRoles&&u.subRoles.includes("admin"));
   const canDepot = u.role==="professeur"||u.role==="admin"||
                    (u.subRoles&&(u.subRoles.includes("volontaire")||u.subRoles.includes("admin")));
@@ -899,10 +1032,8 @@ function hydrateSession(u){
 
   const drawerDepot=document.getElementById("drawer-depot");
   const drawerAdmin=document.getElementById("drawer-admin");
-  const bnavDepot=document.getElementById("bnav-depot");
   if(drawerDepot) drawerDepot.classList.toggle("hidden",!canDepot);
   if(drawerAdmin) drawerAdmin.classList.toggle("hidden",!isAdmin);
-  if(bnavDepot)   bnavDepot.classList.toggle("hidden",!canDepot);
 
   document.getElementById("drawer-name").innerText  = u.displayName||u.username;
   document.getElementById("drawer-role").innerText  = u.role;
@@ -957,6 +1088,19 @@ window.handleForcePwd = async()=>{
   closeModal("m-force-pwd"); showToast("Mot de passe mis à jour ✓");
 };
 
+async function uploadToCloudinary(file){
+  const fd=new FormData();
+  fd.append("file",file);
+  fd.append("upload_preset",CLOUDINARY_UPLOAD_PRESET);
+  fd.append("resource_type","auto"); 
+
+  const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`,{method:"POST",body:fd});
+  if(!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
+  const data=await res.json();
+  if(data.error) throw new Error(data.error.message);
+  return data.secure_url; 
+}
+
 window.uploadAvatar = (e)=>{
   const file=e.target.files[0]; if(!file) return;
   const r=new FileReader();
@@ -977,15 +1121,36 @@ window.uploadAvatar = (e)=>{
   r.readAsDataURL(file);
 };
 
+window.uploadMyBanner = async(e)=>{
+  const file=e.target.files[0]; if(!file) return;
+  showToast("Upload de la bannière en cours...");
+  try {
+    const url = await uploadToCloudinary(file);
+    document.getElementById("prof-banner-input").value = url;
+    showToast("Bannière chargée ✓ N'oublie pas d'Enregistrer");
+  } catch(err){ showToast("Erreur Cloudinary"); }
+};
+
 window.saveProfile = async()=>{
-  const d=document.getElementById("prof-display").value.trim(); if(!d) return;
-  await updateDoc(doc(db,"users",currentUser.id),{displayName:d});
-  currentUser.displayName=d;
+  const d        = document.getElementById("prof-display").value.trim();
+  const bio      = document.getElementById("prof-bio-input").value.trim();
+  const insta    = document.getElementById("prof-insta-input").value.trim();
+  const linkedin = document.getElementById("prof-linkedin-input").value.trim();
+  const banner   = document.getElementById("prof-banner-input").value.trim();
+
+  if(!d) return;
+
+  const updates = { displayName: d, bio, instagram: insta, linkedin, banner };
+  await updateDoc(doc(db,"users",currentUser.id), updates);
+  
+  Object.assign(currentUser, updates);
   localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+  
   document.getElementById("drop-name").innerText=d;
   document.getElementById("drawer-name").innerText=d;
   setAvatar(currentUser.avatar,d);
   setDrawerAvatar(currentUser.avatar,d);
+  
   showToast("Profil enregistré ✓");
   syncContrib();
 };
@@ -1004,6 +1169,7 @@ window.changePassword = async()=>{
   document.getElementById("setting-pwd").value="";
   showToast("Mot de passe changé ✓");
 };
+
 window.toggleChatVis=(show)=>{
   document.getElementById("tchat-widget").style.display=show?"flex":"none";
   localStorage.setItem("dnb_chat_vis",show?"1":"0");
@@ -1014,14 +1180,14 @@ function loadMatieres(){
     const isAdmin=currentUser.role==="admin"||(currentUser.subRoles&&currentUser.subRoles.includes("admin"));
     const mainGrid=document.getElementById("matieres-grid");
     const selDepot=document.getElementById("post-matiere");
-    mainGrid.innerHTML="";
-    selDepot.innerHTML="";
+    mainGrid.innerHTML=""; selDepot.innerHTML=""; window.subjectsMap.clear();
 
     let coursBar=`<button class="filter-btn${window._coursSubjFilter==="all"?" active":""}" data-name="all" onclick="setCoursFilter('all',this)">Toutes les matières</button>`;
     let frSubjBar=`<button class="filter-btn${window._frSubjFilter==="all"?" active":""}" data-name="all" onclick="setFRSubjectFilter('all',this)">Toutes les matières</button>`;
 
     snap.forEach(d=>{
       const m=d.data();
+      window.subjectsMap.set(m.name, m.icon);
 
       mainGrid.innerHTML+=`
         <div class="matiere-card" onclick="openSubjectInMatieres('${esc(m.name)}')">
@@ -1045,8 +1211,7 @@ function loadMatieres(){
 }
 
 window.openSubjectInMatieres=(name)=>{
-  window._coursSubjFilter=name;
-  switchTab("cours");
+  window._coursSubjFilter=name; switchTab('cours');
   document.querySelectorAll("#cours-filter-bar .filter-btn").forEach(b=>b.classList.toggle("active",b.dataset.name===name));
   loadCoursFeed();
 };
@@ -1054,139 +1219,136 @@ window.openSubjectInMatieres=(name)=>{
 window.setCoursFilter=(val,btn)=>{
   window._coursSubjFilter=val;
   document.querySelectorAll("#cours-filter-bar .filter-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  loadCoursFeed();
+  btn.classList.add("active"); loadCoursFeed();
 };
 
 function loadCoursFeed(){
   if(window._coursUnsub){window._coursUnsub();window._coursUnsub=null;}
-  const container=document.getElementById("cours-feed");
-  if(!container) return;
-  container.innerHTML=`<div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div>`;
+  const container=document.getElementById("cours-feed"); if(!container) return;
+  container.innerHTML=`<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
   const q = window._coursSubjFilter==="all"
     ? query(collection(db,"posts"),where("type","==","cours"))
     : query(collection(db,"posts"),where("matiere","==",window._coursSubjFilter),where("type","==","cours"));
-  window._coursUnsub=onSnapshot(q,(snap)=>{
-    renderFeed(snap,container,"Aucun cours disponible pour le moment");
-  });
+  window._coursUnsub=onSnapshot(q, snap => renderFeedFromDocs(snap.docs.map(d=>({id:d.id,...d.data()})), container, "Aucun cours disponible pour le moment"));
 }
 
 window.setFRSubjectFilter=(val,btn)=>{
   window._frSubjFilter=val;
   document.querySelectorAll("#fr-subject-filter-bar .filter-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  loadFRFeed();
+  btn.classList.add("active"); loadFRFeed();
 };
 
 window.setFRFilter=(type,btn)=>{
   window._frFilter=type;
   document.querySelectorAll("#fr-filter-bar .filter-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  loadFRFeed();
+  btn.classList.add("active"); loadFRFeed();
 };
 
 function loadFRFeed(){
   if(window._frUnsub){window._frUnsub();window._frUnsub=null;}
-  const container=document.getElementById("fr-feed");
-  if(!container) return;
-  container.innerHTML=`<div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div>`;
+  const container=document.getElementById("fr-feed"); if(!container) return;
+  container.innerHTML=`<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
   const types = window._frFilter==="all" ? ["fiches","revisions"] : [window._frFilter];
   let q;
   if(window._frSubjFilter==="all"){
-    q = types.length>1
-      ? query(collection(db,"posts"),where("type","in",types))
-      : query(collection(db,"posts"),where("type","==",types[0]));
+    q = types.length>1 ? query(collection(db,"posts"),where("type","in",types)) : query(collection(db,"posts"),where("type","==",types[0]));
   } else {
-    q = types.length>1
-      ? query(collection(db,"posts"),where("matiere","==",window._frSubjFilter),where("type","in",types))
-      : query(collection(db,"posts"),where("matiere","==",window._frSubjFilter),where("type","==",types[0]));
+    q = types.length>1 ? query(collection(db,"posts"),where("matiere","==",window._frSubjFilter),where("type","in",types)) : query(collection(db,"posts"),where("matiere","==",window._frSubjFilter),where("type","==",types[0]));
   }
-  window._frUnsub=onSnapshot(q,(snap)=>{
-    renderFeed(snap,container,"Aucune fiche ni révision disponible pour le moment");
-  });
+  window._frUnsub=onSnapshot(q, snap => renderFeedFromDocs(snap.docs.map(d=>({id:d.id,...d.data()})), container, "Aucune fiche ni révision pour le moment"));
 }
 
-function renderFeed(snap,container,emptyMsg){
+function renderFeedFromDocs(postsArray, container, emptyMsg){
   container.innerHTML="";
-  if(snap.empty){
-    container.innerHTML=`<div class="empty-text">${emptyMsg||"Aucune ressource pour l'instant"}</div>`;
-    return;
+  if(postsArray.length===0){
+    container.innerHTML=`<div class="empty-text">${emptyMsg||"Aucune ressource pour l'instant"}</div>`; return;
   }
-  const sorted=snap.docs.sort((a,b)=>(b.data().timestamp||0)-(a.data().timestamp||0));
-  sorted.forEach(docSnap=>{
-    const p=docSnap.data();
-    const pId=docSnap.id;
-    const isAdmin=currentUser.role==="admin"||(currentUser.subRoles&&currentUser.subRoles.includes("admin"));
-    const canDel=isAdmin||p.authorId===currentUser.username;
-    const hasLiked=(p.likes||[]).includes(currentUser.username);
-    const likeCount=(p.likes||[]).length;
 
-    const avContent=p.authorAvatar
-      ? `<img src="${p.authorAvatar}" alt="">`
-      : (p.authorDisplayName||"?").split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+  const sorted = postsArray.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+  sorted.forEach(p => {
+    const pId = p.id;
+    const isAdmin = currentUser?.role==="admin"||(currentUser?.subRoles&&currentUser.subRoles.includes("admin"));
+    const canDel = isAdmin||p.authorId===currentUser?.username;
+    const hasLiked = (p.likes||[]).includes(currentUser?.username);
+    const likeCount = (p.likes||[]).length;
 
-    const roleLabel=p.authorRole==="professeur"?"professeur":p.authorRole==="admin"?"admin":"élève";
-    const roleClass=roleLabel==="professeur"?"professeur":roleLabel==="admin"?"admin":"eleve";
+    const liveAuthor = window.usersMap.get(p.authorId) || {};
+    const liveRole   = liveAuthor.role || p.authorRole || "élève";
+    const liveName   = liveAuthor.displayName || p.authorDisplayName || p.authorId;
+    const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : p.authorAvatar;
+    const subjIcon   = window.subjectsMap.get(p.matiere) || "📚";
 
-    const typeLabels={cours:"Cours",fiches:"Fiche",revisions:"Révisions"};
-    const typeLabel=typeLabels[p.type]||p.type;
+    const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+    const roleClass = liveRole==="professeur"?"professeur":liveRole==="admin"?"admin":"eleve";
+    const typeLabels = {cours:"Cours", fiches:"Fiche", revisions:"Révisions"};
+    const typeLabel  = typeLabels[p.type]||p.type;
 
-    let fileCard="";
-    if(p.fileData){
-      const ext=p.fileType==="application/pdf"?"PDF":"IMG";
-      fileCard=`<div class="file-chip">
-        <div class="file-chip-info">${p.fileType==="application/pdf"?"📄":"🖼️"} <span>${p.fileName||"Fichier"}</span><span class="ext-tag">${ext}</span></div>
-        <a href="${p.fileData}" download="${p.fileName||'fichier'}" class="btn-pill" style="font-size:13px;padding:8px 16px;text-decoration:none">Télécharger</a>
-      </div>`;
-    } else if(p.url){
-      const isCloudinary=p.url.includes("cloudinary.com");
-      const isPDF=p.fileType==="application/pdf"||(p.fileName||"").toLowerCase().endsWith(".pdf")||p.url.includes(".pdf");
-      const icon=isPDF?"📄":isCloudinary?"🖼️":"🔗";
-      const label=p.fileName||(isPDF?"Document PDF":isCloudinary?"Image":"Lien externe");
-      const ext=isPDF?"PDF":isCloudinary?"IMG":null;
-      fileCard=`<div class="file-chip">
-        <div class="file-chip-info">${icon} <span>${label}</span>${ext?`<span class="ext-tag">${ext}</span>`:""}</div>
-        <a href="${p.url}" target="_blank" rel="noopener" class="btn-pill" style="font-size:13px;padding:8px 16px;text-decoration:none">${isPDF||isCloudinary?"Télécharger":"Ouvrir"}</a>
-      </div>`;
+    const targetUrl = p.fileData || p.url;
+    const isPDF     = p.fileType==="application/pdf" || targetUrl?.toLowerCase().endsWith(".pdf");
+    const isImage   = !isPDF && (p.fileType?.startsWith("image/") || targetUrl?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || targetUrl?.includes("res.cloudinary.com/"));
+
+    let mediaBox="", fileChip="";
+
+    if(targetUrl){
+      if(isImage){
+        mediaBox=`<div class="post-media-preview" onclick="window.open('${targetUrl}','_blank')"><img src="${targetUrl}" alt="Aperçu"></div>`;
+      } else {
+        const cleanName = p.fileName || p.title || "Document";
+        fileChip=`<div class="file-chip mt-1">
+          <div class="file-chip-info" title="${esc(cleanName)}">
+            <span style="font-size:22px">${isPDF?"📄":"🔗"}</span>
+            <span>${cleanName}</span>
+          </div>
+          <a href="${targetUrl}" target="_blank" rel="noopener" download class="btn-download">📥 Télécharger</a>
+        </div>`;
+      }
     }
 
     let cmtHTML="";
     (p.comments||[]).forEach(c=>{
-      cmtHTML+=`<div class="cmt-row"><span class="cmt-user">${c.displayName||c.userId} :</span>${c.text}</div>`;
+      const cmtAuthor = window.usersMap.get(c.userId) || {};
+      const cmtName = cmtAuthor.displayName || c.displayName || c.userId;
+      cmtHTML+=`<div class="cmt-row"><a href="#${c.userId}" class="cmt-user">${cmtName} :</a>${c.text}</div>`;
     });
 
     const dateStr=p.timestamp?new Date(p.timestamp).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Date inconnue";
 
     container.innerHTML+=`
       <div class="post-card">
-        <div class="post-header">
-          <div class="post-av">${avContent}</div>
-          <div style="flex:1">
-            <div class="post-author-name">${p.authorDisplayName||p.authorId}</div>
-            <div class="post-meta">
-              <span class="rbadge ${roleClass}">${roleLabel}</span>
-              <span class="type-tag ${p.type}">${typeLabel}</span>
+        <div style="display:flex;flex-direction:column;gap:14px;flex:1">
+          <div class="post-header">
+            <a href="#${p.authorId}" class="post-av">${avContent}</a>
+            <div style="flex:1;min-width:0">
+              <a href="#${p.authorId}" class="post-author-name">${liveName}</a>
+              <div class="post-meta">
+                <span class="rbadge ${roleClass}">${liveRole}</span>
+                <span class="type-tag ${p.type}">${typeLabel}</span>
+                <span class="subj-tag">${subjIcon} ${p.matiere}</span>
+              </div>
             </div>
+            ${canDel?`<button class="btn-danger btn-sm" onclick="deletePost('${pId}')">Supprimer</button>`:""}
           </div>
-          ${canDel?`<button class="btn-danger btn-sm" onclick="deletePost('${pId}')">Supprimer</button>`:""}
+          <div>
+            <div class="post-title">${p.title}</div>
+            ${p.description?`<p class="post-desc">${p.description}</p>`:""}
+          </div>
+          ${mediaBox}
+          ${fileChip}
         </div>
         <div>
-          <div class="post-title">${p.title}</div>
-          ${p.description?`<p class="post-desc">${p.description}</p>`:""}
-        </div>
-        ${fileCard}
-        <div class="post-date">Publié le ${dateStr}</div>
-        <div class="post-actions">
-          <button class="like-btn ${hasLiked?"liked":""}" onclick="toggleLike('${pId}')">
-            ${hasLiked?"❤️":"🤍"} ${likeCount} j'aime
-          </button>
-        </div>
-        <div class="comments-box">
-          ${cmtHTML}
-          <form class="cmt-form" onsubmit="addComment(event,'${pId}')">
-            <input type="text" placeholder="Un commentaire…" required>
-            <button type="submit" class="cmt-send">Envoyer</button>
-          </form>
+          <div class="post-date">Publié le ${dateStr}</div>
+          <div class="post-actions">
+            <button class="like-btn ${hasLiked?"liked":""}" onclick="toggleLike('${pId}')">
+              ${hasLiked?"❤️":"🤍"} ${likeCount} j'aime
+            </button>
+          </div>
+          <div class="comments-box">
+            ${cmtHTML}
+            <form class="cmt-form" onsubmit="addComment(event,'${pId}')">
+              <input type="text" placeholder="Un commentaire…" required>
+              <button type="submit" class="cmt-send">Envoyer</button>
+            </form>
+          </div>
         </div>
       </div>`;
   });
@@ -1194,180 +1356,80 @@ function renderFeed(snap,container,emptyMsg){
 
 function loadAnnonces(){
   const isAdmin=currentUser.role==="admin"||(currentUser.subRoles&&currentUser.subRoles.includes("admin"));
-  const zone=document.getElementById("annonces-zone");
-  if(!zone) return;
+  const zone=document.getElementById("annonces-zone"); if(!zone) return;
 
   onSnapshot(collection(db,"annonces"),(snap)=>{
     const titleRow=`<div class="ann-section-title">
       📢 Annonces
       ${isAdmin?`<button class="btn-pill-van btn-sm" onclick="openAnnonceModal('')">+ Nouvelle annonce</button>`:""}
     </div>`;
-
     if(snap.empty){
-      zone.innerHTML = isAdmin ? titleRow+`<div class="empty-text">Aucune annonce pour le moment</div>` : "";
-      return;
+      zone.innerHTML = isAdmin ? titleRow+`<div class="empty-text">Aucune annonce pour le moment</div>` : ""; return;
     }
-
     let cards="";
     snap.docs.sort((a,b)=>(b.data().timestamp||0)-(a.data().timestamp||0)).forEach(d=>{
       const a=d.data();
-      cards+=`
-        <div class="ann-card">
-          <div class="ann-card-title">${a.title}</div>
-          <div class="ann-card-body">${a.body||""}</div>
-          ${isAdmin?`<div class="ann-actions">
-            <button class="btn-ghost btn-sm" onclick="openAnnonceModal('${d.id}','${esc(a.title)}','${esc(a.body||'')}')">Modifier</button>
-            <button class="btn-danger btn-sm" onclick="delAnnonce('${d.id}')">Supprimer</button>
-          </div>`:""}
-        </div>`;
+      cards+=`<div class="ann-card"><div class="ann-card-title">${a.title}</div><div class="ann-card-body">${a.body||""}</div>
+      ${isAdmin?`<div class="ann-actions"><button class="btn-ghost btn-sm" onclick="openAnnonceModal('${d.id}','${esc(a.title)}','${esc(a.body||'')}')">Modifier</button><button class="btn-danger btn-sm" onclick="delAnnonce('${d.id}')">Supprimer</button></div>`:""}</div>`;
     });
-    zone.innerHTML=titleRow+`<div class="feed-wrap">${cards}</div>`;
+    zone.innerHTML=titleRow+`<div style="display:flex;flex-direction:column;gap:12px;grid-column:1/-1">${cards}</div>`;
   });
 }
 
 window.openAnnonceModal=(id,title="",body="")=>{
   document.getElementById("m-ann-title").innerText=id?"Modifier l'annonce":"Nouvelle annonce";
-  document.getElementById("ann-edit-id").value=id;
-  document.getElementById("ann-title").value=title;
-  document.getElementById("ann-body").value=body;
+  document.getElementById("ann-edit-id").value=id; document.getElementById("ann-title").value=title; document.getElementById("ann-body").value=body;
   openModal("m-ann");
 };
-
 window.saveAnnonce=async()=>{
-  const id    =document.getElementById("ann-edit-id").value;
-  const title =document.getElementById("ann-title").value.trim();
-  const body  =document.getElementById("ann-body").value.trim();
+  const id=document.getElementById("ann-edit-id").value, title=document.getElementById("ann-title").value.trim(), body=document.getElementById("ann-body").value.trim();
   if(!title){showToast("Titre requis.");return;}
-  if(id){
-    await updateDoc(doc(db,"annonces",id),{title,body});
-  } else {
-    await addDoc(collection(db,"annonces"),{title,body,timestamp:Date.now()});
-  }
+  if(id) await updateDoc(doc(db,"annonces",id),{title,body}); else await addDoc(collection(db,"annonces"),{title,body,timestamp:Date.now()});
   closeModal("m-ann"); showToast("Annonce publiée ✓");
 };
-
-window.delAnnonce=async(id)=>{
-  if(confirm("Supprimer cette annonce ?")) await deleteDoc(doc(db,"annonces",id));
-};
-
-const CLOUDINARY_CLOUD_NAME   = "dmtggmxrm";
-const CLOUDINARY_UPLOAD_PRESET = "iAcqTr_Pg13v5d-Es84wIkdUqaw";
+window.delAnnonce=async(id)=>{if(confirm("Supprimer cette annonce ?")) await deleteDoc(doc(db,"annonces",id));};
 
 window.handleFileSelect=(e)=>{
   const file=e.target.files[0]; if(!file) return;
   if(file.size>25*1024*1024){
-    e.target.value="";
-    window._uploadedFile=null;
-    document.getElementById("file-prev").style.display="none";
-    openModal("m-filesize");
-    return;
+    e.target.value=""; window._uploadedFile=null; document.getElementById("file-prev").style.display="none"; openModal("m-filesize"); return;
   }
   window._uploadedFile=file;
-  const bar=document.getElementById("file-prev");
-  bar.style.display="flex";
+  const bar=document.getElementById("file-prev"); bar.style.display="flex";
   document.getElementById("file-prev-name").innerText=file.name;
-  document.getElementById("file-prev-icon").innerText=file.type==="application/pdf"?"📄":"🖼️";
-  document.getElementById("post-url").value="";
+  document.getElementById("file-prev-icon").innerText=file.type==="application/pdf"?"📄":"🖼️"; document.getElementById("post-url").value="";
 };
-
 window.clearFile=()=>{
-  window._uploadedFile=null;
-  document.getElementById("post-file").value="";
-  document.getElementById("file-prev").style.display="none";
+  window._uploadedFile=null; document.getElementById("post-file").value=""; document.getElementById("file-prev").style.display="none";
 };
-
-async function uploadToCloudinary(file){
-  const fd=new FormData();
-  fd.append("file",file);
-  fd.append("upload_preset",CLOUDINARY_UPLOAD_PRESET);
-  fd.append("resource_type","auto"); 
-
-  const res=await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`,
-    {method:"POST",body:fd}
-  );
-  if(!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
-  const data=await res.json();
-  if(data.error) throw new Error(data.error.message);
-  return data.secure_url; 
-}
 
 window.handleCreatePost=async()=>{
-  const title  =document.getElementById("post-title").value.trim();
-  const matiere=document.getElementById("post-matiere").value;
-  const type   =document.getElementById("post-type").value;
-  const desc   =document.getElementById("post-desc").value.trim();
-  const urlInput=document.getElementById("post-url").value.trim();
+  const title=document.getElementById("post-title").value.trim(), matiere=document.getElementById("post-matiere").value, type=document.getElementById("post-type").value, desc=document.getElementById("post-desc").value.trim(), urlInput=document.getElementById("post-url").value.trim();
+  if(!title||!matiere){showToast("Titre et matière requis.");return;}
 
-  if(!title||!matiere){showToast("Le titre et la matière sont obligatoires.");return;}
-
-  const displayRole=currentUser.role||"élève";
-
-  let fileUrl="";
-  let fileName="";
-  let fileType="";
+  let fileUrl="", fileName="", fileType="";
 
   if(window._uploadedFile){
-    const btn=document.querySelector('[onclick="handleCreatePost()"]');
-    if(btn){btn.disabled=true;btn.innerText="Upload en cours…";}
+    const btn=document.querySelector('[onclick="handleCreatePost()"]'); if(btn){btn.disabled=true;btn.innerText="Upload en cours…";}
     try{
-      fileUrl=await uploadToCloudinary(window._uploadedFile);
-      fileName=window._uploadedFile.name;
-      fileType=window._uploadedFile.type;
+      fileUrl=await uploadToCloudinary(window._uploadedFile); fileName=window._uploadedFile.name; fileType=window._uploadedFile.type;
     } catch(err){
-      showToast("Erreur upload Cloudinary : "+err.message);
-      console.error(err);
-      if(btn){btn.disabled=false;btn.innerText="Partager avec la classe";}
-      return;
+      showToast("Erreur upload Cloudinary."); if(btn){btn.disabled=false;btn.innerText="Partager avec la classe";} return;
     }
     if(btn){btn.disabled=false;btn.innerText="Partager avec la classe";}
   }
 
   const post={
-    title,matiere,type,description:desc,
-    fileData:"",
-    fileName,
-    fileType,
-    url:fileUrl||urlInput||"",
-    authorId:currentUser.username,
-    authorDisplayName:currentUser.displayName||currentUser.username,
-    authorAvatar:currentUser.avatar||"",
-    authorRole:displayRole,
-    likes:[],comments:[],
-    timestamp:Date.now()
+    title,matiere,type,description:desc,fileData:"",fileName,fileType,
+    url:fileUrl||urlInput||"",authorId:currentUser.username,authorDisplayName:currentUser.displayName||currentUser.username,
+    authorAvatar:currentUser.avatar||"",authorRole:currentUser.role||"élève",likes:[],comments:[],timestamp:Date.now()
   };
 
   try{
     await addDoc(collection(db,"posts"),post);
-    document.getElementById("post-title").value="";
-    document.getElementById("post-desc").value="";
-    document.getElementById("post-url").value="";
-    clearFile();
-    syncContrib();
-    showToast("Cours partagé avec la classe ✓");
-    if(type==="cours"){
-      window._coursSubjFilter=matiere;
-      switchTab("cours");
-      setTimeout(()=>{
-        document.querySelectorAll("#cours-filter-bar .filter-btn").forEach(b=>{
-          b.classList.toggle("active",b.dataset.name===matiere);
-        });
-        loadCoursFeed();
-      },100);
-    } else {
-      window._frSubjFilter=matiere;
-      switchTab("fichesrev");
-      setTimeout(()=>{
-        document.querySelectorAll("#fr-subject-filter-bar .filter-btn").forEach(b=>{
-          b.classList.toggle("active",b.dataset.name===matiere);
-        });
-        loadFRFeed();
-      },100);
-    }
-  } catch(e){
-    showToast("Erreur lors de l'envoi. Réessaie.");
-    console.error(e);
-  }
+    document.getElementById("post-title").value=""; document.getElementById("post-desc").value=""; document.getElementById("post-url").value=""; clearFile(); syncContrib(); showToast("Partagé avec la classe ✓");
+    if(type==="cours") switchTab('cours'); else switchTab('fichesrev');
+  } catch(e){ showToast("Erreur d'envoi."); }
 };
 
 const dz=document.getElementById("drop-zone");
@@ -1375,236 +1437,213 @@ if(dz){
   dz.addEventListener("dragover",e=>{e.preventDefault();dz.style.borderColor="var(--primary)";});
   dz.addEventListener("dragleave",()=>{dz.style.borderColor="";});
   dz.addEventListener("drop",e=>{
-    e.preventDefault(); dz.style.borderColor="";
-    const files=e.dataTransfer.files;
-    if(files[0]){
-      const inp=document.getElementById("post-file");
-      const dt=new DataTransfer(); dt.items.add(files[0]); inp.files=dt.files;
-      handleFileSelect({target:inp});
-    }
+    e.preventDefault(); dz.style.borderColor=""; const files=e.dataTransfer.files;
+    if(files[0]){ const inp=document.getElementById("post-file"), dt=new DataTransfer(); dt.items.add(files[0]); inp.files=dt.files; handleFileSelect({target:inp}); }
   });
 }
 
 window.toggleLike=async(postId)=>{
-  const ref=doc(db,"posts",postId);
-  const snap=await getDoc(ref);
-  if(!snap.exists()) return;
+  const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
   let likes=snap.data().likes||[];
-  if(likes.includes(currentUser.username)){
-    likes=likes.filter(u=>u!==currentUser.username);
-  } else {
-    likes.push(currentUser.username);
-  }
+  if(likes.includes(currentUser.username)) likes=likes.filter(u=>u!==currentUser.username); else likes.push(currentUser.username);
   await updateDoc(ref,{likes});
 };
 
 window.addComment=async(e,postId)=>{
-  e.preventDefault();
-  const input=e.target.querySelector("input");
-  const txt=input.value.trim(); if(!txt) return;
-  const ref=doc(db,"posts",postId);
-  const snap=await getDoc(ref); if(!snap.exists()) return;
+  e.preventDefault(); const input=e.target.querySelector("input"), txt=input.value.trim(); if(!txt) return;
+  const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
   const comments=snap.data().comments||[];
   comments.push({userId:currentUser.username,displayName:currentUser.displayName||currentUser.username,text:txt,timestamp:Date.now()});
-  await updateDoc(ref,{comments});
-  input.value="";
+  await updateDoc(ref,{comments}); input.value="";
+};
+window.deletePost=async(id)=>{if(confirm("Supprimer ce document ?")) await deleteDoc(doc(db,"posts",id));};
+
+window.renderPublicProfile = (uname)=>{
+  const targetUser = window.usersMap.get(uname);
+  if(!targetUser){ showToast("Membre introuvable"); window.location.hash="#page-matieres"; return; }
+
+  window._currentViewedUser = targetUser;
+  document.querySelectorAll(".page-view").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(b=>b.classList.remove("active"));
+  document.getElementById("page-pub-profil").classList.add("active");
+  window.scrollTo({top:0,behavior:"smooth"});
+
+  document.getElementById("pub-banner").style.backgroundImage = targetUser.banner ? `url('${targetUser.banner}')` : "";
+
+  const imgEl=document.getElementById("pub-av-img"), initEl=document.getElementById("pub-av-init");
+  if(targetUser.avatar){
+    imgEl.src=targetUser.avatar; imgEl.style.display="block"; initEl.style.display="none";
+  } else {
+    imgEl.style.display="none"; initEl.style.display="block";
+    initEl.innerText = (targetUser.displayName||targetUser.username).split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+  }
+
+  document.getElementById("pub-name").innerText = targetUser.displayName||targetUser.username;
+  document.getElementById("pub-id").innerText   = targetUser.username;
+  document.getElementById("pub-bio").innerText  = targetUser.bio||"Aucune biographie.";
+
+  const roleEl=document.getElementById("pub-role"); roleEl.innerText=targetUser.role||"élève";
+  roleEl.className = "rbadge " + (targetUser.role==="professeur"?"professeur":targetUser.role==="admin"?"admin":"eleve");
+
+  document.getElementById("pub-cnt-followers").innerText = (targetUser.followers||[]).length;
+  document.getElementById("pub-cnt-following").innerText = (targetUser.following||[]).length;
+
+  const socBox=document.getElementById("pub-socials"); socBox.innerHTML="";
+  if(targetUser.instagram){
+    const cleanInsta = targetUser.instagram.replace("https://instagram.com/","").replace("https://www.instagram.com/","").replace("@","").trim();
+    socBox.innerHTML+=`<a href="https://instagram.com/${cleanInsta}" target="_blank" class="soc-pill insta"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg><span>${cleanInsta}</span></a>`;
+  }
+  if(targetUser.linkedin){
+    const cleanLd = targetUser.linkedin.startsWith("http") ? targetUser.linkedin : "https://"+targetUser.linkedin;
+    socBox.innerHTML+=`<a href="${cleanLd}" target="_blank" class="soc-pill linkedin"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg><span>LinkedIn</span></a>`;
+  }
+
+  const followBtn=document.getElementById("pub-follow-btn");
+  if(currentUser && targetUser.username === currentUser.username) followBtn.style.display="none";
+  else {
+    followBtn.style.display="inline-flex";
+    if((currentUser?.following||[]).includes(targetUser.username)){ followBtn.innerText="Abonné ✓"; followBtn.className="btn-pill btn-following"; }
+    else { followBtn.innerText="S'abonner"; followBtn.className="btn-pill"; }
+  }
+
+  if(window._pubFeedUnsub){ window._pubFeedUnsub(); window._pubFeedUnsub=null; }
+  const qFeed = query(collection(db,"posts"),where("authorId","==",targetUser.username));
+  window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
+    const rawDocs = snapFeed.docs.map(d=>({id:d.id,...d.data()}));
+    document.getElementById("pub-cnt-contribs-top").innerText = rawDocs.length;
+
+    const userMats = [...new Set(rawDocs.map(p=>p.matiere))].sort();
+    let filterBarHtml = `<button class="filter-btn ${window._pubSubjFilter==='all'?'active':''}" onclick="setPubSubjFilter('all',this)">Tout (${rawDocs.length})</button>`;
+    userMats.forEach(mName => {
+      const icon = window.subjectsMap.get(mName)||"📚";
+      const cnt = rawDocs.filter(p=>p.matiere===mName).length;
+      filterBarHtml += `<button class="filter-btn ${window._pubSubjFilter===mName?'active':''}" onclick="setPubSubjFilter('${esc(mName)}',this)">${icon} ${mName} (${cnt})</button>`;
+    });
+    document.getElementById("pub-subj-filter-bar").innerHTML = filterBarHtml;
+
+    const filteredDocs = window._pubSubjFilter==='all' ? rawDocs : rawDocs.filter(p=>p.matiere===window._pubSubjFilter);
+    renderFeedFromDocs(filteredDocs, document.getElementById("pub-feed"), "Aucun document partagé pour ce filtre.");
+  });
 };
 
-window.deletePost=async(id)=>{
-  if(confirm("Supprimer ce post ?")) await deleteDoc(doc(db,"posts",id));
+window.setPubSubjFilter = (val, btn)=>{
+  window._pubSubjFilter=val;
+  document.querySelectorAll("#pub-subj-filter-bar .filter-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  if(window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
+};
+
+window.toggleFollowCurrentProfile = async()=>{
+  if(!window._currentViewedUser || !currentUser) return;
+  const targetUname = window._currentViewedUser.username; if(targetUname === currentUser.username) return;
+  const targetDoc = window.usersMap.get(targetUname); if(!targetDoc) return;
+
+  let myFollowing=[...(currentUser.following||[])], theirFollowers=[...(targetDoc.followers||[])];
+  const isFollowing = myFollowing.includes(targetUname);
+
+  if(isFollowing){
+    myFollowing=myFollowing.filter(x=>x!==targetUname); theirFollowers=theirFollowers.filter(x=>x!==currentUser.username);
+  } else {
+    myFollowing.push(targetUname); theirFollowers.push(currentUser.username);
+  }
+
+  currentUser.following=myFollowing; localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+  const fBtn=document.getElementById("pub-follow-btn");
+  if(fBtn){ if(!isFollowing){fBtn.innerText="Abonné ✓";fBtn.className="btn-pill btn-following";}else{fBtn.innerText="S'abonner";fBtn.className="btn-pill";} }
+
+  await Promise.all([updateDoc(doc(db,"users",currentUser.id),{following:myFollowing}), updateDoc(doc(db,"users",targetDoc.id),{followers:theirFollowers})]);
+};
+
+window.openFollowersModal = (type)=>{
+  if(!window._currentViewedUser) return;
+  const list=window._currentViewedUser[type]||[]; document.getElementById("m-follows-title").innerText=type==="followers"?"Abonnés":"Abonnements";
+  const box=document.getElementById("follows-list-box"); box.innerHTML="";
+  if(list.length===0) box.innerHTML=`<div class="empty-text" style="padding:40px 0">Personne ici</div>`;
+  else {
+    list.forEach(uname=>{
+      const u=window.usersMap.get(uname)||"";
+      const nameDisp=u?u.displayName||u.username:uname, roleDisp=u?u.role:"élève", avHtml=u.avatar?`<img src="${u.avatar}">`:nameDisp.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+      box.innerHTML+=`<div class="follow-user-row" onclick="closeModal('m-follows');window.location.hash='#${esc(uname)}'"><div class="drawer-av" style="flex-shrink:0">${avHtml}</div><div style="min-width:0;flex:1"><div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nameDisp}</div><div style="font-size:13px;color:var(--ink-m)">@${uname} • <span style="text-transform:capitalize">${roleDisp}</span></div></div></div>`;
+    });
+  }
+  openModal("m-follows");
 };
 
 window.handleAddMatiere=async()=>{
-  const name=document.getElementById("mat-name").value.trim();
-  const icon=document.getElementById("mat-icon").value.trim();
+  const name=document.getElementById("mat-name").value.trim(), icon=document.getElementById("mat-icon").value.trim();
   if(!name||!icon){showToast("Remplis le nom et l'icône.");return;}
-  await addDoc(collection(db,"subjects"),{name,icon});
-  closeModal("m-add-mat");
-  document.getElementById("mat-name").value="";
-  document.getElementById("mat-icon").value="";
-  showToast("Matière ajoutée ✓");
+  await addDoc(collection(db,"subjects"),{name,icon}); closeModal("m-add-mat"); document.getElementById("mat-name").value=""; document.getElementById("mat-icon").value=""; showToast("Matière ajoutée ✓");
 };
-
 window.editMatiere=(id,name,icon)=>{
-  document.getElementById("m-edit-mat-title").innerText="Modifier la matière";
-  document.getElementById("edit-mat-id").value=id;
-  document.getElementById("adm-m-name").value=name;
-  document.getElementById("adm-m-icon").value=icon;
-  openModal("m-edit-mat");
+  document.getElementById("m-edit-mat-title").innerText="Modifier la matière"; document.getElementById("edit-mat-id").value=id; document.getElementById("adm-m-name").value=name; document.getElementById("adm-m-icon").value=icon; openModal("m-edit-mat");
 };
-
-window.openMatiereModal=(isEdit,id="",name="",icon="")=>{
-  if(isEdit){ editMatiere(id,name,icon); } else { openModal("m-add-mat"); }
-};
-
+window.openMatiereModal=(isEdit,id="",name="",icon="")=>{ if(isEdit) editMatiere(id,name,icon); else openModal("m-add-mat"); };
 window.saveMatiereConfig=async()=>{
-  const id=document.getElementById("edit-mat-id").value;
-  const name=document.getElementById("adm-m-name").value.trim();
-  const icon=document.getElementById("adm-m-icon").value.trim();
+  const id=document.getElementById("edit-mat-id").value, name=document.getElementById("adm-m-name").value.trim(), icon=document.getElementById("adm-m-icon").value.trim();
   if(!name||!icon) return;
-  if(id){ await updateDoc(doc(db,"subjects",id),{name,icon}); }
-  else   { await addDoc(collection(db,"subjects"),{name,icon}); }
+  if(id) await updateDoc(doc(db,"subjects",id),{name,icon}); else await addDoc(collection(db,"subjects"),{name,icon});
   closeModal("m-edit-mat"); showToast("Matière mise à jour ✓");
 };
-
-window.delMatiere=async(id)=>{
-  if(confirm("Supprimer cette matière ? Les cours restent en base.")) await deleteDoc(doc(db,"subjects",id));
-};
+window.delMatiere=async(id)=>{if(confirm("Supprimer cette matière ? Les cours partagés resteront en base.")) await deleteDoc(doc(db,"subjects",id));};
 
 function syncAdminUsers(){
-  onSnapshot(collection(db,"users"),(snap)=>{
-    const tb=document.getElementById("admin-users-tb");
-    tb.innerHTML="";
+  onSnapshot(collection(db,"users"),snap=>{
+    const tb=document.getElementById("admin-users-tb"); tb.innerHTML="";
     snap.forEach(d=>{
       const u=d.data();
-      tb.innerHTML+=`
-        <tr>
-          <td><strong>${u.username}</strong></td>
-          <td>${u.displayName||"—"}</td>
-          <td><span class="rpill">${u.role}</span></td>
-          <td class="caption">${(u.subRoles||[]).join(", ")||"—"}</td>
-          <td>
-            <div class="td-acts">
-              <button class="btn-ghost btn-sm" onclick='openUserModal(true,"${d.id}","${esc(u.username)}","${u.role}",${JSON.stringify(u.subRoles||[])})'>Modifier</button>
-              <button class="btn-danger btn-sm" onclick="delUser('${d.id}','${esc(u.username)}')">Suppr.</button>
-            </div>
-          </td>
-        </tr>`;
+      tb.innerHTML+=`<tr><td><strong>${u.username}</strong></td><td>${u.displayName||"—"}</td><td><span class="rpill">${u.role}</span></td><td class="caption">${(u.subRoles||[]).join(", ")||"—"}</td><td><div class="td-acts"><button class="btn-ghost btn-sm" onclick='openUserModal(true,"${d.id}","${esc(u.username)}","${u.role}",${JSON.stringify(u.subRoles||[])})'>Modifier</button><button class="btn-danger btn-sm" onclick="delUser('${d.id}','${esc(u.username)}')">Suppr.</button></div></td></tr>`;
     });
   });
 }
 
 window.openUserModal=(isEdit,docId="",username="",role="élève",subRoles=[])=>{
-  document.getElementById("m-user-title").innerText=isEdit?"Modifier le compte":"Nouveau compte";
-  document.getElementById("edit-user-id").value=docId;
-  document.getElementById("adm-u-id").value=username;
-  document.getElementById("adm-u-id").readOnly=isEdit;
-  document.getElementById("adm-pwd-wrap").style.display=isEdit?"none":"block";
-  document.getElementById("adm-u-role").value=role;
-  document.getElementById("adm-u-admin").checked=subRoles.includes("admin");
-  document.getElementById("adm-u-vol").checked=subRoles.includes("volontaire");
-  openModal("m-user");
+  document.getElementById("m-user-title").innerText=isEdit?"Modifier le compte":"Nouveau compte"; document.getElementById("edit-user-id").value=docId; document.getElementById("adm-u-id").value=username; document.getElementById("adm-u-id").readOnly=isEdit; document.getElementById("adm-pwd-wrap").style.display=isEdit?"none":"block"; document.getElementById("adm-u-role").value=role; document.getElementById("adm-u-admin").checked=subRoles.includes("admin"); document.getElementById("adm-u-vol").checked=subRoles.includes("volontaire"); openModal("m-user");
 };
-
 window.saveUserConfig=async()=>{
-  const docId=document.getElementById("edit-user-id").value;
-  const subs=[];
-  if(document.getElementById("adm-u-admin").checked) subs.push("admin");
-  if(document.getElementById("adm-u-vol").checked)   subs.push("volontaire");
-  const role=document.getElementById("adm-u-role").value;
+  const docId=document.getElementById("edit-user-id").value, subs=[], role=document.getElementById("adm-u-role").value;
+  if(document.getElementById("adm-u-admin").checked) subs.push("admin"); if(document.getElementById("adm-u-vol").checked) subs.push("volontaire");
 
-  if(docId){
-    await updateDoc(doc(db,"users",docId),{role,subRoles:subs});
-    showToast("Rôle mis à jour ✓");
-  } else {
-    const uname=document.getElementById("adm-u-id").value.trim().toLowerCase();
-    const pwd=document.getElementById("adm-u-pwd").value.trim()||"stmg2026";
+  if(docId){ await updateDoc(doc(db,"users",docId),{role,subRoles:subs}); showToast("Compte mis à jour ✓"); }
+  else {
+    const uname=document.getElementById("adm-u-id").value.trim().toLowerCase(), pwd=document.getElementById("adm-u-pwd").value.trim()||"stmg2026";
     if(!uname){showToast("Identifiant requis.");return;}
-    const exist=await getDocs(query(collection(db,"users"),where("username","==",uname)));
-    if(!exist.empty){showToast("Cet identifiant existe déjà.");return;}
+    const exist=await getDocs(query(collection(db,"users"),where("username","==",uname))); if(!exist.empty){showToast("Identifiant déjà pris.");return;}
     const autoName=displayNameFromId(uname);
-    await addDoc(collection(db,"users"),{
-      username:uname, displayName:autoName,
-      password:pwd, role, subRoles:subs,
-      avatar:"", isTempPassword:true
-    });
-    showToast(`Compte créé pour ${autoName} ✓`);
+    await addDoc(collection(db,"users"),{username:uname,displayName:autoName,password:pwd,role,subRoles:subs,avatar:"",bio:"",banner:"",instagram:"",linkedin:"",followers:[],following:[],isTempPassword:true}); showToast(`Compte de ${autoName} créé ✓`);
   }
   closeModal("m-user");
 };
-
-window.delUser=async(docId,uname)=>{
-  if(uname==="dan.bouillet"){showToast("Ce compte est intouchable.");return;}
-  if(confirm(`Supprimer l'accès de ${uname} ?`)) await deleteDoc(doc(db,"users",docId));
-};
+window.delUser=async(docId,uname)=>{if(uname==="dan.bouillet"){showToast("Compte protégé.");return;}if(confirm(`Supprimer l'accès de ${uname} ?`)) await deleteDoc(doc(db,"users",docId));};
 
 function syncAdminMats(){
-  onSnapshot(collection(db,"subjects"),(snap)=>{
-    const tb=document.getElementById("admin-mat-tb");
-    tb.innerHTML="";
-    snap.forEach(d=>{
-      const m=d.data();
-      tb.innerHTML+=`
-        <tr>
-          <td style="font-size:22px">${m.icon}</td>
-          <td><strong>${m.name}</strong></td>
-          <td>
-            <div class="td-acts">
-              <button class="btn-ghost btn-sm" onclick="editMatiere('${d.id}','${esc(m.name)}','${m.icon}')">Modifier</button>
-              <button class="btn-danger btn-sm" onclick="delMatiere('${d.id}')">Suppr.</button>
-            </div>
-          </td>
-        </tr>`;
-    });
+  onSnapshot(collection(db,"subjects"),snap=>{
+    const tb=document.getElementById("admin-mat-tb"); tb.innerHTML="";
+    snap.forEach(d=>{const m=d.data();tb.innerHTML+=`<tr><td style="font-size:22px">${m.icon}</td><td><strong>${m.name}</strong></td><td><div class="td-acts"><button class="btn-ghost btn-sm" onclick="editMatiere('${d.id}','${esc(m.name)}','${m.icon}')">Modifier</button><button class="btn-danger btn-sm" onclick="delMatiere('${d.id}')">Suppr.</button></div></td></tr>`;});
   });
 }
 
 function initTchat(){
-  const q=query(collection(db,"tchat"),orderBy("timestamp","asc"));
-  onSnapshot(q,(snap)=>{
-    const box=document.getElementById("tchat-msgs");
-    box.innerHTML="";
-    snap.forEach(d=>{
-      const m=d.data();
-      const isMe=m.author===currentUser.username;
-      box.innerHTML+=`<div class="msg ${isMe?"me":""}">
-        ${!isMe?`<div class="msg-auth">${m.displayName}</div>`:""}
-        <div>${m.text}</div>
-      </div>`;
-    });
+  onSnapshot(query(collection(db,"tchat"),orderBy("timestamp","asc")),snap=>{
+    const box=document.getElementById("tchat-msgs"); box.innerHTML="";
+    snap.forEach(d=>{const m=d.data(), isMe=m.author===currentUser.username;box.innerHTML+=`<div class="msg ${isMe?"me":""}">${!isMe?`<div class="msg-auth">${m.displayName}</div>`:""}<div>${m.text}</div></div>`;});
     box.scrollTop=box.scrollHeight;
   });
 }
-window.sendMsg=async(e)=>{
-  e.preventDefault();
-  const inp=document.getElementById("tchat-input");
-  if(!inp.value.trim()) return;
-  await addDoc(collection(db,"tchat"),{
-    author:currentUser.username,
-    displayName:currentUser.displayName||currentUser.username,
-    text:inp.value.trim(), timestamp:Date.now()
-  });
-  inp.value="";
-};
+window.sendMsg=async(e)=>{e.preventDefault(); const inp=document.getElementById("tchat-input"); if(!inp.value.trim()) return; await addDoc(collection(db,"tchat"),{author:currentUser.username,displayName:currentUser.displayName||currentUser.username,text:inp.value.trim(),timestamp:Date.now()}); inp.value="";};
 
-window.switchTab=(target)=>{
-  document.querySelectorAll(".nav-tab").forEach(b=>b.classList.remove("active"));
-  document.querySelectorAll(".page-view").forEach(p=>p.classList.remove("active"));
-  const btn=document.querySelector(`.nav-tab[onclick="switchTab('${target}')"]`);
-  if(btn) btn.classList.add("active");
-  const page=document.getElementById(`page-${target}`);
-  if(page) page.classList.add("active");
-  document.querySelectorAll(".drawer-btn[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===target));
-  document.querySelectorAll(".bnav-btn[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===target));
-  closeDropdown();
-  window.scrollTo({top:0,behavior:"smooth"});
-};
+window.switchTab = target => { window.location.hash = `#page-${target}`; };
 
-window.toggleDrawer=()=>{
-  const drawer=document.getElementById("mob-drawer");
-  const btn=document.getElementById("hamburger-btn");
-  drawer.classList.toggle("open");
-  btn.classList.toggle("open");
-};
-window.closeDrawer=()=>{
-  document.getElementById("mob-drawer").classList.remove("open");
-  document.getElementById("hamburger-btn").classList.remove("open");
-};
-
+window.toggleDrawer=()=>{document.getElementById("mob-drawer").classList.toggle("open");document.getElementById("hamburger-btn").classList.toggle("open");};
+window.closeDrawer=()=>{document.getElementById("mob-drawer").classList.remove("open");document.getElementById("hamburger-btn").classList.remove("open");};
 window.toggleDropdown=()=>document.getElementById("profil-dropdown").classList.toggle("show");
 window.closeDropdown=()=>document.getElementById("profil-dropdown").classList.remove("show");
-document.addEventListener("click",(e)=>{
-  const dd=document.getElementById("profil-dropdown");
-  const av=document.getElementById("nav-avatar");
-  if(dd&&!dd.contains(e.target)&&av&&!av.contains(e.target)) dd.classList.remove("show");
-});
+document.addEventListener("click",e=>{const dd=document.getElementById("profil-dropdown"), av=document.getElementById("nav-avatar");if(dd&&!dd.contains(e.target)&&av&&!av.contains(e.target))dd.classList.remove("show");});
 window.toggleTchat=()=>document.getElementById("tchat-win").classList.toggle("open");
-window.openModal=(id)=>document.getElementById(id).classList.add("active");
-window.closeModal=(id)=>document.getElementById(id).classList.remove("active");
-window.closeOnOut=(e,id)=>{if(e.target.id===id) closeModal(id);};
+window.openModal=id=>document.getElementById(id).classList.add("active");
+window.closeModal=id=>document.getElementById(id).classList.remove("active");
+window.closeOnOut=(e,id)=>{if(e.target.id===id)closeModal(id);};
 
-function esc(s){return(s||"").replace(/'/g,"\\'").replace(/"/g,"&quot;");}
-window.esc=esc;
+function esc(s){return(s||"").replace(/'/g,"\\'").replace(/"/g,"&quot;");} window.esc=esc;
 
 </script>
 </body>
