@@ -68,8 +68,25 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 [data-theme=dark] .btn-utility{background:var(--surface);color:var(--ink)}
 .btn-ghost{background:var(--filter-bg);color:var(--ink-m);font-size:14px;font-weight:500;border-radius:8px;padding:8px 16px;text-decoration:none}
 .btn-ghost:hover{background:var(--primary-l);color:var(--primary-f)}
-.btn-danger{background:var(--danger);color:#fff;font-size:13px;border-radius:7px;padding:6px 12px}
+.btn-danger{background:var(--danger);color:#fff;font-size:13px;border-radius:7px;padding:6px 12px; cursor:pointer;}
+.btn-danger:hover{opacity:0.9;}
 .btn-sm{font-size:13px;padding:6px 14px;border-radius:8px}
+
+.verified-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -2px;
+  margin-left: 5px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+#pub-name .verified-icon {
+  width: 26px;
+  height: 26px;
+  vertical-align: -3px;
+  margin-left: 8px;
+}
 
 header{position:sticky;top:0;height:52px;background:var(--nav-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--hl);display:flex;align-items:center;justify-content:space-between;padding:0 28px;z-index:200;transition:background .3s}
 .header-left{display:flex;align-items:center;gap:10px;flex-shrink:0;text-decoration:none}
@@ -88,7 +105,7 @@ header{position:sticky;top:0;height:52px;background:var(--nav-bg);backdrop-filte
 .dropdown{position:absolute;top:46px;right:0;background:var(--drop-bg);border:1px solid var(--hl);border-radius:18px;padding:12px;width:240px;box-shadow:0 12px 40px var(--shadow-m);display:none;flex-direction:column;gap:2px;z-index:300}
 .dropdown.show{display:flex}
 .drop-head{padding:8px 8px 12px;border-bottom:1px solid var(--hl);margin-bottom:4px}
-.drop-name{font-weight:600;font-size:15px}
+.drop-name{font-weight:600;font-size:15px; display:flex; align-items:center;}
 .role-badge{display:inline-block;font-size:11px;font-weight:700;background:var(--secondary);color:#1d1d1f;padding:2px 8px;border-radius:4px;margin-top:4px;text-transform:uppercase}
 .dropdown button{text-align:left;background:transparent;padding:9px 12px;border-radius:10px;font-size:14px;color:var(--ink);width:100%}
 .dropdown button:hover{background:var(--parchment)}
@@ -122,7 +139,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .post-header{display:flex;align-items:center;gap:12px}
 .post-av{width:38px;height:38px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid var(--primary-l);text-decoration:none}
 .post-av img{width:100%;height:100%;object-fit:cover}
-.post-author-name{font-weight:600;font-size:15px;color:var(--ink);text-decoration:none}
+.post-author-name{font-weight:600;font-size:15px;color:var(--ink);text-decoration:none; display:flex; align-items:center;}
 .post-author-name:hover{color:var(--primary);text-decoration:underline}
 .post-meta{font-size:12px;color:var(--ink-m);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 
@@ -166,8 +183,8 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .cmt-block{display:flex;flex-direction:column;gap:6px;background:var(--file-bg);padding:10px 12px;border-radius:12px;}
 .cmt-block.pinned{border:1px solid var(--primary); background:var(--primary-l);}
 .cmt-header{display:flex;justify-content:space-between;align-items:flex-start;}
-.cmt-row{font-size:13px;color:var(--ink);line-height:1.4}
-.cmt-user{font-weight:600;color:var(--ink);margin-right:5px;text-decoration:none}
+.cmt-row{font-size:13px;color:var(--ink);line-height:1.4; display:flex; align-items:center; flex-wrap:wrap;}
+.cmt-user{font-weight:600;color:var(--ink);margin-right:5px;text-decoration:none; display:inline-flex; align-items:center;}
 .cmt-user:hover{text-decoration:underline}
 .cmt-actions{display:flex;gap:8px;font-size:12px;margin-top:2px;}
 .cmt-actions button{background:transparent;color:var(--ink-m);padding:0;}
@@ -175,7 +192,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .cmt-actions button.del:hover{color:var(--danger);}
 
 .cmt-replies{padding-left:14px;border-left:2px solid var(--hl);display:flex;flex-direction:column;gap:8px;margin-top:4px;}
-.cmt-reply{font-size:13px;line-height:1.4;}
+.cmt-reply{font-size:13px;line-height:1.4; display:flex; align-items:center; flex-wrap:wrap;}
 
 .cmt-form{display:flex;gap:8px;margin-top:2px}
 .cmt-form input{flex:1;background:var(--input-bg);border:1px solid var(--input-b);border-radius:9999px;padding:7px 14px;color:var(--ink);font-size:13px;font-family:inherit;outline:none}
@@ -217,7 +234,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
 .pub-main-info{display:flex;flex-direction:column;gap:6px}
 .pub-name-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.pub-name-line h1{font-size:32px;line-height:1}
+.pub-name-line h1{font-size:32px;line-height:1; display:flex; align-items:center;}
 .pub-uname{font-size:15px;color:var(--ink-m);font-weight:500}
 .pub-bio{font-size:15px;color:var(--ink);line-height:1.5;margin-top:4px;max-width:700px}
 .pub-metrics{display:flex;gap:16px;margin-top:8px;font-size:14px;color:var(--ink-m)}
@@ -264,7 +281,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .adm-head{display:flex;justify-content:space-between;align-items:center;margin-top:40px}
 .adm-head:first-of-type{margin-top:0}
 
-
 .dm-layout{display:grid;grid-template-columns:300px 1fr;gap:20px;height:calc(100vh - 140px);margin-top:20px;}
 .dm-sidebar{background:var(--card-bg);border:1px solid var(--hl);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;}
 .dm-sidebar-head{padding:16px;border-bottom:1px solid var(--hl);display:flex;justify-content:space-between;align-items:center;}
@@ -275,7 +291,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .dm-chat-head{padding:16px;border-bottom:1px solid var(--hl);display:flex;align-items:center;gap:12px;}
 .dm-chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--parchment);}
 .dm-chat-foot{padding:12px;border-top:1px solid var(--hl);background:var(--card-bg);width:100%;box-sizing:border-box;}
-
 
 .dm-msg-wrapper { display:flex; flex-direction:column; max-width:75%; margin-bottom:4px; }
 .dm-msg-wrapper.me { align-self:flex-end; align-items:flex-end; }
@@ -340,7 +355,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .drawer-foot{padding:12px 10px;border-top:1px solid var(--hl);display:flex;flex-direction:column;gap:2px}
 .drawer-user{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:var(--parchment)}
 .drawer-user-info{flex:1;min-width:0}
-.drawer-user-name{font-size:14px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drawer-user-name{font-size:14px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; display:flex; align-items:center;}
 .drawer-user-role{font-size:12px;color:var(--ink-m)}
 .drawer-av{width:36px;height:36px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid var(--primary-l)}
 .drawer-av img{width:100%;height:100%;object-fit:cover;display:none}
@@ -549,10 +564,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         <div class="dm-chat hide-mobile" id="dm-chat-area">
           <div class="dm-chat-head" id="dm-chat-head">
             <button class="dm-back-btn" onclick="backToDMSidebar()">←</button>
-            <div class="drawer-av" style="width:38px;height:38px;"><span id="dm-active-init"></span><img id="dm-active-av" alt=""></div>
-            <div style="flex:1;min-width:0;">
-               <div style="font-weight:600;font-size:16px;" id="dm-active-name">Sélectionne une discussion</div>
-               <div class="caption" id="dm-active-role"></div>
+            <div style="display:flex; align-items:center; gap:12px; flex:1; cursor:pointer;" onclick="openCurrentDMProfile()" title="Voir le profil">
+              <div class="drawer-av" style="width:38px;height:38px;"><span id="dm-active-init"></span><img id="dm-active-av" alt=""></div>
+              <div style="flex:1;min-width:0;">
+                 <div style="font-weight:600;font-size:16px; display:flex; align-items:center; gap:4px;" id="dm-active-name">Sélectionne une discussion</div>
+                 <div class="caption" id="dm-active-role"></div>
+              </div>
             </div>
           </div>
           <div class="dm-chat-msgs" id="dm-msgs-box"></div>
@@ -903,12 +920,27 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       </select>
     </div>
     <div class="input-group">
-      <label>Accès supplémentaires</label>
-      <div class="chk-group">
+      <label>Accès & Badges</label>
+      <div class="chk-group" style="flex-wrap: wrap;">
         <label class="chk-label"><input type="checkbox" id="adm-u-admin"> Admin</label>
         <label class="chk-label"><input type="checkbox" id="adm-u-vol"> Volontaire</label>
+        <label class="chk-label">
+          <input type="checkbox" id="adm-u-verified"> Certifié
+          <img src="https://cdn.prod.website-files.com/6214eaa668d0de27c3ea80cf/652fd0e960df145545f25f12_Pastille%20bleu%20certification%20instagram.png" class="verified-icon" alt="">
+        </label>
       </div>
     </div>
+
+    <div class="input-group mt-1">
+      <label>Faux abonnés crédibles (Génération auto)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="number" id="adm-u-fake-count" placeholder="Quantité (ex: 35)" min="0" max="500" style="flex:1;">
+        <button type="button" class="btn-utility" onclick="generateAndSetFakeFollowers()">Générer</button>
+        <button type="button" class="btn-danger" style="border-radius:8px;" onclick="clearFakeFollowers()">Retirer</button>
+      </div>
+      <p class="caption mt-1" id="adm-fake-preview">Aucun faux abonné rattaché.</p>
+    </div>
+
     <div class="mact">
       <button class="btn-ghost" onclick="closeModal('m-user')">Annuler</button>
       <button class="btn-pill" onclick="saveUserConfig()">Enregistrer</button>
@@ -961,7 +993,6 @@ const app  = initializeApp(FB);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-
 emailjs.init("2VkygefcXxbSOlhFX");
 
 window.currentUser = null;
@@ -987,6 +1018,10 @@ window._dmFileToUpload = null;
 
 const CLOUDINARY_CLOUD_NAME    = "dmtggmxrm";
 const CLOUDINARY_UPLOAD_PRESET = "iAcqTr_Pg13v5d-Es84wIkdUqaw";
+
+window.getBadge = (userObj) => {
+  return (userObj && userObj.isVerified) ? `<img src="https://cdn.prod.website-files.com/6214eaa668d0de27c3ea80cf/652fd0e960df145545f25f12_Pastille%20bleu%20certification%20instagram.png" class="verified-icon" title="Compte certifié">` : '';
+};
 
 function loadTheme(){
   const dark = localStorage.getItem("dnb_theme")==="dark";
@@ -1015,6 +1050,11 @@ onSnapshot(collection(db, "users"), snap => {
   if(document.getElementById("page-cours").classList.contains("active")) loadCoursFeed();
   if(document.getElementById("page-fichesrev").classList.contains("active")) loadFRFeed();
   if(window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
+  if(currentUser) {
+    const myBadge = getBadge(currentUser);
+    document.getElementById("drop-name").innerHTML = (currentUser.displayName||currentUser.username) + myBadge;
+    document.getElementById("drawer-name").innerHTML = (currentUser.displayName||currentUser.username) + myBadge;
+  }
 });
 
 window.addEventListener("hashchange", handleHashChange);
@@ -1123,7 +1163,11 @@ function hydrateSession(u){
   loadTheme();
 
   setAvatar(u.avatar, u.displayName||u.username);
-  document.getElementById("drop-name").innerText = u.displayName||u.username;
+  
+  const myBadge = getBadge(u);
+  document.getElementById("drop-name").innerHTML  = (u.displayName||u.username) + myBadge;
+  document.getElementById("drawer-name").innerHTML  = (u.displayName||u.username) + myBadge;
+  
   document.getElementById("drop-role").innerText  = u.role;
   document.getElementById("prof-id").value        = u.username;
   document.getElementById("prof-display").value   = u.displayName||u.username;
@@ -1150,7 +1194,6 @@ function hydrateSession(u){
   if(drawerDepot) drawerDepot.classList.toggle("hidden",!canDepot);
   if(drawerAdmin) drawerAdmin.classList.toggle("hidden",!isAdmin);
 
-  document.getElementById("drawer-name").innerText  = u.displayName||u.username;
   document.getElementById("drawer-role").innerText  = u.role;
   setDrawerAvatar(u.avatar, u.displayName||u.username);
 
@@ -1207,7 +1250,6 @@ async function uploadToCloudinary(file){
   fd.append("upload_preset",CLOUDINARY_UPLOAD_PRESET);
   fd.append("resource_type","auto"); 
   
-
   const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`,{method:"POST",body:fd});
   if(!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
   const data=await res.json();
@@ -1260,8 +1302,9 @@ window.saveProfile = async()=>{
   Object.assign(currentUser, updates);
   localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
   
-  document.getElementById("drop-name").innerText=d;
-  document.getElementById("drawer-name").innerText=d;
+  const myBadge = getBadge(currentUser);
+  document.getElementById("drop-name").innerHTML = d + myBadge;
+  document.getElementById("drawer-name").innerHTML = d + myBadge;
   setAvatar(currentUser.avatar,d);
   setDrawerAvatar(currentUser.avatar,d);
   
@@ -1435,6 +1478,7 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
     const liveRole   = liveAuthor.role || p.authorRole || "élève";
     const liveName   = liveAuthor.displayName || p.authorDisplayName || p.authorId;
     const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : p.authorAvatar;
+    const authorBadge = getBadge(liveAuthor);
     const subjIcon   = window.subjectsMap.get(p.matiere) || "📚";
 
     const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
@@ -1477,6 +1521,7 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
       const cmtId = c.id || String(c.timestamp); 
       const cmtAuthor = window.usersMap.get(c.userId) || {};
       const cmtName = cmtAuthor.displayName || c.displayName || c.userId;
+      const cmtBadge = getBadge(cmtAuthor);
       const canModCmt = isAdmin || currentUser?.username === c.userId || currentUser?.username === p.authorId;
       const canPin = isAdmin || currentUser?.username === p.authorId;
       
@@ -1486,9 +1531,10 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
           const rId = r.id || String(r.timestamp);
           const rAuthor = window.usersMap.get(r.userId) || {};
           const rName = rAuthor.displayName || r.displayName || r.userId;
+          const rBadge = getBadge(rAuthor);
           const canDelRep = isAdmin || currentUser?.username === r.userId || currentUser?.username === p.authorId;
           repliesHTML += `<div class="cmt-reply">
-            <a href="#${r.userId}" class="cmt-user">${rName}</a> : ${r.text}
+            <a href="#${r.userId}" class="cmt-user">${rName}${rBadge}</a> : ${r.text}
             ${canDelRep ? `<div class="cmt-actions"><button class="del" onclick="delCmt('${pId}','${cmtId}','${rId}')">Supprimer</button></div>`:''}
           </div>`;
         });
@@ -1498,7 +1544,7 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
       <div class="cmt-block ${c.isPinned ? 'pinned' : ''}">
         <div class="cmt-header">
           <div class="cmt-row">
-            ${c.isPinned ? '📌 ' : ''}<a href="#${c.userId}" class="cmt-user">${cmtName}</a> : ${c.text}
+            ${c.isPinned ? '📌 ' : ''}<a href="#${c.userId}" class="cmt-user">${cmtName}${cmtBadge}</a> : ${c.text}
           </div>
         </div>
         <div class="cmt-actions">
@@ -1522,7 +1568,7 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
           <div class="post-header">
             <a href="#${p.authorId}" class="post-av">${avContent}</a>
             <div style="flex:1;min-width:0">
-              <a href="#${p.authorId}" class="post-author-name">${liveName}</a>
+              <a href="#${p.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
               <div class="post-meta">
                 <span class="rbadge ${roleClass}">${liveRole}</span>
                 <span class="type-tag ${p.type}">${typeLabel}</span>
@@ -1737,14 +1783,19 @@ window.renderPublicProfile = (uname)=>{
     initEl.innerText = (targetUser.displayName||targetUser.username).split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
   }
 
-  document.getElementById("pub-name").innerText = targetUser.displayName||targetUser.username;
+  const badge = getBadge(targetUser);
+  document.getElementById("pub-name").innerHTML = (targetUser.displayName || targetUser.username) + badge;
+
   document.getElementById("pub-id").innerText   = targetUser.username;
   document.getElementById("pub-bio").innerText  = targetUser.bio||"Aucune biographie.";
 
   const roleEl=document.getElementById("pub-role"); roleEl.innerText=targetUser.role||"élève";
   roleEl.className = "rbadge " + (targetUser.role==="professeur"?"professeur":targetUser.role==="admin"?"admin":"eleve");
 
-  document.getElementById("pub-cnt-followers").innerText = (targetUser.followers||[]).length;
+  const fakesCount = (targetUser.fakeFollowers || []).length;
+  const realsCount = (targetUser.followers || []).length;
+
+  document.getElementById("pub-cnt-followers").innerText = realsCount + fakesCount;
   document.getElementById("pub-cnt-following").innerText = (targetUser.following||[]).length;
 
   const socBox=document.getElementById("pub-socials"); socBox.innerHTML="";
@@ -1813,24 +1864,46 @@ window.toggleFollowCurrentProfile = async()=>{
   await Promise.all([updateDoc(doc(db,"users",currentUser.id),{following:myFollowing}), updateDoc(doc(db,"users",targetDoc.id),{followers:theirFollowers})]);
 };
 
-window.openFollowersModal = (type)=>{
+window.openFollowersModal = (mode)=>{
   if(!window._currentViewedUser) return;
-  const list=window._currentViewedUser[type]||[]; document.getElementById("m-follows-title").innerText=type==="followers"?"Abonnés":"Abonnements";
+  const isFollowers = mode === 'followers';
+  document.getElementById("m-follows-title").innerText=isFollowers?"Abonnés":"Abonnements";
+  
   const box=document.getElementById("follows-list-box"); box.innerHTML="";
-  if(list.length===0) box.innerHTML=`<div class="empty-text" style="padding:40px 0">Personne ici</div>`;
+  
+  const realUsernames = isFollowers ? (window._currentViewedUser.followers || []) : (window._currentViewedUser.following || []);
+  let fullList = realUsernames.map(u => window.usersMap.get(u)).filter(Boolean);
+
+  if (isFollowers && window._currentViewedUser.fakeFollowers) {
+    fullList = [...fullList, ...window._currentViewedUser.fakeFollowers];
+  }
+
+  if(fullList.length===0) box.innerHTML=`<div class="empty-text" style="padding:40px 0">Personne ici</div>`;
   else {
-    list.forEach(uname=>{
-      const u=window.usersMap.get(uname)||"";
-      const nameDisp=u?u.displayName||u.username:uname;
-      const roleDisp=u?u.role:"élève";
-      const avHtml=u.avatar?`<img src="${u.avatar}" style="display:block;">`:`<span style="display:block">${nameDisp.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase()}</span>`;
-      box.innerHTML+=`<div class="follow-user-row" onclick="closeModal('m-follows');window.location.hash='#${esc(uname)}'"><div class="drawer-av" style="flex-shrink:0">${avHtml}</div><div style="min-width:0;flex:1"><div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nameDisp}</div><div style="font-size:13px;color:var(--ink-m)">@${uname} • <span style="text-transform:capitalize">${roleDisp}</span></div></div></div>`;
+    fullList.forEach(u=>{
+      const nameDisp = u.displayName || u.username;
+      const roleDisp = u.role || "élève";
+      const avHtml = u.avatar ? `<img src="${u.avatar}" style="display:block;">` : `<span style="display:block">${nameDisp.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase()}</span>`;
+      const badge = getBadge(u);
+      
+      box.innerHTML+=`<div class="follow-user-row" onclick="if(!'${u.isFake||''}'){ window.location.hash='#${esc(u.username)}'; closeModal('m-follows'); }">
+        <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
+        <div style="min-width:0;flex:1">
+          <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nameDisp}${badge}</div>
+          <div style="font-size:13px;color:var(--ink-m)">@${u.username} • <span style="text-transform:capitalize">${roleDisp}</span></div>
+        </div>
+      </div>`;
     });
   }
   openModal("m-follows");
 };
 
-// DMs System //
+window.openCurrentDMProfile = () => {
+  if (window._activeChatPartnerId) {
+    window.location.hash = '#' + window._activeChatPartnerId;
+  }
+};
+
 function loadDMChats() {
   if (!currentUser) return;
   if (window._dmChatsUnsub) window._dmChatsUnsub();
@@ -1846,6 +1919,7 @@ function loadDMChats() {
       const partnerUname = c.participants.find(u => u !== currentUser.username);
       const partnerUser = window.usersMap.get(partnerUname) || {username: partnerUname, displayName: partnerUname};
       const dName = partnerUser.displayName || partnerUser.username;
+      const partnerBadge = getBadge(partnerUser);
       const init = dName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
       const avHtml = partnerUser.avatar ? `<img src="${partnerUser.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
       
@@ -1854,7 +1928,7 @@ function loadDMChats() {
         <div class="dm-contact-row ${isActive?'active':''}" onclick="openChat('${c.id}', '${partnerUname}')">
            <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
            <div style="flex:1;min-width:0;">
-             <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dName}</div>
+             <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dName}${partnerBadge}</div>
              <div style="font-size:13px;color:var(--ink-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.lastMessage||'Nouvelle discussion'}</div>
            </div>
         </div>
@@ -1877,10 +1951,11 @@ window.renderContactSearch = () => {
     if (!v || dName.toLowerCase().includes(v) || uname.includes(v)) {
       const init = dName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
       const avHtml = u.avatar ? `<img src="${u.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
+      const uBadge = getBadge(u);
       html += `
         <div class="follow-user-row" onclick="startNewChat('${uname}')">
           <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
-          <div style="min-width:0;flex:1"><div style="font-weight:600;font-size:15px;">${dName}</div><div style="font-size:13px;color:var(--ink-m)">@${uname}</div></div>
+          <div style="min-width:0;flex:1"><div style="font-weight:600;font-size:15px; display:flex; align-items:center;">${dName}${uBadge}</div><div style="font-size:13px;color:var(--ink-m)">@${uname}</div></div>
         </div>
       `;
       count++;
@@ -1913,18 +1988,17 @@ window.openChat = (chatId, partnerUname) => {
   window._activeChatId = chatId;
   window._activeChatPartnerId = partnerUname;
   
-
   document.getElementById("dm-form").style.display = "flex";
   document.querySelectorAll(".dm-contact-row").forEach(r => r.classList.remove("active"));
   
-
   if(window.innerWidth <= 850) {
     document.getElementById("dm-sidebar").classList.add("hide-mobile");
     document.getElementById("dm-chat-area").classList.remove("hide-mobile");
   }
 
   const pUser = window.usersMap.get(partnerUname) || {username: partnerUname, displayName: partnerUname};
-  document.getElementById("dm-active-name").innerText = pUser.displayName || pUser.username;
+  const pBadge = getBadge(pUser);
+  document.getElementById("dm-active-name").innerHTML = (pUser.displayName || pUser.username) + pBadge;
   document.getElementById("dm-active-role").innerText = "@" + pUser.username + (pUser.role ? " • " + pUser.role : "");
   const init = (pUser.displayName||pUser.username).split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
   const avImg = document.getElementById("dm-active-av");
@@ -1934,7 +2008,6 @@ window.openChat = (chatId, partnerUname) => {
 
   if(window._dmMsgsUnsub) window._dmMsgsUnsub();
   
-
   const q = query(collection(db, "dm_messages"), where("chatId", "==", chatId));
   window._dmMsgsUnsub = onSnapshot(q, snap => {
     const docs = snap.docs.map(d => d.data());
@@ -2049,23 +2122,98 @@ function syncAdminUsers(){
   });
 }
 
-window.openUserModal=(isEdit,docId="",username="",role="élève",subRoles=[])=>{
-  document.getElementById("m-user-title").innerText=isEdit?"Modifier le compte":"Nouveau compte"; document.getElementById("edit-user-id").value=docId; document.getElementById("adm-u-id").value=username; document.getElementById("adm-u-id").readOnly=isEdit; document.getElementById("adm-pwd-wrap").style.display=isEdit?"none":"block"; document.getElementById("adm-u-role").value=role; document.getElementById("adm-u-admin").checked=subRoles.includes("admin"); document.getElementById("adm-u-vol").checked=subRoles.includes("volontaire"); openModal("m-user");
-};
-window.saveUserConfig=async()=>{
-  const docId=document.getElementById("edit-user-id").value, subs=[], role=document.getElementById("adm-u-role").value;
-  if(document.getElementById("adm-u-admin").checked) subs.push("admin"); if(document.getElementById("adm-u-vol").checked) subs.push("volontaire");
+window._tempFakeFollowers = [];
 
-  if(docId){ await updateDoc(doc(db,"users",docId),{role,subRoles:subs}); showToast("Compte mis à jour ✓"); }
-  else {
-    const uname=document.getElementById("adm-u-id").value.trim().toLowerCase(), pwd=document.getElementById("adm-u-pwd").value.trim()||"stmg2026";
-    if(!uname){showToast("Identifiant requis.");return;}
-    const exist=await getDocs(query(collection(db,"users"),where("username","==",uname))); if(!exist.empty){showToast("Identifiant déjà pris.");return;}
-    const autoName=displayNameFromId(uname);
-    await addDoc(collection(db,"users"),{username:uname,displayName:autoName,password:pwd,role,subRoles:subs,avatar:"",bio:"",banner:"",instagram:"",linkedin:"",followers:[],following:[],isTempPassword:true,allowMessages:true,emailNotifs:false,email:""}); showToast(`Compte de ${autoName} créé ✓`);
+const FAKE_FIRSTS = ["lucas", "camille", "chloe", "thomas", "lea", "hugo", "manon", "nathan", "emma", "mathis", "jade", "antoine", "julie", "alexis", "marie", "enzo", "sarah"];
+const FAKE_LASTS = ["martin", "bernard", "dubois", "petit", "durand", "leroy", "moreau", "simon", "laurent", "lefevre", "michel", "garcia", "david", "bertrand", "roux"];
+
+window.generateAndSetFakeFollowers = () => {
+  const count = parseInt(document.getElementById("adm-u-fake-count").value, 10) || 0;
+  if (count <= 0) {
+    window.clearFakeFollowers();
+    return;
+  }
+
+  const list = [];
+  for(let i=0; i<count; i++) {
+    const f = FAKE_FIRSTS[Math.floor(Math.random() * FAKE_FIRSTS.length)];
+    const l = FAKE_LASTS[Math.floor(Math.random() * FAKE_LASTS.length)];
+    const dname = `${f.charAt(0).toUpperCase() + f.slice(1)} ${l.charAt(0).toUpperCase() + l.slice(1)}`;
+    list.push({
+      username: `${f}.${l}${Math.random()>0.7 ? Math.floor(Math.random()*90)+10 : ''}`,
+      displayName: dname,
+      role: "élève",
+      avatar: "",
+      isFake: true
+    });
+  }
+
+  window._tempFakeFollowers = list;
+  document.getElementById("adm-fake-preview").innerText = `${list.length} abonnés simulés prêts (ex: @${list[0].username}).`;
+  showToast(`${list.length} faux abonnés générés ✓`);
+};
+
+window.clearFakeFollowers = () => {
+  window._tempFakeFollowers = [];
+  document.getElementById("adm-u-fake-count").value = "";
+  document.getElementById("adm-fake-preview").innerText = "Aucun faux abonné.";
+  showToast("Faux abonnés retirés (pense à enregistrer) ✓");
+};
+
+window.openUserModal=(isEdit,docId="",username="",role="élève",subRoles=[])=>{
+  document.getElementById("m-user-title").innerText=isEdit?"Modifier le compte":"Nouveau compte";
+  document.getElementById("edit-user-id").value=docId; 
+  document.getElementById("adm-u-id").value=username; 
+  document.getElementById("adm-u-id").disabled=isEdit; 
+  document.getElementById("adm-pwd-wrap").style.display=isEdit?"none":"flex"; 
+  
+  document.getElementById("adm-u-role").value=role; 
+  document.getElementById("adm-u-admin").checked=subRoles.includes("admin"); 
+  document.getElementById("adm-u-vol").checked=subRoles.includes("volontaire"); 
+  
+  let userObj = isEdit ? window.usersMap.get(username) : null;
+  document.getElementById("adm-u-verified").checked = userObj ? !!userObj.isVerified : false;
+  
+  const fakes = userObj ? (userObj.fakeFollowers || []) : [];
+  window._tempFakeFollowers = [...fakes];
+  document.getElementById("adm-u-fake-count").value = fakes.length || "";
+  document.getElementById("adm-fake-preview").innerText = fakes.length ? `${fakes.length} faux abonnés actifs.` : "Aucun faux abonné.";
+
+  openModal("m-user");
+};
+
+window.saveUserConfig=async()=>{
+  const docId=document.getElementById("edit-user-id").value;
+  const username=document.getElementById("adm-u-id").value.trim().toLowerCase();
+  const role=document.getElementById("adm-u-role").value;
+  const isVerified=document.getElementById("adm-u-verified").checked;
+
+  if(!username) return;
+
+  const subs=[];
+  if(document.getElementById("adm-u-admin").checked) subs.push("admin"); 
+  if(document.getElementById("adm-u-vol").checked) subs.push("volontaire");
+
+  const updates = { role, subRoles: subs, isVerified, fakeFollowers: window._tempFakeFollowers };
+
+  if(docId){ 
+    await updateDoc(doc(db,"users",docId), updates); 
+    showToast("Compte mis à jour ✓"); 
+  } else {
+    const pwd=document.getElementById("adm-u-pwd").value.trim()||"stmg2026";
+    const exist=await getDocs(query(collection(db,"users"),where("username","==",username))); 
+    if(!exist.empty){showToast("Identifiant déjà pris.");return;}
+    const autoName=displayNameFromId(username);
+    await addDoc(collection(db,"users"),{
+      username, displayName:autoName, password:pwd, avatar:"", bio:"", banner:"",
+      instagram:"", linkedin:"", followers:[], following:[], isTempPassword:true,
+      allowMessages:true, emailNotifs:false, email:"", ...updates
+    }); 
+    showToast(`Compte de ${autoName} créé ✓`);
   }
   closeModal("m-user");
 };
+
 window.delUser=async(docId,uname)=>{if(uname==="dan.bouillet"){showToast("Compte protégé.");return;}if(confirm(`Supprimer l'accès de ${uname} ?`)) await deleteDoc(doc(db,"users",docId));};
 
 function syncAdminMats(){
