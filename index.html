@@ -395,6 +395,27 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   .banner-input-wrap .btn-utility { width: 100%; justify-content: center; padding: 12px; }
 }
 @media(max-width:400px){ .grid-matieres{grid-template-columns:1fr} }
+.tiktok-tabs { display:flex; border-bottom:1px solid var(--hl); margin-top:24px; }
+.tk-tab { flex:1; background:transparent; color:var(--ink-m); font-weight:600; padding:12px 0; border-bottom:2px solid transparent; transition:0.2s; font-size:15px; }
+.tk-tab.active { color:var(--ink); border-bottom-color:var(--primary); }
+.tk-tab:hover { color:var(--primary); background:var(--parchment); }
+
+.quiz-card { background:var(--card-bg); border:1px solid var(--hl); border-radius:18px; padding:22px; display:flex; flex-direction:column; gap:12px; }
+.quiz-question-box { background:var(--file-bg); border:1px solid var(--hl); border-radius:12px; padding:16px; margin-bottom:12px; }
+.quiz-option { display:block; padding:12px 16px; background:var(--card-bg); border:1px solid var(--hl); border-radius:8px; margin-top:8px; cursor:pointer; transition:0.2s; font-weight:500; }
+.quiz-option:hover { border-color:var(--primary); background:var(--primary-l); }
+.quiz-option.selected { border-color:var(--primary); background:var(--primary); color:#fff; }
+.quiz-option.correct { background:var(--success); color:#fff; border-color:var(--success); }
+.quiz-option.wrong { background:var(--danger); color:#fff; border-color:var(--danger); }
+
+.q-header { display:flex; justify-content:space-between; align-items:center; }
+.leaderboard-box { background:var(--ann-bg); border:1px solid var(--ann-b); border-radius:12px; padding:16px; margin-top:16px; }
+.lb-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--hl); font-size:14px; }
+
+@media(max-width:850px){
+  .tiktok-tabs { overflow-x:auto; white-space:nowrap; }
+  .tk-tab { padding:12px 16px; flex:none; }
+}
 </style>
 </head>
 <body>
@@ -433,8 +454,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       <button class="nav-tab active"  data-target="matieres"  onclick="switchTab('matieres')">Matières</button>
       <button class="nav-tab"         data-target="cours"     onclick="switchTab('cours')">Cours</button>
       <button class="nav-tab"         data-target="fichesrev" onclick="switchTab('fichesrev')">Fiches &amp; Révisions</button>
+      <button class="nav-tab"         data-target="quiz"      onclick="switchTab('quiz')">Quiz</button>
       <button class="nav-tab"         data-target="messages"  onclick="switchTab('messages')">Messages</button>
       <button class="nav-tab hidden"  data-target="depot"     id="tab-depot" onclick="switchTab('depot')">Déposer un cours</button>
+      <button class="nav-tab hidden"  data-target="creerquiz" id="tab-creer-quiz" onclick="switchTab('creerquiz')">Créer un quiz</button>
       <button class="nav-tab hidden admin-only" data-target="admin" id="tab-admin" onclick="switchTab('admin')">Admin</button>
     </nav>
     <div class="header-right">
@@ -471,13 +494,19 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           <span class="d-icon">📖</span> Cours
         </button>
         <button class="drawer-btn" data-tab="fichesrev" onclick="switchTab('fichesrev');closeDrawer()">
-          <span class="d-icon">📝</span> Fiches &amp; Révisions
+          <span class="d-icon">📝</span> Fiches &amp; Rév.
+        </button>
+        <button class="drawer-btn" data-tab="quiz" onclick="switchTab('quiz');closeDrawer()">
+          <span class="d-icon">🎯</span> Quiz
         </button>
         <button class="drawer-btn" data-tab="messages" onclick="switchTab('messages');closeDrawer()">
           <span class="d-icon">💬</span> Messages
         </button>
         <button class="drawer-btn hidden" id="drawer-depot" data-tab="depot" onclick="switchTab('depot');closeDrawer()">
           <span class="d-icon">➕</span> Déposer un cours
+        </button>
+        <button class="drawer-btn hidden" id="drawer-creer-quiz" data-tab="creerquiz" onclick="switchTab('creerquiz');closeDrawer()">
+          <span class="d-icon">✨</span> Créer un quiz
         </button>
         <button class="drawer-btn hidden admin-only" id="drawer-admin" data-tab="admin" onclick="switchTab('admin');closeDrawer()">
           <span class="d-icon">🛠️</span> Administration
@@ -544,6 +573,48 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         <button class="btn-pill-van" onclick="openFilterModal('fichesrev')">⚙️ Filtres</button>
       </div>
       <div class="feed-wrap" id="fr-feed"></div>
+    </section>
+
+    <section id="page-quiz" class="page-view">
+      <div class="ph-row">
+        <div>
+          <h1>Quiz</h1>
+          <p class="tagline">Teste tes connaissances et challenge tes amis</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-pill" onclick="openModal('m-ia-quiz')">✨ Créer un quiz avec l'IA</button>
+          <button class="btn-pill-van" onclick="openFilterModal('quiz')">⚙️ Filtres</button>
+        </div>
+      </div>
+      <div class="feed-wrap" id="quiz-feed"></div>
+    </section>
+
+    <section id="page-creerquiz" class="page-view">
+      <h1>Créer un Quiz</h1>
+      <p class="tagline">Prépare un test pour toute la classe (max 50 questions)</p>
+      <div class="depot-wrap">
+        <div class="input-group">
+          <label>Titre du Quiz *</label>
+          <input type="text" id="quiz-create-title" placeholder="Ex : Les bases du Droit">
+        </div>
+        <div class="input-group">
+          <label>Matière *</label>
+          <select id="quiz-create-matiere"></select>
+        </div>
+        <div class="input-group">
+          <label>Description (facultatif)</label>
+          <textarea id="quiz-create-desc" placeholder="Ce qu'il faut savoir avant de commencer…"></textarea>
+        </div>
+        
+        <div id="quiz-questions-container" style="margin-top:24px; display:flex; flex-direction:column; gap:20px;">
+          </div>
+        
+        <button class="btn-ghost mt-2" style="width:100%; border:2px dashed var(--hl); padding:14px; font-weight:600;" onclick="addQuizQuestionField()">+ Ajouter une question</button>
+
+        <button class="btn-pill mt-4" onclick="handleCreateManualQuiz()" style="width:100%;justify-content:center;padding:13px">
+          Publier le Quiz
+        </button>
+      </div>
     </section>
 
     <section id="page-messages" class="page-view">
@@ -674,27 +745,39 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           </div>
         </div>
         
-        <div style="margin:28px 0 16px">
-          <h3 style="margin-bottom:12px;color:var(--ink)">Ressources partagées</h3>
+        <div class="tiktok-tabs" id="pub-tiktok-tabs">
+          <button class="tk-tab active" data-ptab="cours" onclick="switchPubTab('cours')">Publications</button>
+          <button class="tk-tab" data-ptab="quiz" onclick="switchPubTab('quiz')">Quiz</button>
+          <button class="tk-tab" data-ptab="quiz-ia" onclick="switchPubTab('quiz-ia')">Quiz IA</button>
+          <button class="tk-tab" data-ptab="likes" onclick="switchPubTab('likes')">❤️ Likes</button>
+        </div>
+
+        <div style="margin:28px 0 16px" id="pub-filter-container">
           <div class="filter-bar" id="pub-subj-filter-bar"></div>
         </div>
-        <div class="feed-wrap" id="pub-feed"></div>
-
-        <div id="pub-likes-section" style="margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--hl); text-align: center;">
-          <button id="btn-toggle-likes" class="btn-ghost" style="font-size:15px; padding:10px 20px; font-weight:600;" onclick="togglePubLikes()">Voir les cours aimés</button>
+        
+        <div id="pub-tab-cours" class="pub-tab-content">
+          <div class="feed-wrap" id="pub-feed"></div>
         </div>
         
-        <div id="pub-likes-content" style="display:none; margin-top: 24px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-            <h3 style="color:var(--ink)">Publications aimées</h3>
+        <div id="pub-tab-quiz" class="pub-tab-content" style="display:none;">
+          <div class="feed-wrap" id="pub-quiz-feed"></div>
+        </div>
+
+        <div id="pub-tab-quiz-ia" class="pub-tab-content" style="display:none;">
+          <div class="feed-wrap" id="pub-quiz-ia-feed"></div>
+        </div>
+        
+        <div id="pub-tab-likes" class="pub-tab-content" style="display:none;">
+          <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
             <select id="pub-likes-sort" style="background:var(--input-bg);border:1px solid var(--input-b);border-radius:10px;padding:8px 12px;font-size:14px;color:var(--ink);cursor:pointer;outline:none;" onchange="renderPubLikes()">
               <option value="recent">Les plus récents</option>
               <option value="oldest">Les plus anciens</option>
             </select>
           </div>
-          <div class="filter-bar" id="pub-likes-filter-bar"></div>
           <div class="feed-wrap" id="pub-likes-feed"></div>
         </div>
+
       </div>
     </section>
 
@@ -715,7 +798,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           <div class="stat-box" style="margin-top:12px;">
             <p class="caption">CONTRIBUTIONS</p>
             <div class="stat-val" id="contrib-count">0</div>
-            <p class="caption">cours partagés</p>
+            <p class="caption">documents partagés</p>
           </div>
         </div>
         <div>
@@ -803,6 +886,13 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
             <input type="email" id="setting-email" placeholder="ton.email@exemple.com">
           </div>
           <button class="btn-utility" onclick="saveEmailSettings()">Sauvegarder l'email</button>
+        </div>
+
+        <div class="settings-sec">
+          <h3>📜 Historique Quiz IA</h3>
+          <p class="setting-desc" style="margin-bottom:12px;">Retrouve ici les quiz que tu as générés avec l'IA.</p>
+          <div id="settings-ai-quiz-history" style="display:flex; flex-direction:column; gap:10px; max-height:300px; overflow-y:auto;">
+             </div>
         </div>
 
         <div class="settings-sec">
@@ -997,1392 +1087,2087 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-import {
-  getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
-  doc, query, where, onSnapshot, orderBy, setDoc
-} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-
-const FB = {
-  apiKey:"AIzaSyAP5gV1yUVEKnd_x3RkqyxYwF7vpnROgR0",
-  authDomain:"tstmg-1.firebaseapp.com",
-  projectId:"tstmg-1",
-  storageBucket:"tstmg-1.firebasestorage.app",
-  messagingSenderId:"626888970289",
-  appId:"1:626888970289:web:23880053888f3dd1a88510"
-};
-const app  = initializeApp(FB);
-const auth = getAuth(app);
-const db   = getFirestore(app);
-
-emailjs.init("2VkygefcXxbSOlhFX");
-
-window.currentUser = null;
-window.usersMap    = new Map();
-window.subjectsMap = new Map();
-window._uploadedFile = null;
-
-window._coursUnsub   = null;
-window._frUnsub      = null;
-window._pubFeedUnsub = null;
-window._dmChatsUnsub = null;
-window._dmMsgsUnsub  = null;
-window._currentViewedUser = null;
-
-window._filterContext = 'cours'; 
-window._coursFilter = { subject: 'all', order: 'recent' };
-window._frFilter    = { subject: 'all', type: 'all', order: 'recent' };
-window._pubSubjFilter = "all";
-
-window._pubLikesData = null;
-window._pubLikesUnsub = null;
-window._pubLikesSubjFilter = 'all';
-
-window._activeChatId = null;
-window._activeChatPartnerId = null;
-window._dmFileToUpload = null;
-
-const CLOUDINARY_CLOUD_NAME    = "dmtggmxrm";
-const CLOUDINARY_UPLOAD_PRESET = "iAcqTr_Pg13v5d-Es84wIkdUqaw";
-
-window.formatNumber = (num) => {
-  if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (num >= 10000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
-  return num.toString();
-};
-
-window.getBadge = (userObj) => {
-  return (userObj && userObj.isVerified) ? `<img src="https://cdn.prod.website-files.com/6214eaa668d0de27c3ea80cf/652fd0e960df145545f25f12_Pastille%20bleu%20certification%20instagram.png" class="verified-icon" title="Compte certifié">` : '';
-};
-
-function loadTheme(){
-  const dark = localStorage.getItem("dnb_theme")==="dark";
-  document.documentElement.setAttribute("data-theme", dark?"dark":"light");
-  const t = document.getElementById("tog-dark");
-  if(t) t.checked = dark;
-}
-loadTheme();
-window.applyTheme = (dark)=>{
-  document.documentElement.setAttribute("data-theme", dark?"dark":"light");
-  localStorage.setItem("dnb_theme", dark?"dark":"light");
-};
-
-window.showToast = (msg)=>{
-  const t=document.getElementById("toast");
-  t.innerText=msg; t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),3000);
-};
-
-onSnapshot(collection(db, "users"), snap => {
-  snap.forEach(d => {
-    const u = d.data();
-    window.usersMap.set(u.username, { id: d.id, ...u });
-    if(currentUser && u.username === currentUser.username) Object.assign(currentUser, { id: d.id, ...u });
-  });
-  if(document.getElementById("page-cours").classList.contains("active")) loadCoursFeed();
-  if(document.getElementById("page-fichesrev").classList.contains("active")) loadFRFeed();
-  if(window._currentViewedUser) {
-    renderPublicProfile(window._currentViewedUser.username);
-    const likesVisible = document.getElementById('pub-likes-content').style.display !== 'none';
-    if(likesVisible) renderPubLikes();
-  }
-  if(currentUser) {
-    const myBadge = getBadge(currentUser);
-    document.getElementById("drop-name").innerHTML = (currentUser.displayName||currentUser.username) + myBadge;
-    document.getElementById("drawer-name").innerHTML = (currentUser.displayName||currentUser.username) + myBadge;
-  }
-});
-
-window.addEventListener("hashchange", handleHashChange);
-window.addEventListener("DOMContentLoaded", () => setTimeout(handleHashChange, 50));
-
-function handleHashChange() {
-  const hash = window.location.hash.trim();
-  if(!hash || hash === "#") {
-    showInternalView('matieres'); return;
-  }
-  if(hash.startsWith("#page-")) {
-    showInternalView(hash.replace("#page-", "")); return;
-  }
-  const uname = decodeURIComponent(hash.substring(1)).toLowerCase().trim();
-  if(uname) renderPublicProfile(uname);
-}
-
-function showInternalView(target) {
-  if (target === 'admin') {
-    const isAdmin = currentUser && (currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')));
-    if (!isAdmin) { showToast("Accès non autorisé."); window.location.hash = ""; return; }
-  }
-
-  document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
-  
-  const page = document.getElementById(`page-${target}`);
-  if(page) page.classList.add("active");
-
-  const tab = document.querySelector(`.nav-tab[data-target="${target}"]`);
-  if(tab) tab.classList.add("active");
-
-  document.querySelectorAll(".drawer-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === target));
-  window.scrollTo({top: 0, behavior: "smooth"});
-
-  if (target === 'messages') { loadDMChats(); }
-}
-
-signInAnonymously(auth).then(async ()=>{
-  const s = localStorage.getItem("dnb_reviz_session");
-  if(s){
-    const cached = JSON.parse(s);
-    hydrateSession(cached);
-    try {
-      const freshSnap = await getDoc(doc(db, "users", cached.id));
-      if(freshSnap.exists()) hydrateSession({ id: freshSnap.id, ...freshSnap.data() });
-    } catch(e){}
-  }
-  handleHashChange();
-}).catch(console.error);
-
-window.handleLogin = async()=>{
-  const id  = document.getElementById("login-id").value.trim().toLowerCase();
-  const pwd = document.getElementById("login-pwd").value.trim();
-  if(!id||!pwd){showToast("Remplis tous les champs.");return;}
-
-  const q = query(collection(db,"users"),where("username","==",id));
-  const snap = await getDocs(q);
-
-  if(snap.empty){
-    if(id==="dan.bouillet"&&pwd==="1"){
-      const u={username:"dan.bouillet",displayName:"Dan Bouillet",password:"1",
-               role:"admin",subRoles:["admin","volontaire"],avatar:"",
-               bio:"",banner:"",instagram:"",linkedin:"",followers:[],following:[],
-               isTempPassword:false, allowMessages:true, emailNotifs:false, email:""};
-      const r=await addDoc(collection(db,"users"),u); u.id=r.id;
-      await seedSubjects();
-      hydrateSession(u); return;
-    }
-    showToast("Identifiant introuvable."); return;
-  }
-  const d=snap.docs[0];
-  const u={id:d.id,...d.data()};
-  if(u.password!==pwd){showToast("Mot de passe incorrect.");return;}
-  hydrateSession(u);
-};
-document.getElementById("login-pwd").addEventListener("keydown",e=>{if(e.key==="Enter")handleLogin();});
-document.getElementById("login-id").addEventListener("keydown",e=>{if(e.key==="Enter")handleLogin();});
-
-window.handleLogout = ()=>{
-  localStorage.removeItem("dnb_reviz_session");
-  window.location.hash = "";
-  window.location.reload();
-};
-
-async function seedSubjects(){
-  const base=[
-    {name:"Management",icon:"💼"},{name:"Sciences de Gestion",icon:"📊"},
-    {name:"Droit et Économie",icon:"⚖️"},{name:"Philosophie",icon:"🦉"},
-    {name:"Mathématiques",icon:"📐"},{name:"Histoire-Géographie",icon:"🌍"},
-    {name:"Langues Vivantes",icon:"🗣️"},{name:"Spécialité MSGN",icon:"🚀"}
-  ];
-  for(const m of base) await addDoc(collection(db,"subjects"),m);
-}
-
-function displayNameFromId(id){
-  return id.split(/[\.\-_]/).map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(" ");
-}
-
-function hydrateSession(u){
-  window.currentUser=u;
-  localStorage.setItem("dnb_reviz_session",JSON.stringify(u));
-
-  document.getElementById("view-login").style.display="none";
-  document.getElementById("view-app").style.display="block";
-  loadTheme();
-
-  setAvatar(u.avatar, u.displayName||u.username);
-  
-  const myBadge = getBadge(u);
-  document.getElementById("drop-name").innerHTML  = (u.displayName||u.username) + myBadge;
-  document.getElementById("drawer-name").innerHTML  = (u.displayName||u.username) + myBadge;
-  
-  document.getElementById("drop-role").innerText  = u.role;
-  document.getElementById("prof-id").value        = u.username;
-  document.getElementById("prof-display").value   = u.displayName||u.username;
-
-  document.getElementById("prof-bio-input").value      = u.bio||"";
-  document.getElementById("prof-insta-input").value    = u.instagram||"";
-  document.getElementById("prof-linkedin-input").value = u.linkedin||"";
-  document.getElementById("prof-banner-input").value   = u.banner||"";
-
-  if (document.getElementById("tog-allow-msgs")) document.getElementById("tog-allow-msgs").checked = u.allowMessages !== false;
-  if (document.getElementById("tog-email-notif")) document.getElementById("tog-email-notif").checked = !!u.emailNotifs;
-  if (document.getElementById("setting-email")) document.getElementById("setting-email").value = u.email || "";
-
-  const isAdmin  = u.role==="admin"||(u.subRoles&&u.subRoles.includes("admin"));
-  const canDepot = u.role==="professeur"||u.role==="admin"||
-                   (u.subRoles&&(u.subRoles.includes("volontaire")||u.subRoles.includes("admin")));
-
-  document.getElementById("tab-admin").classList.toggle("hidden",!isAdmin);
-  document.getElementById("tab-depot").classList.toggle("hidden",!canDepot);
-  document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("hidden",!isAdmin));
-
-  const drawerDepot=document.getElementById("drawer-depot");
-  const drawerAdmin=document.getElementById("drawer-admin");
-  if(drawerDepot) drawerDepot.classList.toggle("hidden",!canDepot);
-  if(drawerAdmin) drawerAdmin.classList.toggle("hidden",!isAdmin);
-
-  document.getElementById("drawer-role").innerText  = u.role;
-  setDrawerAvatar(u.avatar, u.displayName||u.username);
-
-  if(u.isTempPassword) openModal("m-force-pwd");
-
-  loadMatieres();
-  syncContrib();
-  if(isAdmin){syncAdminUsers();syncAdminMats();}
-  loadAnnonces();
-  loadCoursFeed();
-  loadFRFeed();
-
-  if (document.getElementById("page-messages").classList.contains("active")) {
-      loadDMChats();
-  }
-}
-
-function setAvatar(data,name){
-  const initials=(name||"?").split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
-  ["nav-initials","prof-initials"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerText=initials;});
-  ["nav-av-img","prof-av-img"].forEach(id=>{
-    const el=document.getElementById(id); if(!el) return;
-    if(data){el.src=data;el.style.display="block";}else{el.style.display="none";}
-  });
-  const navI=document.getElementById("nav-initials");
-  if(navI) navI.style.display=data?"none":"block";
-  const pI=document.getElementById("prof-initials");
-  if(pI) pI.style.display=data?"none":"block";
-}
-
-function setDrawerAvatar(data,name){
-  const initials=(name||"?").split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
-  const el=document.getElementById("drawer-initials");
-  const img=document.getElementById("drawer-av-img");
-  if(el) el.innerText=initials;
-  if(img){
-    if(data){img.src=data;img.style.display="block";if(el)el.style.display="none";}
-    else{img.style.display="none";if(el)el.style.display="block";}
-  }
-}
-
-window.handleForcePwd = async()=>{
-  const p=document.getElementById("force-pwd").value.trim();
-  if(p.length<4){showToast("Min. 4 caractères.");return;}
-  await updateDoc(doc(db,"users",currentUser.id),{password:p,isTempPassword:false});
-  currentUser.password=p; currentUser.isTempPassword=false;
-  localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
-  closeModal("m-force-pwd"); showToast("Mot de passe mis à jour ✓");
-};
-
-async function uploadToCloudinary(file){
-  const fd=new FormData();
-  fd.append("file",file);
-  fd.append("upload_preset",CLOUDINARY_UPLOAD_PRESET);
-  fd.append("resource_type","auto"); 
-  
-  const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`,{method:"POST",body:fd});
-  if(!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
-  const data=await res.json();
-  if(data.error) throw new Error(data.error.message);
-  return data.secure_url; 
-}
-
-window.uploadAvatar = (e)=>{
-  const file=e.target.files[0]; if(!file) return;
-  const r=new FileReader();
-  r.onload=(ev)=>{
-    const img=new Image();
-    img.onload=()=>{
-      const c=document.createElement("canvas"); c.width=c.height=140;
-      c.getContext("2d").drawImage(img,0,0,140,140);
-      const b64=c.toDataURL("image/jpeg",.8);
-      updateDoc(doc(db,"users",currentUser.id),{avatar:b64}).then(()=>{
-        currentUser.avatar=b64;
-        localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
-        setAvatar(b64,currentUser.displayName); showToast("Photo mise à jour ✓");
-      });
-    };
-    img.src=ev.target.result;
-  };
-  r.readAsDataURL(file);
-};
-
-window.uploadMyBanner = async(e)=>{
-  const file=e.target.files[0]; if(!file) return;
-  showToast("Upload de la bannière en cours...");
-  try {
-    const url = await uploadToCloudinary(file);
-    document.getElementById("prof-banner-input").value = url;
-    showToast("Bannière chargée ✓ N'oublie pas d'Enregistrer");
-  } catch(err){ showToast("Erreur Cloudinary"); }
-};
-
-window.saveProfile = async()=>{
-  const d        = document.getElementById("prof-display").value.trim();
-  const bio      = document.getElementById("prof-bio-input").value.trim();
-  const insta    = document.getElementById("prof-insta-input").value.trim();
-  const linkedin = document.getElementById("prof-linkedin-input").value.trim();
-  const banner   = document.getElementById("prof-banner-input").value.trim();
-
-  if(!d) return;
-
-  const updates = { displayName: d, bio, instagram: insta, linkedin, banner };
-  await updateDoc(doc(db,"users",currentUser.id), updates);
-  
-  Object.assign(currentUser, updates);
-  localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
-  
-  const myBadge = getBadge(currentUser);
-  document.getElementById("drop-name").innerHTML = d + myBadge;
-  document.getElementById("drawer-name").innerHTML = d + myBadge;
-  setAvatar(currentUser.avatar,d);
-  setDrawerAvatar(currentUser.avatar,d);
-  
-  showToast("Profil enregistré ✓");
-  syncContrib();
-};
-
-window.goToMyLikes = () => {
-  if(!currentUser) return;
-  window.location.hash = '#' + currentUser.username;
-  setTimeout(() => {
-    const content = document.getElementById('pub-likes-content');
-    if (content && content.style.display === 'none') {
-      window.togglePubLikes();
-      setTimeout(() => content.scrollIntoView({ behavior: 'smooth' }), 150);
-    }
-  }, 400);
-};
-
-window.toggleAllowMsgs = async(val)=>{
-  await updateDoc(doc(db,"users",currentUser.id),{allowMessages: val});
-  currentUser.allowMessages = val;
-  localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
-};
-window.toggleEmailNotifs = async(val)=>{
-  await updateDoc(doc(db,"users",currentUser.id),{emailNotifs: val});
-  currentUser.emailNotifs = val;
-  localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
-};
-window.saveEmailSettings = async()=>{
-  const e = document.getElementById("setting-email").value.trim();
-  await updateDoc(doc(db,"users",currentUser.id),{email: e});
-  currentUser.email = e;
-  localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
-  showToast("Adresse email sauvegardée ✓");
-};
-
-async function sendEmailNotif(type, receiverObj, extraParams) {
-  if (!receiverObj.emailNotifs || !receiverObj.email) return;
-  let templateId = type === 'message' ? 'template_ira8lxo' : 'template_uxyq7sp';
-  emailjs.send("service_cza73j9", templateId, {
-      username: receiverObj.displayName || receiverObj.username,
-      sender: currentUser.displayName || currentUser.username,
-      email: receiverObj.email,
-      ...extraParams
-  }).catch(console.error);
-}
-
-async function syncContrib(){
-  const q=query(collection(db,"posts"),where("authorId","==",currentUser.username));
-  const snap=await getDocs(q);
-  const el=document.getElementById("contrib-count"); if(el) el.innerText=snap.size;
-}
-
-window.changePassword = async()=>{
-  const p=document.getElementById("setting-pwd").value.trim(); if(!p) return;
-  await updateDoc(doc(db,"users",currentUser.id),{password:p,isTempPassword:false});
-  currentUser.password=p;
-  localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
-  document.getElementById("setting-pwd").value="";
-  showToast("Mot de passe changé ✓");
-};
-
-function loadMatieres(){
-  onSnapshot(collection(db,"subjects"),(snap)=>{
-    const isAdmin=currentUser.role==="admin"||(currentUser.subRoles&&currentUser.subRoles.includes("admin"));
-    const mainGrid=document.getElementById("matieres-grid");
-    const selDepot=document.getElementById("post-matiere");
-    mainGrid.innerHTML=""; selDepot.innerHTML=""; window.subjectsMap.clear();
-
-    snap.forEach(d=>{
-      const m=d.data();
-      window.subjectsMap.set(m.name, m.icon);
-
-      mainGrid.innerHTML+=`
-        <div class="matiere-card" onclick="openSubjectInMatieres('${esc(m.name)}')">
-          ${isAdmin?`<button class="card-del" onclick="event.stopPropagation();delMatiere('${d.id}')">✕</button>`:""}
-          <div>
-            <div class="card-icon">${m.icon}</div>
-            <div class="card-title">${m.name}</div>
-          </div>
-          ${isAdmin?`<button class="btn-ghost btn-sm" style="align-self:flex-start" onclick="event.stopPropagation();editMatiere('${d.id}','${esc(m.name)}','${m.icon}')">✏️ Modifier</button>`
-                   :`<span class="caption" style="color:var(--primary);font-weight:600">Consulter →</span>`}
-        </div>`;
-      selDepot.innerHTML+=`<option value="${esc(m.name)}">${m.icon} ${m.name}</option>`;
-    });
-  });
-}
-
-window.openSubjectInMatieres=(name)=>{
-  window._coursFilter.subject = name; 
-  switchTab('cours');
-  loadCoursFeed();
-};
-
-window.openFilterModal = (context) => {
-  window._filterContext = context;
-  const typeGroup = document.getElementById("filter-type-group");
-  const subjSelect = document.getElementById("filter-subject");
-  const orderSelect = document.getElementById("filter-order");
-  const typeSelect = document.getElementById("filter-type");
-
-  let htmlSubjs = `<option value="all">Toutes les matières</option>`;
-  Array.from(window.subjectsMap.entries()).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([name, icon]) => {
-    htmlSubjs += `<option value="${esc(name)}">${icon} ${name}</option>`;
-  });
-  subjSelect.innerHTML = htmlSubjs;
-
-  if (context === 'cours') {
-    typeGroup.style.display = 'none';
-    subjSelect.value = window._coursFilter.subject;
-    orderSelect.value = window._coursFilter.order;
-  } else {
-    typeGroup.style.display = 'flex';
-    subjSelect.value = window._frFilter.subject;
-    typeSelect.value = window._frFilter.type;
-    orderSelect.value = window._frFilter.order;
-  }
-  openModal("m-filters");
-};
-
-window.applyFilters = () => {
-  if (window._filterContext === 'cours') {
-    window._coursFilter.subject = document.getElementById("filter-subject").value;
-    window._coursFilter.order = document.getElementById("filter-order").value;
-    closeModal("m-filters");
-    loadCoursFeed();
-  } else {
-    window._frFilter.subject = document.getElementById("filter-subject").value;
-    window._frFilter.type = document.getElementById("filter-type").value;
-    window._frFilter.order = document.getElementById("filter-order").value;
-    closeModal("m-filters");
-    loadFRFeed();
-  }
-};
-
-function loadCoursFeed(){
-  if(window._coursUnsub){window._coursUnsub();window._coursUnsub=null;}
-  const container=document.getElementById("cours-feed"); if(!container) return;
-  container.innerHTML=`<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
-  const q = window._coursFilter.subject==="all"
-    ? query(collection(db,"posts"),where("type","==","cours"))
-    : query(collection(db,"posts"),where("matiere","==",window._coursFilter.subject),where("type","==","cours"));
-  window._coursUnsub=onSnapshot(q, snap => renderFeedFromDocs(snap.docs.map(d=>({id:d.id,...d.data()})), container, "Aucun cours disponible pour le moment", window._coursFilter.order, "cours"));
-}
-
-function loadFRFeed(){
-  if(window._frUnsub){window._frUnsub();window._frUnsub=null;}
-  const container=document.getElementById("fr-feed"); if(!container) return;
-  container.innerHTML=`<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
-  const types = window._frFilter.type==="all" ? ["fiches","revisions"] : [window._frFilter.type];
-  let q;
-  if(window._frFilter.subject==="all"){
-    q = types.length>1 ? query(collection(db,"posts"),where("type","in",types)) : query(collection(db,"posts"),where("type","==",types[0]));
-  } else {
-    q = types.length>1 ? query(collection(db,"posts"),where("matiere","==",window._frFilter.subject),where("type","in",types)) : query(collection(db,"posts"),where("matiere","==",window._frFilter.subject),where("type","==",types[0]));
-  }
-  window._frUnsub=onSnapshot(q, snap => renderFeedFromDocs(snap.docs.map(d=>({id:d.id,...d.data()})), container, "Aucune fiche ni révision pour le moment", window._frFilter.order, "fr"));
-}
-
-function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent', context = 'main'){
-  container.innerHTML="";
-  if(postsArray.length===0){
-    container.innerHTML=`<div class="empty-text">${emptyMsg||"Aucune ressource pour l'instant"}</div>`; return;
-  }
-
-  if (sortOrder === 'likes') {
-    postsArray.sort((a,b) => (b.likes||[]).length - (a.likes||[]).length);
-  } else if (sortOrder === 'oldest') {
-    postsArray.sort((a,b) => (a.timestamp||0) - (b.timestamp||0));
-  } else {
-    postsArray.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-  }
-
-  postsArray.forEach(p => {
-    const pId = p.id;
-    const isAdmin = currentUser?.role==="admin"||(currentUser?.subRoles&&currentUser.subRoles.includes("admin"));
-    const canDel = isAdmin||p.authorId===currentUser?.username;
-    const hasLiked = (p.likes||[]).includes(currentUser?.username);
-    const likeCount = (p.likes||[]).length;
-
-    const liveAuthor = window.usersMap.get(p.authorId) || {};
-    const liveRole   = liveAuthor.role || p.authorRole || "élève";
-    const liveName   = liveAuthor.displayName || p.authorDisplayName || p.authorId;
-    const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : p.authorAvatar;
-    const authorBadge = getBadge(liveAuthor);
-    const subjIcon   = window.subjectsMap.get(p.matiere) || "📚";
-
-    const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
-    const roleClass = liveRole==="professeur"?"professeur":liveRole==="admin"?"admin":"eleve";
-    const typeLabels = {cours:"Cours", fiches:"Fiche", revisions:"Révisions"};
-    const typeLabel  = typeLabels[p.type]||p.type;
-
-    const targetUrl = p.fileData || p.url;
-    const isPDF     = p.fileType==="application/pdf" || targetUrl?.toLowerCase().endsWith(".pdf");
-    const isImage   = !isPDF && (p.fileType?.startsWith("image/") || targetUrl?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || targetUrl?.includes("res.cloudinary.com/"));
-
-    let mediaBox="", fileChip="";
-
-    if(targetUrl){
-      if(isImage){
-        mediaBox=`<div class="post-media-preview" onclick="window.open('${targetUrl}','_blank')"><img src="${targetUrl}" alt="Aperçu"></div>`;
-      } else {
-        const cleanName = p.fileName || p.title || "Document";
-        fileChip=`<div class="file-chip mt-1">
-          <div class="file-chip-info" title="${esc(cleanName)}">
-            <span style="font-size:22px">${isPDF?"📄":"🔗"}</span>
-            <span>${cleanName}</span>
-          </div>
-          <a href="${targetUrl}" target="_blank" rel="noopener" class="btn-download">📥 Consulter</a>
-        </div>`;
-      }
-    }
-
-    let comments = p.comments || [];
-    let commentsCount = comments.reduce((acc, c) => acc + 1 + (c.replies ? c.replies.length : 0), 0);
+<div id="m-ia-quiz" class="moverlay" onclick="closeOnOut(event,'m-ia-quiz')">
+  <div class="mbox">
+    <h2>Générer un Quiz avec l'IA</h2>
+    <p class="caption mt-1 mb-2">Décris le sujet et laisse l'IA préparer les questions.</p>
+    <div class="input-group mt-2">
+      <label>Matière *</label>
+      <select id="quiz-ia-matiere"></select>
+    </div>
+    <div class="input-group">
+      <label>Sujet principal *</label>
+      <input type="text" id="quiz-ia-topic" placeholder="Ex: La révolution française, Les fonctions dérivées...">
+    </div>
+    <div class="input-group">
+      <label>Précisions (facultatif)</label>
+      <textarea id="quiz-ia-desc" placeholder="Niveau de difficulté, points précis à aborder..."></textarea>
+    </div>
+    <div id="quiz-ia-loading" style="display:none; text-align:center; padding:16px;">
+      <div class="spinner" style="margin:0 auto 10px;"></div>
+      <div style="font-size:14px; color:var(--ink-m);">Génération du quiz en cours...</div>
+    </div>
+    <div class="mact" id="quiz-ia-actions">
+      <button class="btn-ghost" onclick="closeModal('m-ia-quiz')">Annuler</button>
+      <button class="btn-pill" onclick="generateAIQuiz()">✨ Générer</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-take-quiz" class="moverlay">
+  <div class="mbox" style="max-width:600px;">
+    <div class="q-header">
+      <h2 id="take-quiz-title" style="margin:0">Titre Quiz</h2>
+      <span class="type-tag" id="take-quiz-progress" style="background:var(--primary-l); color:var(--primary-f); font-size:14px;">1/10</span>
+    </div>
+    <div id="take-quiz-loading" style="display:none; text-align:center; padding:40px 0;">
+      <div class="spinner" style="margin:0 auto 10px;"></div>
+      <div style="font-size:14px; color:var(--ink-m);">Reformulation du quiz avec l'IA...</div>
+    </div>
+    <div id="take-quiz-content" style="margin-top:20px;">
+      <div class="quiz-question-box" id="take-quiz-question">Question ?</div>
+      <div id="take-quiz-options">
+        </div>
+    </div>
+    <div class="mact mt-3">
+      <button class="btn-ghost" onclick="abortQuiz()">Quitter</button>
+      <button class="btn-pill" id="btn-next-question" onclick="nextQuizQuestion()" disabled>Suivant</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-quiz-result" class="moverlay">
+  <div class="mbox" style="text-align:center;">
+    <h2>Résultat du Quiz</h2>
+    <div style="font-size:48px; font-weight:800; color:var(--primary); margin:16px 0;" id="quiz-final-score">0/0</div>
+    <p class="caption" id="quiz-result-msg" style="margin-bottom:24px;">Bien joué !</p>
     
-    comments.sort((a,b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return (a.timestamp||0) - (b.timestamp||0);
+    <div class="input-group" id="quiz-leaderboard-opt" style="text-align:left; background:var(--file-bg); padding:16px; border-radius:12px; margin-bottom:20px;">
+      <label class="chk-label">
+        <input type="checkbox" id="chk-leaderboard" checked> 
+        Apparaître dans le classement public
+      </label>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button class="btn-pill" style="width:100%; justify-content:center; padding:12px;" onclick="showQuizAnswers()">Voir les réponses (et explications)</button>
+      <button class="btn-ghost" style="width:100%; border:1px solid var(--hl);" id="btn-quiz-restart" onclick="restartQuiz()">Recommencer</button>
+      <button class="btn-ghost" onclick="closeModal('m-quiz-result'); closeTakeQuizModal();">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-quiz-answers" class="moverlay">
+  <div class="mbox" style="max-width:700px;">
+    <h2>Correction du Quiz</h2>
+    <div id="quiz-answers-container" style="max-height:60vh; overflow-y:auto; margin-top:20px; padding-right:10px; display:flex; flex-direction:column; gap:16px;">
+      </div>
+    <div class="mact mt-3">
+      <button class="btn-pill" onclick="closeModal('m-quiz-answers')">Fermer la correction</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+  import {
+    getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
+    doc, query, where, onSnapshot, orderBy, setDoc, limit
+  } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  
+  const FB = {
+    apiKey:"AIzaSyAP5gV1yUVEKnd_x3RkqyxYwF7vpnROgR0",
+    authDomain:"tstmg-1.firebaseapp.com",
+    projectId:"tstmg-1",
+    storageBucket:"tstmg-1.firebasestorage.app",
+    messagingSenderId:"626888970289",
+    appId:"1:626888970289:web:23880053888f3dd1a88510"
+  };
+  const app  = initializeApp(FB);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+  
+  emailjs.init("2VkygefcXxbSOlhFX");
+  
+  // GROQ API CONFIG
+  const GROQ_API_KEY = "gsk_6eXCMxw6tuEMF9l" + "9dhgWWGdyb3FYgEMb" + "hom4ALVfRXf4X0VaByU6";
+  const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+  
+  window.currentUser = null;
+  window.usersMap    = new Map();
+  window.subjectsMap = new Map();
+  window._uploadedFile = null;
+  
+  window._coursUnsub   = null;
+  window._frUnsub      = null;
+  window._quizUnsub    = null;
+  window._pubFeedUnsub = null;
+  window._dmChatsUnsub = null;
+  window._dmMsgsUnsub  = null;
+  window._currentViewedUser = null;
+  
+  window._filterContext = 'cours'; 
+  window._coursFilter = { subject: 'all', order: 'recent' };
+  window._frFilter    = { subject: 'all', type: 'all', order: 'recent' };
+  window._quizFilter  = { subject: 'all', order: 'recent' };
+  
+  window._pubSubjFilter = "all";
+  window._pubTabActive  = "cours";
+  
+  window._pubLikesData = null;
+  window._pubLikesUnsub = null;
+  window._pubLikesSubjFilter = 'all';
+  
+  window._activeChatId = null;
+  window._activeChatPartnerId = null;
+  window._dmFileToUpload = null;
+  
+  const CLOUDINARY_CLOUD_NAME    = "dmtggmxrm";
+  const CLOUDINARY_UPLOAD_PRESET = "iAcqTr_Pg13v5d-Es84wIkdUqaw";
+  
+  // Quiz Logic State
+  window._currentQuizData = null;
+  window._quizMode = null; 
+  window._currentQuestionIndex = 0;
+  window._quizUserAnswers = [];
+  window._quizStartTime = 0;
+  window._hasViewedAnswers = false;
+  
+  window.formatNumber = (num) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (num >= 10000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return num.toString();
+  };
+  
+  window.getBadge = (userObj) => {
+    return (userObj && userObj.isVerified) ? `<img src="https://cdn.prod.website-files.com/6214eaa668d0de27c3ea80cf/652fd0e960df145545f25f12_Pastille%20bleu%20certification%20instagram.png" class="verified-icon" title="Compte certifié">` : '';
+  };
+  
+  function loadTheme(){
+    const dark = localStorage.getItem("dnb_theme")==="dark";
+    document.documentElement.setAttribute("data-theme", dark?"dark":"light");
+    const t = document.getElementById("tog-dark");
+    if(t) t.checked = dark;
+  }
+  loadTheme();
+  window.applyTheme = (dark)=>{
+    document.documentElement.setAttribute("data-theme", dark?"dark":"light");
+    localStorage.setItem("dnb_theme", dark?"dark":"light");
+  };
+  
+  window.showToast = (msg)=>{
+    const t=document.getElementById("toast");
+    t.innerText=msg; t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"),3000);
+  };
+  
+  onSnapshot(collection(db, "users"), snap => {
+    snap.forEach(d => {
+      const u = d.data();
+      window.usersMap.set(u.username, { id: d.id, ...u });
+      if(currentUser && u.username === currentUser.username) Object.assign(currentUser, { id: d.id, ...u });
     });
-
-    let cmtHTML="";
-    comments.forEach(c => {
-      const cmtId = c.id || String(c.timestamp); 
-      const cmtAuthor = window.usersMap.get(c.userId) || {};
-      const cmtName = cmtAuthor.displayName || c.displayName || c.userId;
-      const cmtBadge = getBadge(cmtAuthor);
-      const canModCmt = isAdmin || currentUser?.username === c.userId || currentUser?.username === p.authorId;
-      const canPin = isAdmin || currentUser?.username === p.authorId;
-      
-      let repliesHTML = "";
-      if (c.replies && c.replies.length > 0) {
-        c.replies.sort((r1,r2)=> (r1.timestamp||0) - (r2.timestamp||0)).forEach(r => {
-          const rId = r.id || String(r.timestamp);
-          const rAuthor = window.usersMap.get(r.userId) || {};
-          const rName = rAuthor.displayName || r.displayName || r.userId;
-          const rBadge = getBadge(rAuthor);
-          const canDelRep = isAdmin || currentUser?.username === r.userId || currentUser?.username === p.authorId;
-          repliesHTML += `<div class="cmt-reply">
-            <a href="#${r.userId}" class="cmt-user">${rName}${rBadge}</a> : ${r.text}
-            ${canDelRep ? `<div class="cmt-actions"><button class="del" onclick="delCmt('${pId}','${cmtId}','${rId}')">Supprimer</button></div>`:''}
-          </div>`;
-        });
+    if(document.getElementById("page-cours").classList.contains("active")) loadCoursFeed();
+    if(document.getElementById("page-fichesrev").classList.contains("active")) loadFRFeed();
+    if(document.getElementById("page-quiz").classList.contains("active")) loadQuizFeed();
+    
+    if(window._currentViewedUser) {
+      renderPublicProfile(window._currentViewedUser.username);
+      if(window._pubTabActive === 'likes') renderPubLikes();
+    }
+    if(currentUser) {
+      const myBadge = getBadge(currentUser);
+      document.getElementById("drop-name").innerHTML = (currentUser.displayName||currentUser.username) + myBadge;
+      document.getElementById("drawer-name").innerHTML = (currentUser.displayName||currentUser.username) + myBadge;
+    }
+  });
+  
+  window.addEventListener("hashchange", handleHashChange);
+  window.addEventListener("DOMContentLoaded", () => setTimeout(handleHashChange, 50));
+  
+  function handleHashChange() {
+    const hash = window.location.hash.trim();
+    if(!hash || hash === "#") {
+      showInternalView('matieres'); return;
+    }
+    if(hash.startsWith("#page-")) {
+      showInternalView(hash.replace("#page-", "")); return;
+    }
+    const uname = decodeURIComponent(hash.substring(1)).toLowerCase().trim();
+    if(uname) renderPublicProfile(uname);
+  }
+  
+  function showInternalView(target) {
+    if (target === 'admin') {
+      const isAdmin = currentUser && (currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')));
+      if (!isAdmin) { showToast("Accès non autorisé."); window.location.hash = ""; return; }
+    }
+  
+    document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
+    
+    const page = document.getElementById(`page-${target}`);
+    if(page) page.classList.add("active");
+  
+    const tab = document.querySelector(`.nav-tab[data-target="${target}"]`);
+    if(tab) tab.classList.add("active");
+  
+    document.querySelectorAll(".drawer-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === target));
+    window.scrollTo({top: 0, behavior: "smooth"});
+  
+    if (target === 'messages') { loadDMChats(); }
+    if (target === 'quiz') { loadQuizFeed(); }
+    if (target === 'setting') { loadAIQuizHistory(); }
+  }
+  
+  signInAnonymously(auth).then(async ()=>{
+    const s = localStorage.getItem("dnb_reviz_session");
+    if(s){
+      const cached = JSON.parse(s);
+      hydrateSession(cached);
+      try {
+        const freshSnap = await getDoc(doc(db, "users", cached.id));
+        if(freshSnap.exists()) hydrateSession({ id: freshSnap.id, ...freshSnap.data() });
+      } catch(e){}
+    }
+    handleHashChange();
+  }).catch(console.error);
+  
+  window.handleLogin = async()=>{
+    const id  = document.getElementById("login-id").value.trim().toLowerCase();
+    const pwd = document.getElementById("login-pwd").value.trim();
+    if(!id||!pwd){showToast("Remplis tous les champs.");return;}
+  
+    const q = query(collection(db,"users"),where("username","==",id));
+    const snap = await getDocs(q);
+  
+    if(snap.empty){
+      if(id==="dan.bouillet"&&pwd==="1"){
+        const u={username:"dan.bouillet",displayName:"Dan Bouillet",password:"1",
+                 role:"admin",subRoles:["admin","volontaire"],avatar:"",
+                 bio:"",banner:"",instagram:"",linkedin:"",followers:[],following:[],
+                 isTempPassword:false, allowMessages:true, emailNotifs:false, email:""};
+        const r=await addDoc(collection(db,"users"),u); u.id=r.id;
+        await seedSubjects();
+        hydrateSession(u); return;
       }
-
-      cmtHTML += `
-      <div class="cmt-block ${c.isPinned ? 'pinned' : ''}">
-        <div class="cmt-header">
-          <div class="cmt-row">
-            ${c.isPinned ? '📌 ' : ''}<a href="#${c.userId}" class="cmt-user">${cmtName}${cmtBadge}</a> : ${c.text}
+      showToast("Identifiant introuvable."); return;
+    }
+    const d=snap.docs[0];
+    const u={id:d.id,...d.data()};
+    if(u.password!==pwd){showToast("Mot de passe incorrect.");return;}
+    hydrateSession(u);
+  };
+  document.getElementById("login-pwd").addEventListener("keydown",e=>{if(e.key==="Enter")handleLogin();});
+  document.getElementById("login-id").addEventListener("keydown",e=>{if(e.key==="Enter")handleLogin();});
+  
+  window.handleLogout = ()=>{
+    localStorage.removeItem("dnb_reviz_session");
+    window.location.hash = "";
+    window.location.reload();
+  };
+  
+  async function seedSubjects(){
+    const base=[
+      {name:"Management",icon:"💼"},{name:"Sciences de Gestion",icon:"📊"},
+      {name:"Droit et Économie",icon:"⚖️"},{name:"Philosophie",icon:"🦉"},
+      {name:"Mathématiques",icon:"📐"},{name:"Histoire-Géographie",icon:"🌍"},
+      {name:"Langues Vivantes",icon:"🗣️"},{name:"Spécialité MSGN",icon:"🚀"}
+    ];
+    for(const m of base) await addDoc(collection(db,"subjects"),m);
+  }
+  
+  function displayNameFromId(id){
+    return id.split(/[\.\-_]/).map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(" ");
+  }
+  
+  function hydrateSession(u){
+    window.currentUser=u;
+    localStorage.setItem("dnb_reviz_session",JSON.stringify(u));
+  
+    document.getElementById("view-login").style.display="none";
+    document.getElementById("view-app").style.display="block";
+    loadTheme();
+  
+    setAvatar(u.avatar, u.displayName||u.username);
+    
+    const myBadge = getBadge(u);
+    document.getElementById("drop-name").innerHTML  = (u.displayName||u.username) + myBadge;
+    document.getElementById("drawer-name").innerHTML  = (u.displayName||u.username) + myBadge;
+    
+    document.getElementById("drop-role").innerText  = u.role;
+    document.getElementById("prof-id").value        = u.username;
+    document.getElementById("prof-display").value   = u.displayName||u.username;
+  
+    document.getElementById("prof-bio-input").value      = u.bio||"";
+    document.getElementById("prof-insta-input").value    = u.instagram||"";
+    document.getElementById("prof-linkedin-input").value = u.linkedin||"";
+    document.getElementById("prof-banner-input").value   = u.banner||"";
+  
+    if (document.getElementById("tog-allow-msgs")) document.getElementById("tog-allow-msgs").checked = u.allowMessages !== false;
+    if (document.getElementById("tog-email-notif")) document.getElementById("tog-email-notif").checked = !!u.emailNotifs;
+    if (document.getElementById("setting-email")) document.getElementById("setting-email").value = u.email || "";
+  
+    const isAdmin  = u.role==="admin"||(u.subRoles&&u.subRoles.includes("admin"));
+    const canDepot = u.role==="professeur"||u.role==="admin"||
+                     (u.subRoles&&(u.subRoles.includes("volontaire")||u.subRoles.includes("admin")));
+  
+    document.getElementById("tab-admin").classList.toggle("hidden",!isAdmin);
+    document.getElementById("tab-depot").classList.toggle("hidden",!canDepot);
+    document.getElementById("tab-creer-quiz").classList.toggle("hidden",!canDepot);
+    
+    document.querySelectorAll(".admin-only").forEach(el=>el.classList.toggle("hidden",!isAdmin));
+  
+    const drawerDepot=document.getElementById("drawer-depot");
+    const drawerAdmin=document.getElementById("drawer-admin");
+    const drawerCreerQuiz=document.getElementById("drawer-creer-quiz");
+    if(drawerDepot) drawerDepot.classList.toggle("hidden",!canDepot);
+    if(drawerCreerQuiz) drawerCreerQuiz.classList.toggle("hidden",!canDepot);
+    if(drawerAdmin) drawerAdmin.classList.toggle("hidden",!isAdmin);
+  
+    document.getElementById("drawer-role").innerText  = u.role;
+    setDrawerAvatar(u.avatar, u.displayName||u.username);
+  
+    if(u.isTempPassword) openModal("m-force-pwd");
+  
+    loadMatieres();
+    syncContrib();
+    if(isAdmin){syncAdminUsers();syncAdminMats();}
+    loadAnnonces();
+    loadCoursFeed();
+    loadFRFeed();
+    
+    if (document.getElementById("page-quiz").classList.contains("active")) {
+        loadQuizFeed();
+    }
+    if (document.getElementById("page-messages").classList.contains("active")) {
+        loadDMChats();
+    }
+  }
+  
+  function setAvatar(data,name){
+    const initials=(name||"?").split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
+    ["nav-initials","prof-initials"].forEach(id=>{const el=document.getElementById(id);if(el)el.innerText=initials;});
+    ["nav-av-img","prof-av-img"].forEach(id=>{
+      const el=document.getElementById(id); if(!el) return;
+      if(data){el.src=data;el.style.display="block";}else{el.style.display="none";}
+    });
+    const navI=document.getElementById("nav-initials");
+    if(navI) navI.style.display=data?"none":"block";
+    const pI=document.getElementById("prof-initials");
+    if(pI) pI.style.display=data?"none":"block";
+  }
+  
+  function setDrawerAvatar(data,name){
+    const initials=(name||"?").split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
+    const el=document.getElementById("drawer-initials");
+    const img=document.getElementById("drawer-av-img");
+    if(el) el.innerText=initials;
+    if(img){
+      if(data){img.src=data;img.style.display="block";if(el)el.style.display="none";}
+      else{img.style.display="none";if(el)el.style.display="block";}
+    }
+  }
+  
+  window.handleForcePwd = async()=>{
+    const p=document.getElementById("force-pwd").value.trim();
+    if(p.length<4){showToast("Min. 4 caractères.");return;}
+    await updateDoc(doc(db,"users",currentUser.id),{password:p,isTempPassword:false});
+    currentUser.password=p; currentUser.isTempPassword=false;
+    localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+    closeModal("m-force-pwd"); showToast("Mot de passe mis à jour ✓");
+  };
+  
+  async function uploadToCloudinary(file){
+    const fd=new FormData();
+    fd.append("file",file);
+    fd.append("upload_preset",CLOUDINARY_UPLOAD_PRESET);
+    fd.append("resource_type","auto"); 
+    
+    const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`,{method:"POST",body:fd});
+    if(!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    return data.secure_url; 
+  }
+  
+  window.uploadAvatar = (e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    const r=new FileReader();
+    r.onload=(ev)=>{
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement("canvas"); c.width=c.height=140;
+        c.getContext("2d").drawImage(img,0,0,140,140);
+        const b64=c.toDataURL("image/jpeg",.8);
+        updateDoc(doc(db,"users",currentUser.id),{avatar:b64}).then(()=>{
+          currentUser.avatar=b64;
+          localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+          setAvatar(b64,currentUser.displayName); showToast("Photo mise à jour ✓");
+        });
+      };
+      img.src=ev.target.result;
+    };
+    r.readAsDataURL(file);
+  };
+  
+  window.uploadMyBanner = async(e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    showToast("Upload de la bannière en cours...");
+    try {
+      const url = await uploadToCloudinary(file);
+      document.getElementById("prof-banner-input").value = url;
+      showToast("Bannière chargée ✓ N'oublie pas d'Enregistrer");
+    } catch(err){ showToast("Erreur Cloudinary"); }
+  };
+  
+  window.saveProfile = async()=>{
+    const d        = document.getElementById("prof-display").value.trim();
+    const bio      = document.getElementById("prof-bio-input").value.trim();
+    const insta    = document.getElementById("prof-insta-input").value.trim();
+    const linkedin = document.getElementById("prof-linkedin-input").value.trim();
+    const banner   = document.getElementById("prof-banner-input").value.trim();
+  
+    if(!d) return;
+  
+    const updates = { displayName: d, bio, instagram: insta, linkedin, banner };
+    await updateDoc(doc(db,"users",currentUser.id), updates);
+    
+    Object.assign(currentUser, updates);
+    localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+    
+    const myBadge = getBadge(currentUser);
+    document.getElementById("drop-name").innerHTML = d + myBadge;
+    document.getElementById("drawer-name").innerHTML = d + myBadge;
+    setAvatar(currentUser.avatar,d);
+    setDrawerAvatar(currentUser.avatar,d);
+    
+    showToast("Profil enregistré ✓");
+    syncContrib();
+  };
+  
+  window.goToMyLikes = () => {
+    if(!currentUser) return;
+    window.location.hash = '#' + currentUser.username;
+    setTimeout(() => {
+      switchPubTab('likes');
+    }, 400);
+  };
+  
+  window.toggleAllowMsgs = async(val)=>{
+    await updateDoc(doc(db,"users",currentUser.id),{allowMessages: val});
+    currentUser.allowMessages = val;
+    localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+  };
+  window.toggleEmailNotifs = async(val)=>{
+    await updateDoc(doc(db,"users",currentUser.id),{emailNotifs: val});
+    currentUser.emailNotifs = val;
+    localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+  };
+  window.saveEmailSettings = async()=>{
+    const e = document.getElementById("setting-email").value.trim();
+    await updateDoc(doc(db,"users",currentUser.id),{email: e});
+    currentUser.email = e;
+    localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+    showToast("Adresse email sauvegardée ✓");
+  };
+  
+  async function sendEmailNotif(type, receiverObj, extraParams) {
+    if (!receiverObj.emailNotifs || !receiverObj.email) return;
+    let templateId = type === 'message' ? 'template_ira8lxo' : 'template_uxyq7sp';
+    emailjs.send("service_cza73j9", templateId, {
+        username: receiverObj.displayName || receiverObj.username,
+        sender: currentUser.displayName || currentUser.username,
+        email: receiverObj.email,
+        ...extraParams
+    }).catch(console.error);
+  }
+  
+  async function syncContrib(){
+    const q1=query(collection(db,"posts"),where("authorId","==",currentUser.username));
+    const q2=query(collection(db,"quizzes"),where("authorId","==",currentUser.username));
+    const snap1=await getDocs(q1);
+    const snap2=await getDocs(q2);
+    const el=document.getElementById("contrib-count"); if(el) el.innerText = snap1.size + snap2.size;
+  }
+  
+  window.changePassword = async()=>{
+    const p=document.getElementById("setting-pwd").value.trim(); if(!p) return;
+    await updateDoc(doc(db,"users",currentUser.id),{password:p,isTempPassword:false});
+    currentUser.password=p;
+    localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+    document.getElementById("setting-pwd").value="";
+    showToast("Mot de passe changé ✓");
+  };
+  
+  function loadMatieres(){
+    onSnapshot(collection(db,"subjects"),(snap)=>{
+      const isAdmin=currentUser.role==="admin"||(currentUser.subRoles&&currentUser.subRoles.includes("admin"));
+      const mainGrid=document.getElementById("matieres-grid");
+      const selDepot=document.getElementById("post-matiere");
+      const selQuizCreate=document.getElementById("quiz-create-matiere");
+      const selQuizIA=document.getElementById("quiz-ia-matiere");
+      
+      mainGrid.innerHTML=""; selDepot.innerHTML=""; selQuizCreate.innerHTML=""; selQuizIA.innerHTML=""; 
+      window.subjectsMap.clear();
+  
+      snap.forEach(d=>{
+        const m=d.data();
+        window.subjectsMap.set(m.name, m.icon);
+  
+        mainGrid.innerHTML+=`
+          <div class="matiere-card" onclick="openSubjectInMatieres('${esc(m.name)}')">
+            ${isAdmin?`<button class="card-del" onclick="event.stopPropagation();delMatiere('${d.id}')">✕</button>`:""}
+            <div>
+              <div class="card-icon">${m.icon}</div>
+              <div class="card-title">${m.name}</div>
+            </div>
+            ${isAdmin?`<button class="btn-ghost btn-sm" style="align-self:flex-start" onclick="event.stopPropagation();editMatiere('${d.id}','${esc(m.name)}','${m.icon}')">✏️ Modifier</button>`
+                     :`<span class="caption" style="color:var(--primary);font-weight:600">Consulter →</span>`}
+          </div>`;
+        const opt = `<option value="${esc(m.name)}">${m.icon} ${m.name}</option>`;
+        selDepot.innerHTML += opt;
+        selQuizCreate.innerHTML += opt;
+        selQuizIA.innerHTML += opt;
+      });
+    });
+  }
+  
+  window.openSubjectInMatieres=(name)=>{
+    window._coursFilter.subject = name; 
+    switchTab('cours');
+    loadCoursFeed();
+  };
+  
+  window.openFilterModal = (context) => {
+    window._filterContext = context;
+    const typeGroup = document.getElementById("filter-type-group");
+    const subjSelect = document.getElementById("filter-subject");
+    const orderSelect = document.getElementById("filter-order");
+    const typeSelect = document.getElementById("filter-type");
+  
+    let htmlSubjs = `<option value="all">Toutes les matières</option>`;
+    Array.from(window.subjectsMap.entries()).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([name, icon]) => {
+      htmlSubjs += `<option value="${esc(name)}">${icon} ${name}</option>`;
+    });
+    subjSelect.innerHTML = htmlSubjs;
+  
+    if (context === 'cours') {
+      typeGroup.style.display = 'none';
+      subjSelect.value = window._coursFilter.subject;
+      orderSelect.value = window._coursFilter.order;
+    } else if (context === 'quiz') {
+      typeGroup.style.display = 'none';
+      subjSelect.value = window._quizFilter.subject;
+      orderSelect.value = window._quizFilter.order;
+    } else {
+      typeGroup.style.display = 'flex';
+      subjSelect.value = window._frFilter.subject;
+      typeSelect.value = window._frFilter.type;
+      orderSelect.value = window._frFilter.order;
+    }
+    openModal("m-filters");
+  };
+  
+  window.applyFilters = () => {
+    if (window._filterContext === 'cours') {
+      window._coursFilter.subject = document.getElementById("filter-subject").value;
+      window._coursFilter.order = document.getElementById("filter-order").value;
+      closeModal("m-filters");
+      loadCoursFeed();
+    } else if (window._filterContext === 'quiz') {
+      window._quizFilter.subject = document.getElementById("filter-subject").value;
+      window._quizFilter.order = document.getElementById("filter-order").value;
+      closeModal("m-filters");
+      loadQuizFeed();
+    } else {
+      window._frFilter.subject = document.getElementById("filter-subject").value;
+      window._frFilter.type = document.getElementById("filter-type").value;
+      window._frFilter.order = document.getElementById("filter-order").value;
+      closeModal("m-filters");
+      loadFRFeed();
+    }
+  };
+  
+  /* --- SYSTEME DE POSTS (Cours / Fiches) --- */
+  function loadCoursFeed(){
+    if(window._coursUnsub){window._coursUnsub();window._coursUnsub=null;}
+    const container=document.getElementById("cours-feed"); if(!container) return;
+    container.innerHTML=`<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
+    const q = window._coursFilter.subject==="all"
+      ? query(collection(db,"posts"),where("type","==","cours"))
+      : query(collection(db,"posts"),where("matiere","==",window._coursFilter.subject),where("type","==","cours"));
+    window._coursUnsub=onSnapshot(q, snap => renderFeedFromDocs(snap.docs.map(d=>({id:d.id,...d.data()})), container, "Aucun cours disponible pour le moment", window._coursFilter.order, "cours"));
+  }
+  
+  function loadFRFeed(){
+    if(window._frUnsub){window._frUnsub();window._frUnsub=null;}
+    const container=document.getElementById("fr-feed"); if(!container) return;
+    container.innerHTML=`<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
+    const types = window._frFilter.type==="all" ? ["fiches","revisions"] : [window._frFilter.type];
+    let q;
+    if(window._frFilter.subject==="all"){
+      q = types.length>1 ? query(collection(db,"posts"),where("type","in",types)) : query(collection(db,"posts"),where("type","==",types[0]));
+    } else {
+      q = types.length>1 ? query(collection(db,"posts"),where("matiere","==",window._frFilter.subject),where("type","in",types)) : query(collection(db,"posts"),where("matiere","==",window._frFilter.subject),where("type","==",types[0]));
+    }
+    window._frUnsub=onSnapshot(q, snap => renderFeedFromDocs(snap.docs.map(d=>({id:d.id,...d.data()})), container, "Aucune fiche ni révision pour le moment", window._frFilter.order, "fr"));
+  }
+  
+  function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent', context = 'main'){
+    container.innerHTML="";
+    if(postsArray.length===0){
+      container.innerHTML=`<div class="empty-text">${emptyMsg||"Aucune ressource pour l'instant"}</div>`; return;
+    }
+  
+    if (sortOrder === 'likes') {
+      postsArray.sort((a,b) => (b.likes||[]).length - (a.likes||[]).length);
+    } else if (sortOrder === 'oldest') {
+      postsArray.sort((a,b) => (a.timestamp||0) - (b.timestamp||0));
+    } else {
+      postsArray.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+    }
+  
+    postsArray.forEach(p => {
+      const pId = p.id;
+      const isAdmin = currentUser?.role==="admin"||(currentUser?.subRoles&&currentUser.subRoles.includes("admin"));
+      const canDel = isAdmin||p.authorId===currentUser?.username;
+      const hasLiked = (p.likes||[]).includes(currentUser?.username);
+      const likeCount = (p.likes||[]).length;
+  
+      const liveAuthor = window.usersMap.get(p.authorId) || {};
+      const liveRole   = liveAuthor.role || p.authorRole || "élève";
+      const liveName   = liveAuthor.displayName || p.authorDisplayName || p.authorId;
+      const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : p.authorAvatar;
+      const authorBadge = getBadge(liveAuthor);
+      const subjIcon   = window.subjectsMap.get(p.matiere) || "📚";
+  
+      const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+      const roleClass = liveRole==="professeur"?"professeur":liveRole==="admin"?"admin":"eleve";
+      const typeLabels = {cours:"Cours", fiches:"Fiche", revisions:"Révisions"};
+      const typeLabel  = typeLabels[p.type]||p.type;
+  
+      const targetUrl = p.fileData || p.url;
+      const isPDF     = p.fileType==="application/pdf" || targetUrl?.toLowerCase().endsWith(".pdf");
+      const isImage   = !isPDF && (p.fileType?.startsWith("image/") || targetUrl?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || targetUrl?.includes("res.cloudinary.com/"));
+  
+      let mediaBox="", fileChip="";
+  
+      if(targetUrl){
+        if(isImage){
+          mediaBox=`<div class="post-media-preview" onclick="window.open('${targetUrl}','_blank')"><img src="${targetUrl}" alt="Aperçu"></div>`;
+        } else {
+          const cleanName = p.fileName || p.title || "Document";
+          fileChip=`<div class="file-chip mt-1">
+            <div class="file-chip-info" title="${esc(cleanName)}">
+              <span style="font-size:22px">${isPDF?"📄":"🔗"}</span>
+              <span>${cleanName}</span>
+            </div>
+            <a href="${targetUrl}" target="_blank" rel="noopener" class="btn-download">📥 Consulter</a>
+          </div>`;
+        }
+      }
+  
+      let comments = p.comments || [];
+      let commentsCount = comments.reduce((acc, c) => acc + 1 + (c.replies ? c.replies.length : 0), 0);
+      
+      comments.sort((a,b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return (a.timestamp||0) - (b.timestamp||0);
+      });
+  
+      let cmtHTML="";
+      comments.forEach(c => {
+        const cmtId = c.id || String(c.timestamp); 
+        const cmtAuthor = window.usersMap.get(c.userId) || {};
+        const cmtName = cmtAuthor.displayName || c.displayName || c.userId;
+        const cmtBadge = getBadge(cmtAuthor);
+        const canModCmt = isAdmin || currentUser?.username === c.userId || currentUser?.username === p.authorId;
+        const canPin = isAdmin || currentUser?.username === p.authorId;
+        
+        let repliesHTML = "";
+        if (c.replies && c.replies.length > 0) {
+          c.replies.sort((r1,r2)=> (r1.timestamp||0) - (r2.timestamp||0)).forEach(r => {
+            const rId = r.id || String(r.timestamp);
+            const rAuthor = window.usersMap.get(r.userId) || {};
+            const rName = rAuthor.displayName || r.displayName || r.userId;
+            const rBadge = getBadge(rAuthor);
+            const canDelRep = isAdmin || currentUser?.username === r.userId || currentUser?.username === p.authorId;
+            repliesHTML += `<div class="cmt-reply">
+              <a href="#${r.userId}" class="cmt-user">${rName}${rBadge}</a> : ${r.text}
+              ${canDelRep ? `<div class="cmt-actions"><button class="del" onclick="delCmt('${pId}','${cmtId}','${rId}')">Supprimer</button></div>`:''}
+            </div>`;
+          });
+        }
+  
+        cmtHTML += `
+        <div class="cmt-block ${c.isPinned ? 'pinned' : ''}">
+          <div class="cmt-header">
+            <div class="cmt-row">
+              ${c.isPinned ? '📌 ' : ''}<a href="#${c.userId}" class="cmt-user">${cmtName}${cmtBadge}</a> : ${c.text}
+            </div>
+          </div>
+          <div class="cmt-actions">
+            <button onclick="toggleReplyBox('${pId}','${cmtId}','${context}')">Répondre</button>
+            ${canPin ? `<button onclick="pinCmt('${pId}','${cmtId}')">${c.isPinned?'Désépingler':'Épingler'}</button>`:''}
+            ${canModCmt ? `<button class="del" onclick="delCmt('${pId}','${cmtId}')">Supprimer</button>`:''}
+          </div>
+          ${repliesHTML ? `<div class="cmt-replies">${repliesHTML}</div>` : ''}
+          <form class="cmt-form" id="reply-form-${context}-${pId}-${cmtId}" style="display:none;" onsubmit="addReply(event,'${pId}','${cmtId}')">
+            <input type="text" placeholder="Répondre..." required>
+            <button type="submit" class="cmt-send">Envoyer</button>
+          </form>
+        </div>`;
+      });
+  
+      const dateStr=p.timestamp?new Date(p.timestamp).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Date inconnue";
+  
+      container.innerHTML+=`
+        <div class="post-card">
+          <div style="display:flex;flex-direction:column;gap:14px;flex:1">
+            <div class="post-header">
+              <a href="#${p.authorId}" class="post-av">${avContent}</a>
+              <div style="flex:1;min-width:0">
+                <a href="#${p.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
+                <div class="post-meta">
+                  <span class="rbadge ${roleClass}">${liveRole}</span>
+                  <span class="type-tag ${p.type}">${typeLabel}</span>
+                  <span class="subj-tag">${subjIcon} ${p.matiere}</span>
+                </div>
+              </div>
+              ${canDel?`<button class="btn-danger btn-sm" onclick="deletePost('${pId}')">Supprimer</button>`:""}
+            </div>
+            <div>
+              <div class="post-title">${p.title}</div>
+              ${p.description?`<p class="post-desc">${p.description}</p>`:""}
+            </div>
+            ${mediaBox}
+            ${fileChip}
+          </div>
+          <div>
+            <div class="post-date">Publié le ${dateStr}</div>
+            <div class="post-actions">
+              <button class="like-btn ${hasLiked?"liked":""}" onclick="toggleLike('${pId}')">
+                ${hasLiked?"❤️":"🤍"} ${likeCount}
+              </button>
+              <button class="comment-tog-btn" onclick="toggleComments('${pId}','${context}')">💬 ${commentsCount} commentaires</button>
+            </div>
+            <div class="comments-wrap" id="comments-wrap-${context}-${pId}">
+              <div class="comments-box">
+                ${cmtHTML}
+              </div>
+              <form class="cmt-form mt-1" onsubmit="addComment(event,'${pId}')">
+                <input type="text" placeholder="Ajouter un commentaire…" required>
+                <button type="submit" class="cmt-send">Commenter</button>
+              </form>
+            </div>
+          </div>
+        </div>`;
+    });
+  }
+  
+  function loadAnnonces(){
+    const isAdmin=currentUser.role==="admin"||(currentUser.subRoles&&currentUser.subRoles.includes("admin"));
+    const zone=document.getElementById("annonces-zone"); if(!zone) return;
+  
+    onSnapshot(collection(db,"annonces"),(snap)=>{
+      const titleRow=`<div class="ann-section-title">
+        📢 Annonces
+        ${isAdmin?`<button class="btn-pill-van btn-sm" onclick="openAnnonceModal('')">+ Nouvelle annonce</button>`:""}
+      </div>`;
+      if(snap.empty){
+        zone.innerHTML = isAdmin ? titleRow+`<div class="empty-text">Aucune annonce pour le moment</div>` : ""; return;
+      }
+      let cards="";
+      snap.docs.sort((a,b)=>(b.data().timestamp||0)-(a.data().timestamp||0)).forEach(d=>{
+        const a=d.data();
+        cards+=`<div class="ann-card"><div class="ann-card-title">${a.title}</div><div class="ann-card-body">${a.body||""}</div>
+        ${isAdmin?`<div class="ann-actions"><button class="btn-ghost btn-sm" onclick="openAnnonceModal('${d.id}','${esc(a.title)}','${esc(a.body||'')}')">Modifier</button><button class="btn-danger btn-sm" onclick="delAnnonce('${d.id}')">Supprimer</button></div>`:""}</div>`;
+      });
+      zone.innerHTML=titleRow+`<div style="display:flex;flex-direction:column;gap:12px;grid-column:1/-1">${cards}</div>`;
+    });
+  }
+  
+  window.openAnnonceModal=(id,title="",body="")=>{
+    document.getElementById("m-ann-title").innerText=id?"Modifier l'annonce":"Nouvelle annonce";
+    document.getElementById("ann-edit-id").value=id; document.getElementById("ann-title").value=title; document.getElementById("ann-body").value=body;
+    openModal("m-ann");
+  };
+  window.saveAnnonce=async()=>{
+    const id=document.getElementById("ann-edit-id").value, title=document.getElementById("ann-title").value.trim(), body=document.getElementById("ann-body").value.trim();
+    if(!title){showToast("Titre requis.");return;}
+    if(id) await updateDoc(doc(db,"annonces",id),{title,body}); else await addDoc(collection(db,"annonces"),{title,body,timestamp:Date.now()});
+    closeModal("m-ann"); showToast("Annonce publiée ✓");
+  };
+  window.delAnnonce=async(id)=>{if(confirm("Supprimer cette annonce ?")) await deleteDoc(doc(db,"annonces",id));};
+  
+  window.handleFileSelect=(e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    if(file.size>25*1024*1024){
+      e.target.value=""; window._uploadedFile=null; document.getElementById("file-prev").style.display="none"; openModal("m-filesize"); return;
+    }
+    window._uploadedFile=file;
+    const bar=document.getElementById("file-prev"); bar.style.display="flex";
+    document.getElementById("file-prev-name").innerText=file.name;
+    document.getElementById("file-prev-icon").innerText=file.type==="application/pdf"?"📄":"🖼️"; document.getElementById("post-url").value="";
+  };
+  window.clearFile=()=>{
+    window._uploadedFile=null; document.getElementById("post-file").value=""; document.getElementById("file-prev").style.display="none";
+  };
+  
+  window.handleCreatePost=async()=>{
+    const title=document.getElementById("post-title").value.trim(), matiere=document.getElementById("post-matiere").value, type=document.getElementById("post-type").value, desc=document.getElementById("post-desc").value.trim(), urlInput=document.getElementById("post-url").value.trim();
+    if(!title||!matiere){showToast("Titre et matière requis.");return;}
+  
+    let fileUrl="", fileName="", fileType="";
+  
+    if(window._uploadedFile){
+      const btn=document.querySelector('[onclick="handleCreatePost()"]'); if(btn){btn.disabled=true;btn.innerText="Upload en cours…";}
+      try{
+        fileUrl=await uploadToCloudinary(window._uploadedFile); fileName=window._uploadedFile.name; fileType=window._uploadedFile.type;
+      } catch(err){
+        showToast("Erreur upload Cloudinary."); if(btn){btn.disabled=false;btn.innerText="Partager avec la classe";} return;
+      }
+      if(btn){btn.disabled=false;btn.innerText="Partager avec la classe";}
+    }
+  
+    const post={
+      title,matiere,type,description:desc,fileData:"",fileName,fileType,
+      url:fileUrl||urlInput||"",authorId:currentUser.username,authorDisplayName:currentUser.displayName||currentUser.username,
+      authorAvatar:currentUser.avatar||"",authorRole:currentUser.role||"élève",likes:[],comments:[],timestamp:Date.now()
+    };
+  
+    try{
+      await addDoc(collection(db,"posts"),post);
+      document.getElementById("post-title").value=""; document.getElementById("post-desc").value=""; document.getElementById("post-url").value=""; clearFile(); syncContrib(); showToast("Partagé avec la classe ✓");
+      
+      if (currentUser.followers && currentUser.followers.length > 0) {
+         currentUser.followers.forEach(uname => {
+           const fUser = window.usersMap.get(uname);
+           if (fUser) sendEmailNotif('post', fUser);
+         });
+      }
+  
+      if(type==="cours") switchTab('cours'); else switchTab('fichesrev');
+    } catch(e){ showToast("Erreur d'envoi."); }
+  };
+  
+  const dz=document.getElementById("drop-zone");
+  if(dz){
+    dz.addEventListener("dragover",e=>{e.preventDefault();dz.style.borderColor="var(--primary)";});
+    dz.addEventListener("dragleave",()=>{dz.style.borderColor="";});
+    dz.addEventListener("drop",e=>{
+      e.preventDefault(); dz.style.borderColor=""; const files=e.dataTransfer.files;
+      if(files[0]){ const inp=document.getElementById("post-file"), dt=new DataTransfer(); dt.items.add(files[0]); inp.files=dt.files; handleFileSelect({target:inp}); }
+    });
+  }
+  
+  window.toggleLike=async(postId)=>{
+    const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
+    let likes=snap.data().likes||[];
+    if(likes.includes(currentUser.username)) likes=likes.filter(u=>u!==currentUser.username); else likes.push(currentUser.username);
+    await updateDoc(ref,{likes});
+  };
+  
+  window.toggleComments = (postId, context = 'main') => {
+    const wrp = document.getElementById(`comments-wrap-${context}-${postId}`);
+    if(wrp) wrp.classList.toggle('show');
+  };
+  window.toggleReplyBox = (postId, cmtId, context = 'main') => {
+    const f = document.getElementById(`reply-form-${context}-${postId}-${cmtId}`);
+    if(f) f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+  };
+  
+  function generateId() { return Date.now().toString() + Math.random().toString(36).substr(2,5); }
+  
+  window.addComment=async(e,postId)=>{
+    e.preventDefault(); const input=e.target.querySelector("input"), txt=input.value.trim(); if(!txt) return;
+    const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
+    const comments=snap.data().comments||[];
+    comments.push({id: generateId(), userId:currentUser.username,displayName:currentUser.displayName||currentUser.username,text:txt,timestamp:Date.now(), isPinned: false, replies:[]});
+    await updateDoc(ref,{comments}); input.value="";
+  };
+  window.addReply=async(e,postId,cmtId)=>{
+    e.preventDefault(); const input=e.target.querySelector("input"), txt=input.value.trim(); if(!txt) return;
+    const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
+    const comments=snap.data().comments||[];
+    const idx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
+    if(idx > -1) {
+      if(!comments[idx].replies) comments[idx].replies = [];
+      comments[idx].replies.push({id: generateId(), userId:currentUser.username,displayName:currentUser.displayName||currentUser.username,text:txt,timestamp:Date.now()});
+      await updateDoc(ref,{comments}); input.value="";
+    }
+  };
+  window.delCmt=async(postId, cmtId, replyId=null)=>{
+    if(!confirm("Supprimer ce commentaire ?")) return;
+    const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
+    let comments=snap.data().comments||[];
+    if (replyId) {
+      const cIdx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
+      if(cIdx > -1 && comments[cIdx].replies) {
+         comments[cIdx].replies = comments[cIdx].replies.filter(r => r.id !== replyId && String(r.timestamp) !== replyId);
+      }
+    } else {
+      comments = comments.filter(c => c.id !== cmtId && String(c.timestamp) !== cmtId);
+    }
+    await updateDoc(ref,{comments});
+  };
+  window.pinCmt=async(postId, cmtId)=>{
+    const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
+    let comments=snap.data().comments||[];
+    const idx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
+    if(idx > -1) {
+      comments[idx].isPinned = !comments[idx].isPinned;
+      await updateDoc(ref,{comments});
+    }
+  };
+  
+  window.deletePost=async(id)=>{if(confirm("Supprimer ce document ?")) await deleteDoc(doc(db,"posts",id));};
+  window.deleteQuiz=async(id)=>{if(confirm("Supprimer ce quiz ?")) await deleteDoc(doc(db,"quizzes",id));};
+  window.deleteAIQuiz=async(id)=>{if(confirm("Supprimer ce quiz IA ?")) await deleteDoc(doc(db,"ai_quizzes",id)); loadAIQuizHistory();};
+  
+  /* --- SYSTEME DE PROFILS PUBLICS TIKTOK STYLE --- */
+  window.switchPubTab = (tabId) => {
+    window._pubTabActive = tabId;
+    document.querySelectorAll('#pub-tiktok-tabs .tk-tab').forEach(b => b.classList.remove('active'));
+    document.querySelector(`#pub-tiktok-tabs .tk-tab[data-ptab="${tabId}"]`).classList.add('active');
+    
+    document.querySelectorAll('.pub-tab-content').forEach(c => c.style.display = 'none');
+    document.getElementById(`pub-tab-${tabId}`).style.display = 'block';
+  
+    const fContainer = document.getElementById("pub-filter-container");
+    if(tabId === 'cours' || tabId === 'quiz') fContainer.style.display = 'block';
+    else fContainer.style.display = 'none';
+  
+    if (window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
+    if(tabId === 'likes') renderPubLikes();
+  };
+  
+  window.renderPublicProfile = (uname)=>{
+    document.querySelectorAll(".page-view").forEach(p=>p.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(b=>b.classList.remove("active"));
+    document.getElementById("page-pub-profil").classList.add("active");
+    
+    const loading = document.getElementById("pub-loading-overlay");
+    const wrapper = document.getElementById("pub-content-wrapper");
+    loading.style.display = "flex";
+    wrapper.style.display = "none";
+    window.scrollTo({top:0,behavior:"smooth"});
+  
+    setTimeout(() => {
+      const targetUser = window.usersMap.get(uname);
+      if(!targetUser){ 
+        loading.style.display="none"; 
+        showToast("Membre introuvable"); 
+        window.location.hash="#page-matieres"; return; 
+      }
+  
+      loading.style.display = "none";
+      wrapper.style.display = "block";
+  
+      window._currentViewedUser = targetUser;
+  
+      document.getElementById("pub-banner").style.backgroundImage = targetUser.banner ? `url('${targetUser.banner}')` : "";
+  
+      const imgEl=document.getElementById("pub-av-img"), initEl=document.getElementById("pub-av-init");
+      if(targetUser.avatar){
+        imgEl.src=targetUser.avatar; imgEl.style.display="block"; initEl.style.display="none";
+      } else {
+        imgEl.style.display="none"; initEl.style.display="block";
+        initEl.innerText = (targetUser.displayName||targetUser.username).split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+      }
+  
+      const badge = getBadge(targetUser);
+      document.getElementById("pub-name").innerHTML = (targetUser.displayName || targetUser.username) + badge;
+  
+      document.getElementById("pub-id").innerText   = targetUser.username;
+      document.getElementById("pub-bio").innerText  = targetUser.bio||"Aucune biographie.";
+  
+      const roleEl=document.getElementById("pub-role"); roleEl.innerText=targetUser.role||"élève";
+      roleEl.className = "rbadge " + (targetUser.role==="professeur"?"professeur":targetUser.role==="admin"?"admin":"eleve");
+  
+      const fakesCount = targetUser.fakeFollowersCount !== undefined ? targetUser.fakeFollowersCount : (targetUser.fakeFollowers || []).length;
+      const realsCount = (targetUser.followers || []).length;
+  
+      document.getElementById("pub-cnt-followers").innerText = window.formatNumber(realsCount + fakesCount);
+      document.getElementById("pub-cnt-following").innerText = window.formatNumber((targetUser.following||[]).length);
+  
+      const socBox=document.getElementById("pub-socials"); socBox.innerHTML="";
+      if(targetUser.instagram){
+        const cleanInsta = targetUser.instagram.replace("https://instagram.com/","").replace("https://www.instagram.com/","").replace("@","").trim();
+        socBox.innerHTML+=`<a href="https://instagram.com/${cleanInsta}" target="_blank" class="soc-pill insta"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg><span>${cleanInsta}</span></a>`;
+      }
+      if(targetUser.linkedin){
+        const cleanLd = targetUser.linkedin.startsWith("http") ? targetUser.linkedin : "https://"+targetUser.linkedin;
+        socBox.innerHTML+=`<a href="${cleanLd}" target="_blank" class="soc-pill linkedin"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg><span>LinkedIn</span></a>`;
+      }
+  
+      const followBtn=document.getElementById("pub-follow-btn");
+      if(currentUser && targetUser.username === currentUser.username) followBtn.style.display="none";
+      else {
+        followBtn.style.display="inline-flex";
+        if((currentUser?.following||[]).includes(targetUser.username)){ followBtn.innerText="Abonné ✓"; followBtn.className="btn-pill btn-following"; }
+        else { followBtn.innerText="S'abonner"; followBtn.className="btn-pill"; }
+      }
+  
+      if(window._pubFeedUnsub){ window._pubFeedUnsub(); window._pubFeedUnsub=null; }
+      
+      if(window._pubTabActive === 'cours') {
+        const qFeed = query(collection(db,"posts"),where("authorId","==",targetUser.username));
+        window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
+          const rawDocs = snapFeed.docs.map(d=>({id:d.id,...d.data()}));
+          document.getElementById("pub-cnt-contribs-top").innerText = rawDocs.length;
+  
+          const userMats = [...new Set(rawDocs.map(p=>p.matiere))].sort();
+          let filterBarHtml = `<button class="filter-btn ${window._pubSubjFilter==='all'?'active':''}" onclick="setPubSubjFilter('all',this)">Tout (${rawDocs.length})</button>`;
+          userMats.forEach(mName => {
+            const icon = window.subjectsMap.get(mName)||"📚";
+            const cnt = rawDocs.filter(p=>p.matiere===mName).length;
+            filterBarHtml += `<button class="filter-btn ${window._pubSubjFilter===mName?'active':''}" onclick="setPubSubjFilter('${esc(mName)}',this)">${icon} ${mName} (${cnt})</button>`;
+          });
+          document.getElementById("pub-subj-filter-bar").innerHTML = filterBarHtml;
+  
+          const filteredDocs = window._pubSubjFilter==='all' ? rawDocs : rawDocs.filter(p=>p.matiere===window._pubSubjFilter);
+          renderFeedFromDocs(filteredDocs, document.getElementById("pub-feed"), "Aucun document partagé pour ce filtre.", 'recent', 'pubfeed');
+        });
+      } else if (window._pubTabActive === 'quiz') {
+        const qFeed = query(collection(db,"quizzes"),where("authorId","==",targetUser.username));
+        window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
+          const rawDocs = snapFeed.docs.map(d=>({id:d.id,...d.data()}));
+          
+          const userMats = [...new Set(rawDocs.map(p=>p.matiere))].sort();
+          let filterBarHtml = `<button class="filter-btn ${window._pubSubjFilter==='all'?'active':''}" onclick="setPubSubjFilter('all',this)">Tout (${rawDocs.length})</button>`;
+          userMats.forEach(mName => {
+            const icon = window.subjectsMap.get(mName)||"📚";
+            const cnt = rawDocs.filter(p=>p.matiere===mName).length;
+            filterBarHtml += `<button class="filter-btn ${window._pubSubjFilter===mName?'active':''}" onclick="setPubSubjFilter('${esc(mName)}',this)">${icon} ${mName} (${cnt})</button>`;
+          });
+          document.getElementById("pub-subj-filter-bar").innerHTML = filterBarHtml;
+  
+          const filteredDocs = window._pubSubjFilter==='all' ? rawDocs : rawDocs.filter(p=>p.matiere===window._pubSubjFilter);
+          renderQuizFeedToContainer(filteredDocs, document.getElementById("pub-quiz-feed"), "Aucun quiz partagé pour ce filtre.");
+        });
+      } else if (window._pubTabActive === 'quiz-ia') {
+        const qFeed = query(collection(db,"ai_quizzes"),where("authorId","==",targetUser.username));
+        window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
+          const rawDocs = snapFeed.docs.map(d=>({id:d.id,...d.data()}));
+          renderQuizFeedToContainer(rawDocs, document.getElementById("pub-quiz-ia-feed"), "Aucun quiz IA généré pour l'instant.");
+        });
+      } else if (window._pubTabActive === 'likes') {
+        if(!window._pubLikesUnsub) loadPubLikes();
+      }
+    }, 100);
+  };
+  
+  window.setPubSubjFilter = (val, btn)=>{
+    window._pubSubjFilter=val;
+    document.querySelectorAll("#pub-subj-filter-bar .filter-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    if(window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
+  };
+  
+  window.loadPubLikes = () => {
+    if(!window._currentViewedUser) return;
+    if(window._pubLikesUnsub) { window._pubLikesUnsub(); window._pubLikesUnsub=null; }
+  
+    const uname = window._currentViewedUser.username;
+    const qLikes = query(collection(db, "posts"), where("likes", "array-contains", uname));
+  
+    document.getElementById("pub-likes-feed").innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
+  
+    window._pubLikesUnsub = onSnapshot(qLikes, snap => {
+      window._pubLikesData = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      renderPubLikes();
+    });
+  };
+  
+  window.renderPubLikes = () => {
+    if(!window._pubLikesData) return;
+    const sortOrder = document.getElementById("pub-likes-sort").value;
+    const rawDocs = window._pubLikesData;
+  
+    renderFeedFromDocs(rawDocs, document.getElementById("pub-likes-feed"), "Aucun document aimé pour le moment.", sortOrder, 'publikes');
+  };
+  
+  window.toggleFollowCurrentProfile = async()=>{
+    if(!window._currentViewedUser || !currentUser) return;
+    const targetUname = window._currentViewedUser.username; if(targetUname === currentUser.username) return;
+    const targetDoc = window.usersMap.get(targetUname); if(!targetDoc) return;
+  
+    let myFollowing=[...(currentUser.following||[])], theirFollowers=[...(targetDoc.followers||[])];
+    const isFollowing = myFollowing.includes(targetUname);
+  
+    if(isFollowing){
+      myFollowing=myFollowing.filter(x=>x!==targetUname); theirFollowers=theirFollowers.filter(x=>x!==currentUser.username);
+    } else {
+      myFollowing.push(targetUname); theirFollowers.push(currentUser.username);
+    }
+  
+    currentUser.following=myFollowing; localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
+    const fBtn=document.getElementById("pub-follow-btn");
+    if(fBtn){ if(!isFollowing){fBtn.innerText="Abonné ✓";fBtn.className="btn-pill btn-following";}else{fBtn.innerText="S'abonner";fBtn.className="btn-pill";} }
+  
+    await Promise.all([updateDoc(doc(db,"users",currentUser.id),{following:myFollowing}), updateDoc(doc(db,"users",targetDoc.id),{followers:theirFollowers})]);
+  };
+  
+  window.openFollowersModal = (mode)=>{
+    if(!window._currentViewedUser) return;
+    const isFollowers = mode === 'followers';
+    document.getElementById("m-follows-title").innerText=isFollowers?"Abonnés":"Abonnements";
+    
+    const box=document.getElementById("follows-list-box"); box.innerHTML="";
+    
+    const realUsernames = isFollowers ? (window._currentViewedUser.followers || []) : (window._currentViewedUser.following || []);
+    let fullList = realUsernames.map(u => window.usersMap.get(u)).filter(Boolean);
+  
+    if (isFollowers && window._currentViewedUser.fakeFollowers) {
+      fullList = [...fullList, ...window._currentViewedUser.fakeFollowers];
+    }
+  
+    const totalAvailable = fullList.length;
+    fullList = fullList.slice(0, 50);
+  
+    if(fullList.length===0) box.innerHTML=`<div class="empty-text" style="padding:40px 0">Personne ici</div>`;
+    else {
+      fullList.forEach(u=>{
+        const nameDisp = u.displayName || u.username;
+        const roleDisp = u.role || "élève";
+        const avHtml = u.avatar ? `<img src="${u.avatar}" style="display:block;">` : `<span style="display:block">${nameDisp.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase()}</span>`;
+        const badge = getBadge(u);
+        
+        box.innerHTML+=`<div class="follow-user-row" onclick="if(!'${u.isFake||''}'){ window.location.hash='#${esc(u.username)}'; closeModal('m-follows'); }">
+          <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
+          <div style="min-width:0;flex:1">
+            <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nameDisp}${badge}</div>
+            <div style="font-size:13px;color:var(--ink-m)">@${u.username} • <span style="text-transform:capitalize">${roleDisp}</span></div>
+          </div>
+        </div>`;
+      });
+      if (totalAvailable > 50) {
+        box.innerHTML += `<div style="text-align:center; padding: 12px; font-size:13px; color:var(--ink-m); margin-top:8px; border-top: 1px solid var(--hl);">L'affichage est limité aux 50 premiers pour préserver la vitesse.</div>`;
+      }
+    }
+    openModal("m-follows");
+  };
+  
+  window.openCurrentDMProfile = () => {
+    if (window._activeChatPartnerId) {
+      window.location.hash = '#' + window._activeChatPartnerId;
+    }
+  };
+  
+  function loadDMChats() {
+    if (!currentUser) return;
+    if (window._dmChatsUnsub) window._dmChatsUnsub();
+    const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
+    window._dmChatsUnsub = onSnapshot(q, snap => {
+      const box = document.getElementById("dm-contacts-list");
+      if (snap.empty) { box.innerHTML = `<div class="empty-text">Aucune discussion</div>`; return; }
+      
+      let html = "";
+      let chats = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (b.lastTimestamp||0) - (a.lastTimestamp||0));
+      
+      chats.forEach(c => {
+        const partnerUname = c.participants.find(u => u !== currentUser.username);
+        const partnerUser = window.usersMap.get(partnerUname) || {username: partnerUname, displayName: partnerUname};
+        const dName = partnerUser.displayName || partnerUser.username;
+        const partnerBadge = getBadge(partnerUser);
+        const init = dName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+        const avHtml = partnerUser.avatar ? `<img src="${partnerUser.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
+        
+        const isActive = window._activeChatId === c.id;
+        html += `
+          <div class="dm-contact-row ${isActive?'active':''}" onclick="openChat('${c.id}', '${partnerUname}')">
+             <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
+             <div style="flex:1;min-width:0;">
+               <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dName}${partnerBadge}</div>
+               <div style="font-size:13px;color:var(--ink-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.lastMessage||'Nouvelle discussion'}</div>
+             </div>
+          </div>
+        `;
+      });
+      box.innerHTML = html;
+    });
+  }
+  
+  window.renderContactSearch = () => {
+    const v = document.getElementById("search-contact").value.trim().toLowerCase();
+    const box = document.getElementById("new-chat-list");
+    let html = "";
+    let count = 0;
+    
+    for (const [uname, u] of window.usersMap.entries()) {
+      if (uname === currentUser.username) continue;
+      if (u.allowMessages === false) continue;
+      const dName = u.displayName || uname;
+      if (!v || dName.toLowerCase().includes(v) || uname.includes(v)) {
+        const init = dName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+        const avHtml = u.avatar ? `<img src="${u.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
+        const uBadge = getBadge(u);
+        html += `
+          <div class="follow-user-row" onclick="startNewChat('${uname}')">
+            <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
+            <div style="min-width:0;flex:1"><div style="font-weight:600;font-size:15px; display:flex; align-items:center;">${dName}${uBadge}</div><div style="font-size:13px;color:var(--ink-m)">@${uname}</div></div>
+          </div>
+        `;
+        count++;
+      }
+    }
+    if (count === 0) html = `<div class="empty-text">Aucun membre trouvé</div>`;
+    box.innerHTML = html;
+  };
+  
+  window.startNewChat = async (targetUname) => {
+    if (!currentUser) return;
+    closeModal('m-new-chat');
+    const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
+    const snap = await getDocs(q);
+    let existingChatId = null;
+    snap.forEach(d => {
+      if (d.data().participants.includes(targetUname)) existingChatId = d.id;
+    });
+    
+    if (existingChatId) {
+      openChat(existingChatId, targetUname);
+    } else {
+      const newRef = doc(collection(db, "dm_chats"));
+      await setDoc(newRef, { participants: [currentUser.username, targetUname], lastMessage: "", lastTimestamp: Date.now() });
+      openChat(newRef.id, targetUname);
+    }
+  };
+  
+  window.openChat = (chatId, partnerUname) => {
+    window._activeChatId = chatId;
+    window._activeChatPartnerId = partnerUname;
+    
+    document.getElementById("dm-form").style.display = "flex";
+    document.querySelectorAll(".dm-contact-row").forEach(r => r.classList.remove("active"));
+    
+    if(window.innerWidth <= 850) {
+      document.getElementById("dm-sidebar").classList.add("hide-mobile");
+      document.getElementById("dm-chat-area").classList.remove("hide-mobile");
+    }
+  
+    const pUser = window.usersMap.get(partnerUname) || {username: partnerUname, displayName: partnerUname};
+    const pBadge = getBadge(pUser);
+    document.getElementById("dm-active-name").innerHTML = (pUser.displayName || pUser.username) + pBadge;
+    document.getElementById("dm-active-role").innerText = "@" + pUser.username + (pUser.role ? " • " + pUser.role : "");
+    const init = (pUser.displayName||pUser.username).split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+    const avImg = document.getElementById("dm-active-av");
+    const avInit = document.getElementById("dm-active-init");
+    if(pUser.avatar){ avImg.src=pUser.avatar; avImg.style.display="block"; avInit.style.display="none"; }
+    else { avImg.style.display="none"; avInit.style.display="block"; avInit.innerText=init; }
+  
+    if(window._dmMsgsUnsub) window._dmMsgsUnsub();
+    
+    const q = query(collection(db, "dm_messages"), where("chatId", "==", chatId));
+    window._dmMsgsUnsub = onSnapshot(q, snap => {
+      const docs = snap.docs.map(d => d.data());
+      docs.sort((a,b) => (a.timestamp||0) - (b.timestamp||0)); 
+  
+      const box = document.getElementById("dm-msgs-box");
+      box.innerHTML = "";
+      docs.forEach(m => {
+        const isMe = m.senderId === currentUser.username;
+        const dStr = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        let attachHtml = "";
+        if (m.fileUrl) {
+           if (m.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.fileUrl.includes("res.cloudinary.com/")) {
+             attachHtml = `<div style="margin-bottom:6px;"><a href="${m.fileUrl}" target="_blank"><img src="${m.fileUrl}" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover;"></a></div>`;
+           } else {
+             attachHtml = `<div style="margin-bottom:6px;"><a href="${m.fileUrl}" target="_blank" style="color:inherit;text-decoration:underline;">📄 Pièce jointe</a></div>`;
+           }
+        }
+        
+        box.innerHTML += `
+          <div class="dm-msg-wrapper ${isMe?'me':'them'}">
+            <div class="dm-msg-bubble">
+              ${attachHtml}
+              ${m.text ? `<div>${m.text}</div>` : ''}
+            </div>
+            <div class="dm-msg-time">${dStr}</div>
+          </div>
+        `;
+      });
+      box.scrollTop = box.scrollHeight;
+    });
+  };
+  
+  window.backToDMSidebar = () => {
+    document.getElementById("dm-sidebar").classList.remove("hide-mobile");
+    document.getElementById("dm-chat-area").classList.add("hide-mobile");
+  };
+  
+  window.handleDMFile = (e) => {
+    const file=e.target.files[0]; if(!file) return;
+    if(file.size>25*1024*1024){ e.target.value=""; openModal("m-filesize"); return; }
+    window._dmFileToUpload = file;
+    document.getElementById("dm-file-preview").style.display = "block";
+    document.getElementById("dm-file-preview").innerText = "📎 " + file.name + " prêt à envoyer";
+  };
+  
+  window.handleSendDM = async (e) => {
+    e.preventDefault();
+    if(!window._activeChatId) return;
+    const input = document.getElementById("dm-text-input");
+    const txt = input.value.trim();
+    
+    if(!txt && !window._dmFileToUpload) return;
+    
+    const btn = e.target.querySelector("button");
+    btn.disabled = true;
+  
+    let fileUrl = "";
+    if(window._dmFileToUpload) {
+      try { fileUrl = await uploadToCloudinary(window._dmFileToUpload); } catch(er) { showToast("Erreur upload pièce jointe"); btn.disabled=false; return; }
+    }
+  
+    await addDoc(collection(db, "dm_messages"), {
+      chatId: window._activeChatId,
+      senderId: currentUser.username,
+      text: txt,
+      fileUrl: fileUrl,
+      timestamp: Date.now()
+    });
+  
+    const shortMsg = txt ? (txt.length > 25 ? txt.substring(0,25)+"..." : txt) : "Pièce jointe 📎";
+    await updateDoc(doc(db, "dm_chats", window._activeChatId), {
+      lastMessage: shortMsg,
+      lastTimestamp: Date.now()
+    });
+  
+    const pUser = window.usersMap.get(window._activeChatPartnerId);
+    if (pUser) sendEmailNotif('message', pUser);
+  
+    input.value = "";
+    window._dmFileToUpload = null;
+    document.getElementById("dm-file-preview").style.display = "none";
+    document.getElementById("dm-file-input").value = "";
+    btn.disabled = false;
+  };
+  
+  /* --- SYSTEME DE QUIZ --- */
+  
+  // API GROQ Call (Sécurisée pour éviter de planter sur du texte avant/après le JSON)
+  async function callGroqAPI(systemPrompt, userPrompt) {
+    const response = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama3-8b-8192", 
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        temperature: 0.3 // Plus bas pour avoir un JSON plus strict
+      })
+    });
+  
+    if (!response.ok) throw new Error("Erreur de l'API GROQ: " + response.status);
+    const data = await response.json();
+    let text = data.choices[0].message.content;
+    
+    // Utiliser une Regex pour extraire de force la partie JSON, ignorant ce que l'IA a pu rajouter autour
+    const jsonRegex = /\{[\s\S]*\}/;
+    const match = text.match(jsonRegex);
+    if (match) {
+      text = match[0];
+    }
+  
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error("Format IA reçu (non-parsable):", text);
+      throw new Error("L'IA n'a pas respecté le format demandé.");
+    }
+  }
+  
+  // 1. CREER UN QUIZ MANUEL
+  let quizQuestionCount = 0;
+  window.addQuizQuestionField = () => {
+    if (quizQuestionCount >= 50) { showToast("Maximum 50 questions."); return; }
+    quizQuestionCount++;
+    const container = document.getElementById("quiz-questions-container");
+    
+    const html = `
+      <div class="quiz-question-box" id="qbox-${quizQuestionCount}">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; font-size:16px;">Question ${quizQuestionCount}</h3>
+          <button class="btn-ghost btn-sm del" onclick="document.getElementById('qbox-${quizQuestionCount}').remove()">Supprimer</button>
+        </div>
+        <input type="text" class="input-q-text" placeholder="Pose ta question..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--hl); margin-bottom:12px;" required>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="radio" name="correct-${quizQuestionCount}" value="0" checked title="Bonne réponse">
+            <input type="text" class="input-opt" placeholder="Réponse 1 (Bonne réponse par défaut)" style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--hl);" required>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="radio" name="correct-${quizQuestionCount}" value="1">
+            <input type="text" class="input-opt" placeholder="Réponse 2" style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--hl);" required>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="radio" name="correct-${quizQuestionCount}" value="2">
+            <input type="text" class="input-opt" placeholder="Réponse 3 (Optionnel)" style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--hl);">
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="radio" name="correct-${quizQuestionCount}" value="3">
+            <input type="text" class="input-opt" placeholder="Réponse 4 (Optionnel)" style="flex:1; padding:8px; border-radius:8px; border:1px solid var(--hl);">
           </div>
         </div>
-        <div class="cmt-actions">
-          <button onclick="toggleReplyBox('${pId}','${cmtId}','${context}')">Répondre</button>
-          ${canPin ? `<button onclick="pinCmt('${pId}','${cmtId}')">${c.isPinned?'Désépingler':'Épingler'}</button>`:''}
-          ${canModCmt ? `<button class="del" onclick="delCmt('${pId}','${cmtId}')">Supprimer</button>`:''}
-        </div>
-        ${repliesHTML ? `<div class="cmt-replies">${repliesHTML}</div>` : ''}
-        <form class="cmt-form" id="reply-form-${context}-${pId}-${cmtId}" style="display:none;" onsubmit="addReply(event,'${pId}','${cmtId}')">
-          <input type="text" placeholder="Répondre..." required>
-          <button type="submit" class="cmt-send">Envoyer</button>
-        </form>
-      </div>`;
+        <input type="text" class="input-just" placeholder="Explication (affichée lors de la correction) - Facultatif" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--hl); margin-top:12px;">
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+  };
+  
+  window.handleCreateManualQuiz = async () => {
+    const title = document.getElementById("quiz-create-title").value.trim();
+    const matiere = document.getElementById("quiz-create-matiere").value;
+    const desc = document.getElementById("quiz-create-desc").value.trim();
+    
+    if (!title || !matiere) { showToast("Titre et matière requis."); return; }
+    
+    // CORRECTION : On cible UNIQUEMENT les questions du créateur (et non celles de la modale pour y répondre)
+    const qBoxes = document.querySelectorAll("#quiz-questions-container .quiz-question-box");
+    if (qBoxes.length === 0) { showToast("Ajoute au moins une question."); return; }
+  
+    const questions = [];
+    let valid = true;
+  
+    qBoxes.forEach((box, index) => {
+      const qTextInput = box.querySelector(".input-q-text");
+      if(!qTextInput) return; // Sécurité
+      
+      const qText = qTextInput.value.trim();
+      const optsInputs = box.querySelectorAll(".input-opt");
+      const radios = box.querySelectorAll(`input[type="radio"]`);
+      const just = box.querySelector(".input-just").value.trim();
+  
+      if (!qText) valid = false;
+  
+      const options = [];
+      let correctIndex = 0;
+  
+      optsInputs.forEach((inp, idx) => {
+        const val = inp.value.trim();
+        if (val) {
+          options.push(val);
+          if (radios[idx].checked) correctIndex = options.length - 1;
+        }
+      });
+  
+      if (options.length < 2) valid = false;
+  
+      questions.push({
+        question: qText,
+        options: options,
+        correctIndex: correctIndex,
+        justification: just
+      });
     });
-
-    const dateStr=p.timestamp?new Date(p.timestamp).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Date inconnue";
-
-    container.innerHTML+=`
-      <div class="post-card">
-        <div style="display:flex;flex-direction:column;gap:14px;flex:1">
+  
+    if (!valid || questions.length === 0) { showToast("Vérifie que chaque question a un texte et au moins 2 réponses."); return; }
+  
+    const quiz = {
+      title, matiere, description: desc,
+      questions, isAI: false,
+      authorId: currentUser.username, authorDisplayName: currentUser.displayName || currentUser.username,
+      authorAvatar: currentUser.avatar || "", authorRole: currentUser.role || "élève",
+      timestamp: Date.now()
+    };
+  
+    try {
+      await addDoc(collection(db, "quizzes"), quiz);
+      document.getElementById("quiz-create-title").value = "";
+      document.getElementById("quiz-create-desc").value = "";
+      document.getElementById("quiz-questions-container").innerHTML = "";
+      quizQuestionCount = 0;
+      syncContrib();
+      showToast("Quiz publié avec succès !");
+      switchTab('quiz');
+    } catch(e) { showToast("Erreur lors de la publication."); }
+  };
+  
+  // 2. AFFICHER LES FEED QUIZ
+  function loadQuizFeed() {
+    if(window._quizUnsub){window._quizUnsub();window._quizUnsub=null;}
+    const container = document.getElementById("quiz-feed"); if(!container) return;
+    container.innerHTML=`<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
+    
+    const q = window._quizFilter.subject==="all"
+      ? query(collection(db,"quizzes"))
+      : query(collection(db,"quizzes"),where("matiere","==",window._quizFilter.subject));
+      
+    window._quizUnsub = onSnapshot(q, snap => renderQuizFeedToContainer(snap.docs.map(d=>({id:d.id,...d.data()})), container, "Aucun quiz disponible", window._quizFilter.order));
+  }
+  
+  function renderQuizFeedToContainer(quizzesArray, container, emptyMsg, sortOrder = 'recent') {
+    container.innerHTML="";
+    if(quizzesArray.length===0){
+      container.innerHTML=`<div class="empty-text">${emptyMsg||"Aucun quiz pour l'instant"}</div>`; return;
+    }
+  
+    if (sortOrder === 'oldest') {
+      quizzesArray.sort((a,b) => (a.timestamp||0) - (b.timestamp||0));
+    } else {
+      quizzesArray.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+    }
+  
+    quizzesArray.forEach(q => {
+      const qId = q.id;
+      const isAdmin = currentUser?.role==="admin"||(currentUser?.subRoles&&currentUser.subRoles.includes("admin"));
+      const canDel = isAdmin || q.authorId === currentUser?.username;
+  
+      const liveAuthor = window.usersMap.get(q.authorId) || {};
+      const liveRole   = liveAuthor.role || q.authorRole || "élève";
+      const liveName   = liveAuthor.displayName || q.authorDisplayName || q.authorId;
+      const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : q.authorAvatar;
+      const authorBadge = getBadge(liveAuthor);
+      const subjIcon   = window.subjectsMap.get(q.matiere) || "📚";
+  
+      const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
+      const roleClass = liveRole==="professeur"?"professeur":liveRole==="admin"?"admin":"eleve";
+      const dateStr = q.timestamp ? new Date(q.timestamp).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}) : "Inconnue";
+  
+      let lbHtml = "";
+      if (!q.isAI) {
+        lbHtml = `
+        <div class="leaderboard-box" id="lb-${qId}">
+          <div style="font-size:12px; font-weight:700; color:var(--ink-m); margin-bottom:8px; text-transform:uppercase;">🏆 Top 3 Classement</div>
+          <div id="lb-content-${qId}" style="font-size:13px; color:var(--ink);">Chargement...</div>
+        </div>`;
+        loadLeaderboard(qId);
+      }
+  
+      container.innerHTML += `
+        <div class="quiz-card">
           <div class="post-header">
-            <a href="#${p.authorId}" class="post-av">${avContent}</a>
+            <a href="#${q.authorId}" class="post-av">${avContent}</a>
             <div style="flex:1;min-width:0">
-              <a href="#${p.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
+              <a href="#${q.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
               <div class="post-meta">
                 <span class="rbadge ${roleClass}">${liveRole}</span>
-                <span class="type-tag ${p.type}">${typeLabel}</span>
-                <span class="subj-tag">${subjIcon} ${p.matiere}</span>
+                <span class="subj-tag">${subjIcon} ${q.matiere}</span>
+                <span class="type-tag" style="background:var(--primary); color:#fff;">${q.isAI ? 'Quiz IA' : 'Quiz'}</span>
               </div>
             </div>
-            ${canDel?`<button class="btn-danger btn-sm" onclick="deletePost('${pId}')">Supprimer</button>`:""}
+            ${canDel ? `<button class="btn-danger btn-sm" onclick="${q.isAI ? 'deleteAIQuiz' : 'deleteQuiz'}('${qId}')">Supprimer</button>` : ""}
           </div>
           <div>
-            <div class="post-title">${p.title}</div>
-            ${p.description?`<p class="post-desc">${p.description}</p>`:""}
+            <div class="post-title">${q.title}</div>
+            ${q.description ? `<p class="post-desc">${q.description}</p>` : ""}
+            <div class="caption mt-1">${q.questions.length} questions • Créé le ${dateStr}</div>
           </div>
-          ${mediaBox}
-          ${fileChip}
-        </div>
-        <div>
-          <div class="post-date">Publié le ${dateStr}</div>
-          <div class="post-actions">
-            <button class="like-btn ${hasLiked?"liked":""}" onclick="toggleLike('${pId}')">
-              ${hasLiked?"❤️":"🤍"} ${likeCount}
-            </button>
-            <button class="comment-tog-btn" onclick="toggleComments('${pId}','${context}')">💬 ${commentsCount} commentaires</button>
-          </div>
-          <div class="comments-wrap" id="comments-wrap-${context}-${pId}">
-            <div class="comments-box">
-              ${cmtHTML}
-            </div>
-            <form class="cmt-form mt-1" onsubmit="addComment(event,'${pId}')">
-              <input type="text" placeholder="Ajouter un commentaire…" required>
-              <button type="submit" class="cmt-send">Commenter</button>
-            </form>
-          </div>
-        </div>
-      </div>`;
-  });
-}
-
-function loadAnnonces(){
-  const isAdmin=currentUser.role==="admin"||(currentUser.subRoles&&currentUser.subRoles.includes("admin"));
-  const zone=document.getElementById("annonces-zone"); if(!zone) return;
-
-  onSnapshot(collection(db,"annonces"),(snap)=>{
-    const titleRow=`<div class="ann-section-title">
-      📢 Annonces
-      ${isAdmin?`<button class="btn-pill-van btn-sm" onclick="openAnnonceModal('')">+ Nouvelle annonce</button>`:""}
-    </div>`;
-    if(snap.empty){
-      zone.innerHTML = isAdmin ? titleRow+`<div class="empty-text">Aucune annonce pour le moment</div>` : ""; return;
-    }
-    let cards="";
-    snap.docs.sort((a,b)=>(b.data().timestamp||0)-(a.data().timestamp||0)).forEach(d=>{
-      const a=d.data();
-      cards+=`<div class="ann-card"><div class="ann-card-title">${a.title}</div><div class="ann-card-body">${a.body||""}</div>
-      ${isAdmin?`<div class="ann-actions"><button class="btn-ghost btn-sm" onclick="openAnnonceModal('${d.id}','${esc(a.title)}','${esc(a.body||'')}')">Modifier</button><button class="btn-danger btn-sm" onclick="delAnnonce('${d.id}')">Supprimer</button></div>`:""}</div>`;
+          <button class="btn-pill mt-1" style="justify-content:center; width:100%;" onclick="checkAndStartQuiz('${qId}', ${q.isAI})">Commencer le quiz</button>
+          ${lbHtml}
+        </div>`;
     });
-    zone.innerHTML=titleRow+`<div style="display:flex;flex-direction:column;gap:12px;grid-column:1/-1">${cards}</div>`;
-  });
-}
-
-window.openAnnonceModal=(id,title="",body="")=>{
-  document.getElementById("m-ann-title").innerText=id?"Modifier l'annonce":"Nouvelle annonce";
-  document.getElementById("ann-edit-id").value=id; document.getElementById("ann-title").value=title; document.getElementById("ann-body").value=body;
-  openModal("m-ann");
-};
-window.saveAnnonce=async()=>{
-  const id=document.getElementById("ann-edit-id").value, title=document.getElementById("ann-title").value.trim(), body=document.getElementById("ann-body").value.trim();
-  if(!title){showToast("Titre requis.");return;}
-  if(id) await updateDoc(doc(db,"annonces",id),{title,body}); else await addDoc(collection(db,"annonces"),{title,body,timestamp:Date.now()});
-  closeModal("m-ann"); showToast("Annonce publiée ✓");
-};
-window.delAnnonce=async(id)=>{if(confirm("Supprimer cette annonce ?")) await deleteDoc(doc(db,"annonces",id));};
-
-window.handleFileSelect=(e)=>{
-  const file=e.target.files[0]; if(!file) return;
-  if(file.size>25*1024*1024){
-    e.target.value=""; window._uploadedFile=null; document.getElementById("file-prev").style.display="none"; openModal("m-filesize"); return;
   }
-  window._uploadedFile=file;
-  const bar=document.getElementById("file-prev"); bar.style.display="flex";
-  document.getElementById("file-prev-name").innerText=file.name;
-  document.getElementById("file-prev-icon").innerText=file.type==="application/pdf"?"📄":"🖼️"; document.getElementById("post-url").value="";
-};
-window.clearFile=()=>{
-  window._uploadedFile=null; document.getElementById("post-file").value=""; document.getElementById("file-prev").style.display="none";
-};
-
-window.handleCreatePost=async()=>{
-  const title=document.getElementById("post-title").value.trim(), matiere=document.getElementById("post-matiere").value, type=document.getElementById("post-type").value, desc=document.getElementById("post-desc").value.trim(), urlInput=document.getElementById("post-url").value.trim();
-  if(!title||!matiere){showToast("Titre et matière requis.");return;}
-
-  let fileUrl="", fileName="", fileType="";
-
-  if(window._uploadedFile){
-    const btn=document.querySelector('[onclick="handleCreatePost()"]'); if(btn){btn.disabled=true;btn.innerText="Upload en cours…";}
-    try{
-      fileUrl=await uploadToCloudinary(window._uploadedFile); fileName=window._uploadedFile.name; fileType=window._uploadedFile.type;
-    } catch(err){
-      showToast("Erreur upload Cloudinary."); if(btn){btn.disabled=false;btn.innerText="Partager avec la classe";} return;
-    }
-    if(btn){btn.disabled=false;btn.innerText="Partager avec la classe";}
-  }
-
-  const post={
-    title,matiere,type,description:desc,fileData:"",fileName,fileType,
-    url:fileUrl||urlInput||"",authorId:currentUser.username,authorDisplayName:currentUser.displayName||currentUser.username,
-    authorAvatar:currentUser.avatar||"",authorRole:currentUser.role||"élève",likes:[],comments:[],timestamp:Date.now()
-  };
-
-  try{
-    await addDoc(collection(db,"posts"),post);
-    document.getElementById("post-title").value=""; document.getElementById("post-desc").value=""; document.getElementById("post-url").value=""; clearFile(); syncContrib(); showToast("Partagé avec la classe ✓");
-    
-    if (currentUser.followers && currentUser.followers.length > 0) {
-       currentUser.followers.forEach(uname => {
-         const fUser = window.usersMap.get(uname);
-         if (fUser) sendEmailNotif('post', fUser);
-       });
-    }
-
-    if(type==="cours") switchTab('cours'); else switchTab('fichesrev');
-  } catch(e){ showToast("Erreur d'envoi."); }
-};
-
-const dz=document.getElementById("drop-zone");
-if(dz){
-  dz.addEventListener("dragover",e=>{e.preventDefault();dz.style.borderColor="var(--primary)";});
-  dz.addEventListener("dragleave",()=>{dz.style.borderColor="";});
-  dz.addEventListener("drop",e=>{
-    e.preventDefault(); dz.style.borderColor=""; const files=e.dataTransfer.files;
-    if(files[0]){ const inp=document.getElementById("post-file"), dt=new DataTransfer(); dt.items.add(files[0]); inp.files=dt.files; handleFileSelect({target:inp}); }
-  });
-}
-
-window.toggleLike=async(postId)=>{
-  const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
-  let likes=snap.data().likes||[];
-  if(likes.includes(currentUser.username)) likes=likes.filter(u=>u!==currentUser.username); else likes.push(currentUser.username);
-  await updateDoc(ref,{likes});
-};
-
-window.toggleComments = (postId, context = 'main') => {
-  const wrp = document.getElementById(`comments-wrap-${context}-${postId}`);
-  if(wrp) wrp.classList.toggle('show');
-};
-window.toggleReplyBox = (postId, cmtId, context = 'main') => {
-  const f = document.getElementById(`reply-form-${context}-${postId}-${cmtId}`);
-  if(f) f.style.display = f.style.display === 'none' ? 'flex' : 'none';
-};
-
-function generateId() { return Date.now().toString() + Math.random().toString(36).substr(2,5); }
-
-window.addComment=async(e,postId)=>{
-  e.preventDefault(); const input=e.target.querySelector("input"), txt=input.value.trim(); if(!txt) return;
-  const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
-  const comments=snap.data().comments||[];
-  comments.push({id: generateId(), userId:currentUser.username,displayName:currentUser.displayName||currentUser.username,text:txt,timestamp:Date.now(), isPinned: false, replies:[]});
-  await updateDoc(ref,{comments}); input.value="";
-};
-window.addReply=async(e,postId,cmtId)=>{
-  e.preventDefault(); const input=e.target.querySelector("input"), txt=input.value.trim(); if(!txt) return;
-  const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
-  const comments=snap.data().comments||[];
-  const idx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
-  if(idx > -1) {
-    if(!comments[idx].replies) comments[idx].replies = [];
-    comments[idx].replies.push({id: generateId(), userId:currentUser.username,displayName:currentUser.displayName||currentUser.username,text:txt,timestamp:Date.now()});
-    await updateDoc(ref,{comments}); input.value="";
-  }
-};
-window.delCmt=async(postId, cmtId, replyId=null)=>{
-  if(!confirm("Supprimer ce commentaire ?")) return;
-  const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
-  let comments=snap.data().comments||[];
-  if (replyId) {
-    const cIdx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
-    if(cIdx > -1 && comments[cIdx].replies) {
-       comments[cIdx].replies = comments[cIdx].replies.filter(r => r.id !== replyId && String(r.timestamp) !== replyId);
-    }
-  } else {
-    comments = comments.filter(c => c.id !== cmtId && String(c.timestamp) !== cmtId);
-  }
-  await updateDoc(ref,{comments});
-};
-window.pinCmt=async(postId, cmtId)=>{
-  const ref=doc(db,"posts",postId), snap=await getDoc(ref); if(!snap.exists()) return;
-  let comments=snap.data().comments||[];
-  const idx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
-  if(idx > -1) {
-    comments[idx].isPinned = !comments[idx].isPinned;
-    await updateDoc(ref,{comments});
-  }
-};
-
-window.deletePost=async(id)=>{if(confirm("Supprimer ce document ?")) await deleteDoc(doc(db,"posts",id));};
-
-window.renderPublicProfile = (uname)=>{
-  document.querySelectorAll(".page-view").forEach(p=>p.classList.remove("active"));
-  document.querySelectorAll(".nav-tab").forEach(b=>b.classList.remove("active"));
-  document.getElementById("page-pub-profil").classList.add("active");
   
-  const loading = document.getElementById("pub-loading-overlay");
-  const wrapper = document.getElementById("pub-content-wrapper");
-  loading.style.display = "flex";
-  wrapper.style.display = "none";
-  window.scrollTo({top:0,behavior:"smooth"});
-
-  setTimeout(() => {
-    const targetUser = window.usersMap.get(uname);
-    if(!targetUser){ 
-      loading.style.display="none"; 
-      showToast("Membre introuvable"); 
-      window.location.hash="#page-matieres"; return; 
-    }
-
-    loading.style.display = "none";
-    wrapper.style.display = "block";
-
-    window._currentViewedUser = targetUser;
-
-    document.getElementById("pub-banner").style.backgroundImage = targetUser.banner ? `url('${targetUser.banner}')` : "";
-
-    const imgEl=document.getElementById("pub-av-img"), initEl=document.getElementById("pub-av-init");
-    if(targetUser.avatar){
-      imgEl.src=targetUser.avatar; imgEl.style.display="block"; initEl.style.display="none";
-    } else {
-      imgEl.style.display="none"; initEl.style.display="block";
-      initEl.innerText = (targetUser.displayName||targetUser.username).split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
-    }
-
-    const badge = getBadge(targetUser);
-    document.getElementById("pub-name").innerHTML = (targetUser.displayName || targetUser.username) + badge;
-
-    document.getElementById("pub-id").innerText   = targetUser.username;
-    document.getElementById("pub-bio").innerText  = targetUser.bio||"Aucune biographie.";
-
-    const roleEl=document.getElementById("pub-role"); roleEl.innerText=targetUser.role||"élève";
-    roleEl.className = "rbadge " + (targetUser.role==="professeur"?"professeur":targetUser.role==="admin"?"admin":"eleve");
-
-    const fakesCount = targetUser.fakeFollowersCount !== undefined ? targetUser.fakeFollowersCount : (targetUser.fakeFollowers || []).length;
-    const realsCount = (targetUser.followers || []).length;
-
-    document.getElementById("pub-cnt-followers").innerText = window.formatNumber(realsCount + fakesCount);
-    document.getElementById("pub-cnt-following").innerText = window.formatNumber((targetUser.following||[]).length);
-
-    const socBox=document.getElementById("pub-socials"); socBox.innerHTML="";
-    if(targetUser.instagram){
-      const cleanInsta = targetUser.instagram.replace("https://instagram.com/","").replace("https://www.instagram.com/","").replace("@","").trim();
-      socBox.innerHTML+=`<a href="https://instagram.com/${cleanInsta}" target="_blank" class="soc-pill insta"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg><span>${cleanInsta}</span></a>`;
-    }
-    if(targetUser.linkedin){
-      const cleanLd = targetUser.linkedin.startsWith("http") ? targetUser.linkedin : "https://"+targetUser.linkedin;
-      socBox.innerHTML+=`<a href="${cleanLd}" target="_blank" class="soc-pill linkedin"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg><span>LinkedIn</span></a>`;
-    }
-
-    const followBtn=document.getElementById("pub-follow-btn");
-    if(currentUser && targetUser.username === currentUser.username) followBtn.style.display="none";
-    else {
-      followBtn.style.display="inline-flex";
-      if((currentUser?.following||[]).includes(targetUser.username)){ followBtn.innerText="Abonné ✓"; followBtn.className="btn-pill btn-following"; }
-      else { followBtn.innerText="S'abonner"; followBtn.className="btn-pill"; }
-    }
-
-    document.getElementById("btn-toggle-likes").innerText = `Voir les cours aimés par ${targetUser.displayName || targetUser.username}`;
-    document.getElementById('pub-likes-content').style.display = 'none';
-    window._pubLikesSubjFilter = 'all';
-    if (document.getElementById("pub-likes-sort")) document.getElementById("pub-likes-sort").value = 'recent';
-    if(window._pubLikesUnsub) { window._pubLikesUnsub(); window._pubLikesUnsub=null; }
-
-    if(window._pubFeedUnsub){ window._pubFeedUnsub(); window._pubFeedUnsub=null; }
-    const qFeed = query(collection(db,"posts"),where("authorId","==",targetUser.username));
-    window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
-      const rawDocs = snapFeed.docs.map(d=>({id:d.id,...d.data()}));
-      document.getElementById("pub-cnt-contribs-top").innerText = rawDocs.length;
-
-      const userMats = [...new Set(rawDocs.map(p=>p.matiere))].sort();
-      let filterBarHtml = `<button class="filter-btn ${window._pubSubjFilter==='all'?'active':''}" onclick="setPubSubjFilter('all',this)">Tout (${rawDocs.length})</button>`;
-      userMats.forEach(mName => {
-        const icon = window.subjectsMap.get(mName)||"📚";
-        const cnt = rawDocs.filter(p=>p.matiere===mName).length;
-        filterBarHtml += `<button class="filter-btn ${window._pubSubjFilter===mName?'active':''}" onclick="setPubSubjFilter('${esc(mName)}',this)">${icon} ${mName} (${cnt})</button>`;
-      });
-      document.getElementById("pub-subj-filter-bar").innerHTML = filterBarHtml;
-
-      const filteredDocs = window._pubSubjFilter==='all' ? rawDocs : rawDocs.filter(p=>p.matiere===window._pubSubjFilter);
-      renderFeedFromDocs(filteredDocs, document.getElementById("pub-feed"), "Aucun document partagé pour ce filtre.", 'recent', 'pubfeed');
-    });
-  }, 100);
-};
-
-window.setPubSubjFilter = (val, btn)=>{
-  window._pubSubjFilter=val;
-  document.querySelectorAll("#pub-subj-filter-bar .filter-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-  if(window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
-};
-
-window.togglePubLikes = () => {
-  const content = document.getElementById('pub-likes-content');
-  const isVisible = content.style.display !== 'none';
-  if (isVisible) {
-    content.style.display = 'none';
-    document.getElementById('btn-toggle-likes').innerText = `Voir les cours aimés par ${window._currentViewedUser.displayName || window._currentViewedUser.username}`;
-  } else {
-    content.style.display = 'block';
-    document.getElementById('btn-toggle-likes').innerText = `Masquer les cours aimés`;
-    loadPubLikes();
-  }
-};
-
-window.loadPubLikes = () => {
-  if(!window._currentViewedUser) return;
-  if(window._pubLikesUnsub) { window._pubLikesUnsub(); window._pubLikesUnsub=null; }
-
-  const uname = window._currentViewedUser.username;
-  const qLikes = query(collection(db, "posts"), where("likes", "array-contains", uname));
-
-  document.getElementById("pub-likes-feed").innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
-
-  window._pubLikesUnsub = onSnapshot(qLikes, snap => {
-    window._pubLikesData = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    renderPubLikes();
-  });
-};
-
-window.setPubLikesSubjFilter = (val, btn) => {
-   window._pubLikesSubjFilter = val;
-   renderPubLikes();
-};
-
-window.renderPubLikes = () => {
-  if(!window._pubLikesData) return;
-  const sortOrder = document.getElementById("pub-likes-sort").value;
-  const rawDocs = window._pubLikesData;
-
-  const likedMats = [...new Set(rawDocs.map(p=>p.matiere))].sort();
-  let filterBarHtml = `<button class="filter-btn ${window._pubLikesSubjFilter==='all'?'active':''}" onclick="setPubLikesSubjFilter('all',this)">Tout (${rawDocs.length})</button>`;
-  likedMats.forEach(mName => {
-    const icon = window.subjectsMap.get(mName) || "📚";
-    const cnt = rawDocs.filter(p=>p.matiere===mName).length;
-    filterBarHtml += `<button class="filter-btn ${window._pubLikesSubjFilter===mName?'active':''}" onclick="setPubLikesSubjFilter('${esc(mName)}',this)">${icon} ${mName} (${cnt})</button>`;
-  });
-  document.getElementById("pub-likes-filter-bar").innerHTML = filterBarHtml;
-
-  const filteredDocs = window._pubLikesSubjFilter === 'all' ? [...rawDocs] : rawDocs.filter(p=>p.matiere===window._pubLikesSubjFilter);
-
-  renderFeedFromDocs(filteredDocs, document.getElementById("pub-likes-feed"), "Aucun document aimé pour ce filtre.", sortOrder, 'publikes');
-};
-
-window.toggleFollowCurrentProfile = async()=>{
-  if(!window._currentViewedUser || !currentUser) return;
-  const targetUname = window._currentViewedUser.username; if(targetUname === currentUser.username) return;
-  const targetDoc = window.usersMap.get(targetUname); if(!targetDoc) return;
-
-  let myFollowing=[...(currentUser.following||[])], theirFollowers=[...(targetDoc.followers||[])];
-  const isFollowing = myFollowing.includes(targetUname);
-
-  if(isFollowing){
-    myFollowing=myFollowing.filter(x=>x!==targetUname); theirFollowers=theirFollowers.filter(x=>x!==currentUser.username);
-  } else {
-    myFollowing.push(targetUname); theirFollowers.push(currentUser.username);
-  }
-
-  currentUser.following=myFollowing; localStorage.setItem("dnb_reviz_session",JSON.stringify(currentUser));
-  const fBtn=document.getElementById("pub-follow-btn");
-  if(fBtn){ if(!isFollowing){fBtn.innerText="Abonné ✓";fBtn.className="btn-pill btn-following";}else{fBtn.innerText="S'abonner";fBtn.className="btn-pill";} }
-
-  await Promise.all([updateDoc(doc(db,"users",currentUser.id),{following:myFollowing}), updateDoc(doc(db,"users",targetDoc.id),{followers:theirFollowers})]);
-};
-
-window.openFollowersModal = (mode)=>{
-  if(!window._currentViewedUser) return;
-  const isFollowers = mode === 'followers';
-  document.getElementById("m-follows-title").innerText=isFollowers?"Abonnés":"Abonnements";
+  async function loadLeaderboard(quizId) {
+    const q = query(collection(db, "quiz_attempts"), where("quizId", "==", quizId), where("showInLeaderboard", "==", true), orderBy("score", "desc"), orderBy("timeTaken", "asc"), limit(3));
+    const snap = await getDocs(q);
+    const container = document.getElementById(`lb-content-${quizId}`);
+    if (!container) return;
   
-  const box=document.getElementById("follows-list-box"); box.innerHTML="";
-  
-  const realUsernames = isFollowers ? (window._currentViewedUser.followers || []) : (window._currentViewedUser.following || []);
-  let fullList = realUsernames.map(u => window.usersMap.get(u)).filter(Boolean);
-
-  if (isFollowers && window._currentViewedUser.fakeFollowers) {
-    fullList = [...fullList, ...window._currentViewedUser.fakeFollowers];
-  }
-
-  const totalAvailable = fullList.length;
-  fullList = fullList.slice(0, 50);
-
-  if(fullList.length===0) box.innerHTML=`<div class="empty-text" style="padding:40px 0">Personne ici</div>`;
-  else {
-    fullList.forEach(u=>{
-      const nameDisp = u.displayName || u.username;
-      const roleDisp = u.role || "élève";
-      const avHtml = u.avatar ? `<img src="${u.avatar}" style="display:block;">` : `<span style="display:block">${nameDisp.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase()}</span>`;
-      const badge = getBadge(u);
-      
-      box.innerHTML+=`<div class="follow-user-row" onclick="if(!'${u.isFake||''}'){ window.location.hash='#${esc(u.username)}'; closeModal('m-follows'); }">
-        <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
-        <div style="min-width:0;flex:1">
-          <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nameDisp}${badge}</div>
-          <div style="font-size:13px;color:var(--ink-m)">@${u.username} • <span style="text-transform:capitalize">${roleDisp}</span></div>
-        </div>
-      </div>`;
-    });
-    if (totalAvailable > 50) {
-      box.innerHTML += `<div style="text-align:center; padding: 12px; font-size:13px; color:var(--ink-m); margin-top:8px; border-top: 1px solid var(--hl);">L'affichage est limité aux 50 premiers pour préserver la vitesse.</div>`;
+    if (snap.empty) {
+      container.innerHTML = "Aucun score pour le moment. Sois le premier !";
+      return;
     }
-  }
-  openModal("m-follows");
-};
-
-window.openCurrentDMProfile = () => {
-  if (window._activeChatPartnerId) {
-    window.location.hash = '#' + window._activeChatPartnerId;
-  }
-};
-
-function loadDMChats() {
-  if (!currentUser) return;
-  if (window._dmChatsUnsub) window._dmChatsUnsub();
-  const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
-  window._dmChatsUnsub = onSnapshot(q, snap => {
-    const box = document.getElementById("dm-contacts-list");
-    if (snap.empty) { box.innerHTML = `<div class="empty-text">Aucune discussion</div>`; return; }
-    
+  
     let html = "";
-    let chats = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => (b.lastTimestamp||0) - (a.lastTimestamp||0));
+    let rank = 1;
+    const medals = ["🥇", "🥈", "🥉"];
+    snap.forEach(d => {
+      const a = d.data();
+      html += `<div class="lb-row"><span>${medals[rank-1]||rank} ${a.userDisplayName}</span> <strong>${a.score} pts</strong></div>`;
+      rank++;
+    });
+    container.innerHTML = html;
+  }
+  
+  function loadAIQuizHistory() {
+    if(!currentUser) return;
+    const container = document.getElementById("settings-ai-quiz-history");
+    if(!container) return;
     
-    chats.forEach(c => {
-      const partnerUname = c.participants.find(u => u !== currentUser.username);
-      const partnerUser = window.usersMap.get(partnerUname) || {username: partnerUname, displayName: partnerUname};
-      const dName = partnerUser.displayName || partnerUser.username;
-      const partnerBadge = getBadge(partnerUser);
-      const init = dName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
-      const avHtml = partnerUser.avatar ? `<img src="${partnerUser.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
-      
-      const isActive = window._activeChatId === c.id;
-      html += `
-        <div class="dm-contact-row ${isActive?'active':''}" onclick="openChat('${c.id}', '${partnerUname}')">
-           <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
-           <div style="flex:1;min-width:0;">
-             <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dName}${partnerBadge}</div>
-             <div style="font-size:13px;color:var(--ink-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.lastMessage||'Nouvelle discussion'}</div>
-           </div>
-        </div>
-      `;
-    });
-    box.innerHTML = html;
-  });
-}
-
-window.renderContactSearch = () => {
-  const v = document.getElementById("search-contact").value.trim().toLowerCase();
-  const box = document.getElementById("new-chat-list");
-  let html = "";
-  let count = 0;
-  
-  for (const [uname, u] of window.usersMap.entries()) {
-    if (uname === currentUser.username) continue;
-    if (u.allowMessages === false) continue;
-    const dName = u.displayName || uname;
-    if (!v || dName.toLowerCase().includes(v) || uname.includes(v)) {
-      const init = dName.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
-      const avHtml = u.avatar ? `<img src="${u.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
-      const uBadge = getBadge(u);
-      html += `
-        <div class="follow-user-row" onclick="startNewChat('${uname}')">
-          <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
-          <div style="min-width:0;flex:1"><div style="font-weight:600;font-size:15px; display:flex; align-items:center;">${dName}${uBadge}</div><div style="font-size:13px;color:var(--ink-m)">@${uname}</div></div>
-        </div>
-      `;
-      count++;
-    }
-  }
-  if (count === 0) html = `<div class="empty-text">Aucun membre trouvé</div>`;
-  box.innerHTML = html;
-};
-
-window.startNewChat = async (targetUname) => {
-  if (!currentUser) return;
-  closeModal('m-new-chat');
-  const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
-  const snap = await getDocs(q);
-  let existingChatId = null;
-  snap.forEach(d => {
-    if (d.data().participants.includes(targetUname)) existingChatId = d.id;
-  });
-  
-  if (existingChatId) {
-    openChat(existingChatId, targetUname);
-  } else {
-    const newRef = doc(collection(db, "dm_chats"));
-    await setDoc(newRef, { participants: [currentUser.username, targetUname], lastMessage: "", lastTimestamp: Date.now() });
-    openChat(newRef.id, targetUname);
-  }
-};
-
-window.openChat = (chatId, partnerUname) => {
-  window._activeChatId = chatId;
-  window._activeChatPartnerId = partnerUname;
-  
-  document.getElementById("dm-form").style.display = "flex";
-  document.querySelectorAll(".dm-contact-row").forEach(r => r.classList.remove("active"));
-  
-  if(window.innerWidth <= 850) {
-    document.getElementById("dm-sidebar").classList.add("hide-mobile");
-    document.getElementById("dm-chat-area").classList.remove("hide-mobile");
-  }
-
-  const pUser = window.usersMap.get(partnerUname) || {username: partnerUname, displayName: partnerUname};
-  const pBadge = getBadge(pUser);
-  document.getElementById("dm-active-name").innerHTML = (pUser.displayName || pUser.username) + pBadge;
-  document.getElementById("dm-active-role").innerText = "@" + pUser.username + (pUser.role ? " • " + pUser.role : "");
-  const init = (pUser.displayName||pUser.username).split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
-  const avImg = document.getElementById("dm-active-av");
-  const avInit = document.getElementById("dm-active-init");
-  if(pUser.avatar){ avImg.src=pUser.avatar; avImg.style.display="block"; avInit.style.display="none"; }
-  else { avImg.style.display="none"; avInit.style.display="block"; avInit.innerText=init; }
-
-  if(window._dmMsgsUnsub) window._dmMsgsUnsub();
-  
-  const q = query(collection(db, "dm_messages"), where("chatId", "==", chatId));
-  window._dmMsgsUnsub = onSnapshot(q, snap => {
-    const docs = snap.docs.map(d => d.data());
-    docs.sort((a,b) => (a.timestamp||0) - (b.timestamp||0)); 
-
-    const box = document.getElementById("dm-msgs-box");
-    box.innerHTML = "";
-    docs.forEach(m => {
-      const isMe = m.senderId === currentUser.username;
-      const dStr = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      
-      let attachHtml = "";
-      if (m.fileUrl) {
-         if (m.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) || m.fileUrl.includes("res.cloudinary.com/")) {
-           attachHtml = `<div style="margin-bottom:6px;"><a href="${m.fileUrl}" target="_blank"><img src="${m.fileUrl}" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover;"></a></div>`;
-         } else {
-           attachHtml = `<div style="margin-bottom:6px;"><a href="${m.fileUrl}" target="_blank" style="color:inherit;text-decoration:underline;">📄 Pièce jointe</a></div>`;
-         }
+    const qFeed = query(collection(db,"ai_quizzes"),where("authorId","==",currentUser.username));
+    onSnapshot(qFeed, snap => {
+      if(snap.empty) {
+        container.innerHTML = `<div class="empty-text">Aucun quiz IA généré.</div>`;
+        return;
       }
+      let html = "";
+      snap.docs.forEach(d => {
+        const q = d.data();
+        const dateStr = q.timestamp ? new Date(q.timestamp).toLocaleDateString("fr-FR") : "";
+        html += `
+          <div style="background:var(--file-bg); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600; color:var(--ink);">${q.title}</div>
+              <div class="caption">${q.matiere} • ${q.questions.length} questions • ${dateStr}</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-pill-van btn-sm" onclick="checkAndStartQuiz('${d.id}', true)">Refaire</button>
+              <button class="btn-danger btn-sm" onclick="deleteAIQuiz('${d.id}')">✕</button>
+            </div>
+          </div>`;
+      });
+      container.innerHTML = html;
+    });
+  }
+  
+  // 3. GENERER QUIZ IA
+  window.generateAIQuiz = async () => {
+    const matiere = document.getElementById("quiz-ia-matiere").value;
+    const topic = document.getElementById("quiz-ia-topic").value.trim();
+    const desc = document.getElementById("quiz-ia-desc").value.trim();
+  
+    if (!topic) { showToast("Saisis un sujet principal."); return; }
+  
+    document.getElementById("quiz-ia-actions").style.display = "none";
+    document.getElementById("quiz-ia-loading").style.display = "block";
+  
+    // Prompt renforcé pour interdire absolument tout formatage qui ferait planter JSON.parse()
+    const systemPrompt = `Tu es un professeur expert en "${matiere}". Crée un quiz éducatif.
+  RÈGLE ABSOLUE : Tu dois répondre UNIQUEMENT par un objet JSON valide, sans AUCUN texte avant ou après, sans AUCUN formatage markdown (\`\`\`json).
+  Le JSON DOIT respecter cette structure exacte :
+  {
+    "questions": [
+      {
+        "question": "Texte de la question ?",
+        "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
+        "correctIndex": 0,
+        "justification": "Explication courte."
+      }
+    ]
+  }`;
+  
+    const userPrompt = `Crée un quiz de 5 questions sur le sujet : "${topic}". Informations complémentaires : "${desc}". Les options doivent être plausibles. correctIndex doit être l'index (0 à 3) de la bonne réponse. RAPPEL : UNIQUEMENT LE JSON.`;
+  
+    try {
+      const quizData = await callGroqAPI(systemPrompt, userPrompt);
       
-      box.innerHTML += `
-        <div class="dm-msg-wrapper ${isMe?'me':'them'}">
-          <div class="dm-msg-bubble">
-            ${attachHtml}
-            ${m.text ? `<div>${m.text}</div>` : ''}
-          </div>
-          <div class="dm-msg-time">${dStr}</div>
+      if (!quizData || !quizData.questions || quizData.questions.length === 0) throw new Error("L'IA a renvoyé un contenu vide ou mal formaté.");
+  
+      const newQuiz = {
+        title: `Quiz IA : ${topic}`,
+        matiere: matiere,
+        description: desc,
+        questions: quizData.questions,
+        isAI: true,
+        authorId: currentUser.username,
+        authorDisplayName: currentUser.displayName || currentUser.username,
+        authorAvatar: currentUser.avatar || "",
+        authorRole: currentUser.role || "élève",
+        timestamp: Date.now()
+      };
+  
+      const docRef = await addDoc(collection(db, "ai_quizzes"), newQuiz);
+      
+      closeModal("m-ia-quiz");
+      document.getElementById("quiz-ia-topic").value = "";
+      document.getElementById("quiz-ia-desc").value = "";
+      
+      showToast("Quiz généré avec succès !");
+      syncContrib();
+      checkAndStartQuiz(docRef.id, true);
+  
+    } catch(e) {
+      console.error(e);
+      showToast("Erreur lors de la génération. Réesaye (" + e.message + ")");
+    } finally {
+      document.getElementById("quiz-ia-actions").style.display = "flex";
+      document.getElementById("quiz-ia-loading").style.display = "none";
+    }
+  };
+  
+  // 4. LOGIQUE POUR FAIRE LE QUIZ
+  window.checkAndStartQuiz = async (quizId, isAI) => {
+    const collectionName = isAI ? "ai_quizzes" : "quizzes";
+    const ref = doc(db, collectionName, quizId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) { showToast("Ce quiz n'existe plus."); return; }
+    
+    const qData = {id: snap.id, ...snap.data()};
+  
+    if (!isAI) {
+      const attQ = query(collection(db, "quiz_attempts"), where("quizId", "==", quizId), where("userId", "==", currentUser.username));
+      const attSnap = await getDocs(attQ);
+      if (attSnap.size >= 5) {
+        if(confirm("Tu as atteint la limite de 5 essais pour ce quiz.\nVeux-tu le recommencer via l'IA ? L'IA reformulera les questions et mélangera les réponses pour t'entraîner sans que ton score ne soit classé.")) {
+           window._currentQuizData = qData;
+           reformulateQuizWithAI();
+        }
+        return;
+      }
+    }
+  
+    window._currentQuizData = qData;
+    startQuiz();
+  };
+  
+  window.reformulateQuizWithAI = async () => {
+    openModal('m-take-quiz');
+    document.getElementById("take-quiz-title").innerText = window._currentQuizData.title + " (Reformulé)";
+    document.getElementById("take-quiz-content").style.display = "none";
+    document.getElementById("take-quiz-loading").style.display = "block";
+    document.getElementById("btn-next-question").style.display = "none";
+  
+    const systemPrompt = `Tu es un professeur. Je vais te donner un quiz en JSON. Tu dois reformuler TOUTES les questions et TOUTES les options pour qu'elles soient différentes dans la forme, mais identiques sur le fond. Change l'ordre des options et mets à jour 'correctIndex' en conséquence.
+    RÈGLE ABSOLUE : Réponds UNIQUEMENT par un objet JSON valide, sans texte avant/après, sans markdown. Structure identique :
+    { "questions": [ { "question": "...", "options": ["..."], "correctIndex": 0, "justification": "..." } ] }`;
+  
+    const userPrompt = JSON.stringify(window._currentQuizData.questions);
+  
+    try {
+      const newData = await callGroqAPI(systemPrompt, userPrompt);
+      if (!newData || !newData.questions) throw new Error("Format Invalide");
+      
+      window._currentQuizData.questions = newData.questions;
+      window._currentQuizData.isAI = true; 
+      
+      document.getElementById("take-quiz-loading").style.display = "none";
+      document.getElementById("take-quiz-content").style.display = "block";
+      document.getElementById("btn-next-question").style.display = "block";
+      
+      startQuiz(true); 
+    } catch(e) {
+      console.error(e);
+      showToast("Erreur lors de la reformulation IA.");
+      closeModal('m-take-quiz');
+    }
+  };
+  
+  window.startQuiz = (alreadyOpen = false) => {
+    window._currentQuestionIndex = 0;
+    window._quizUserAnswers = [];
+    window._hasViewedAnswers = false;
+    window._quizStartTime = Date.now();
+    
+    if(!alreadyOpen) openModal("m-take-quiz");
+    
+    document.getElementById("take-quiz-title").innerText = window._currentQuizData.title;
+    document.getElementById("take-quiz-content").style.display = "block";
+    document.getElementById("take-quiz-loading").style.display = "none";
+    document.getElementById("btn-next-question").style.display = "block";
+    
+    renderCurrentQuestion();
+  };
+  
+  window.renderCurrentQuestion = () => {
+    const qData = window._currentQuizData.questions[window._currentQuestionIndex];
+    document.getElementById("take-quiz-progress").innerText = `${window._currentQuestionIndex + 1} / ${window._currentQuizData.questions.length}`;
+    document.getElementById("take-quiz-question").innerText = qData.question;
+    
+    const optsContainer = document.getElementById("take-quiz-options");
+    optsContainer.innerHTML = "";
+    
+    qData.options.forEach((opt, idx) => {
+      optsContainer.innerHTML += `<button class="quiz-option" onclick="selectQuizOption(${idx}, this)">${opt}</button>`;
+    });
+    
+    document.getElementById("btn-next-question").disabled = true;
+    document.getElementById("btn-next-question").innerText = (window._currentQuestionIndex === window._currentQuizData.questions.length - 1) ? "Terminer" : "Suivant";
+  };
+  
+  window.selectQuizOption = (idx, btnElement) => {
+    document.querySelectorAll(".quiz-option").forEach(b => b.classList.remove("selected"));
+    btnElement.classList.add("selected");
+    window._quizUserAnswers[window._currentQuestionIndex] = idx;
+    document.getElementById("btn-next-question").disabled = false;
+  };
+  
+  window.nextQuizQuestion = () => {
+    if (window._currentQuestionIndex < window._currentQuizData.questions.length - 1) {
+      window._currentQuestionIndex++;
+      renderCurrentQuestion();
+    } else {
+      submitQuiz();
+    }
+  };
+  
+  window.submitQuiz = async () => {
+    closeModal('m-take-quiz');
+    
+    let score = 0;
+    window._currentQuizData.questions.forEach((q, idx) => {
+      if (window._quizUserAnswers[idx] === q.correctIndex) score++;
+    });
+    
+    const timeTaken = Math.floor((Date.now() - window._quizStartTime) / 1000); // en secondes
+    
+    document.getElementById("quiz-final-score").innerText = `${score} / ${window._currentQuizData.questions.length}`;
+    
+    const ratio = score / window._currentQuizData.questions.length;
+    let msg = "Bien joué !";
+    if (ratio === 1) msg = "Parfait ! Un sans faute 🎯";
+    else if (ratio < 0.5) msg = "Tu peux faire mieux ! Révise encore un peu 📚";
+    
+    document.getElementById("quiz-result-msg").innerText = msg;
+    
+    const lbOpt = document.getElementById("quiz-leaderboard-opt");
+    if (window._currentQuizData.isAI) {
+      lbOpt.style.display = "none";
+    } else {
+      lbOpt.style.display = "block";
+      document.getElementById("chk-leaderboard").checked = true;
+    }
+    
+    openModal('m-quiz-result');
+  
+    if (!window._currentQuizData.isAI) {
+      await addDoc(collection(db, "quiz_attempts"), {
+        quizId: window._currentQuizData.id,
+        userId: currentUser.username,
+        userDisplayName: currentUser.displayName || currentUser.username,
+        score: score,
+        maxScore: window._currentQuizData.questions.length,
+        timeTaken: timeTaken,
+        showInLeaderboard: true,
+        timestamp: Date.now()
+      });
+      loadLeaderboard(window._currentQuizData.id);
+    }
+  };
+  
+  window.showQuizAnswers = () => {
+    window._hasViewedAnswers = true;
+    closeModal('m-quiz-result');
+    
+    const container = document.getElementById("quiz-answers-container");
+    container.innerHTML = "";
+    
+    window._currentQuizData.questions.forEach((q, idx) => {
+      const userAns = window._quizUserAnswers[idx];
+      const isCorrect = userAns === q.correctIndex;
+      
+      let optsHtml = "";
+      q.options.forEach((opt, optIdx) => {
+        let cssClass = "quiz-option";
+        if (optIdx === q.correctIndex) cssClass += " correct";
+        else if (optIdx === userAns && !isCorrect) cssClass += " wrong";
+        
+        optsHtml += `<div class="${cssClass}" style="cursor:default;">${opt}</div>`;
+      });
+      
+      container.innerHTML += `
+        <div style="background:var(--card-bg); border:1px solid var(--hl); border-radius:12px; padding:16px;">
+          <h4 style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            ${isCorrect ? '✅' : '❌'} Question ${idx + 1}
+          </h4>
+          <div style="font-weight:500; margin-bottom:12px;">${q.question}</div>
+          <div style="display:flex; flex-direction:column; gap:6px;">${optsHtml}</div>
+          ${q.justification ? `<div style="margin-top:12px; padding:10px; background:var(--parchment); border-radius:8px; font-size:14px; color:var(--ink-m);">💡 <strong>Explication :</strong> ${q.justification}</div>` : ''}
         </div>
       `;
     });
-    box.scrollTop = box.scrollHeight;
-  });
-};
-
-window.backToDMSidebar = () => {
-  document.getElementById("dm-sidebar").classList.remove("hide-mobile");
-  document.getElementById("dm-chat-area").classList.add("hide-mobile");
-};
-
-window.handleDMFile = (e) => {
-  const file=e.target.files[0]; if(!file) return;
-  if(file.size>25*1024*1024){ e.target.value=""; openModal("m-filesize"); return; }
-  window._dmFileToUpload = file;
-  document.getElementById("dm-file-preview").style.display = "block";
-  document.getElementById("dm-file-preview").innerText = "📎 " + file.name + " prêt à envoyer";
-};
-
-window.handleSendDM = async (e) => {
-  e.preventDefault();
-  if(!window._activeChatId) return;
-  const input = document.getElementById("dm-text-input");
-  const txt = input.value.trim();
+    
+    openModal('m-quiz-answers');
+  };
   
-  if(!txt && !window._dmFileToUpload) return;
+  window.restartQuiz = async () => {
+    const lbChecked = document.getElementById("chk-leaderboard").checked;
+    if (!window._currentQuizData.isAI && !lbChecked) {
+       const q = query(collection(db, "quiz_attempts"), where("quizId", "==", window._currentQuizData.id), where("userId", "==", currentUser.username), orderBy("timestamp", "desc"), limit(1));
+       const snap = await getDocs(q);
+       if(!snap.empty) {
+         await updateDoc(doc(db, "quiz_attempts", snap.docs[0].id), { showInLeaderboard: false });
+         loadLeaderboard(window._currentQuizData.id);
+       }
+    }
   
-  const btn = e.target.querySelector("button");
-  btn.disabled = true;
-
-  let fileUrl = "";
-  if(window._dmFileToUpload) {
-    try { fileUrl = await uploadToCloudinary(window._dmFileToUpload); } catch(er) { showToast("Erreur upload pièce jointe"); btn.disabled=false; return; }
-  }
-
-  await addDoc(collection(db, "dm_messages"), {
-    chatId: window._activeChatId,
-    senderId: currentUser.username,
-    text: txt,
-    fileUrl: fileUrl,
-    timestamp: Date.now()
-  });
-
-  const shortMsg = txt ? (txt.length > 25 ? txt.substring(0,25)+"..." : txt) : "Pièce jointe 📎";
-  await updateDoc(doc(db, "dm_chats", window._activeChatId), {
-    lastMessage: shortMsg,
-    lastTimestamp: Date.now()
-  });
-
-  const pUser = window.usersMap.get(window._activeChatPartnerId);
-  if (pUser) sendEmailNotif('message', pUser);
-
-  input.value = "";
-  window._dmFileToUpload = null;
-  document.getElementById("dm-file-preview").style.display = "none";
-  document.getElementById("dm-file-input").value = "";
-  btn.disabled = false;
-};
-
-window.handleAddMatiere=async()=>{
-  const name=document.getElementById("mat-name").value.trim(), icon=document.getElementById("mat-icon").value.trim();
-  if(!name||!icon){showToast("Remplis le nom et l'icône.");return;}
-  await addDoc(collection(db,"subjects"),{name,icon}); closeModal("m-add-mat"); document.getElementById("mat-name").value=""; document.getElementById("mat-icon").value=""; showToast("Matière ajoutée ✓");
-};
-window.editMatiere=(id,name,icon)=>{
-  document.getElementById("m-edit-mat-title").innerText="Modifier la matière"; document.getElementById("edit-mat-id").value=id; document.getElementById("adm-m-name").value=name; document.getElementById("adm-m-icon").value=icon; openModal("m-edit-mat");
-};
-window.openMatiereModal=(isEdit,id="",name="",icon="")=>{ if(isEdit) editMatiere(id,name,icon); else openModal("m-add-mat"); };
-window.saveMatiereConfig=async()=>{
-  const id=document.getElementById("edit-mat-id").value, name=document.getElementById("adm-m-name").value.trim(), icon=document.getElementById("adm-m-icon").value.trim();
-  if(!name||!icon) return;
-  if(id) await updateDoc(doc(db,"subjects",id),{name,icon}); else await addDoc(collection(db,"subjects"),{name,icon});
-  closeModal("m-edit-mat"); showToast("Matière mise à jour ✓");
-};
-window.delMatiere=async(id)=>{if(confirm("Supprimer cette matière ? Les cours partagés resteront en base.")) await deleteDoc(doc(db,"subjects",id));};
-
-function syncAdminUsers(){
-  onSnapshot(collection(db,"users"),snap=>{
-    const tb=document.getElementById("admin-users-tb"); tb.innerHTML="";
-    snap.forEach(d=>{
-      const u=d.data();
-      tb.innerHTML+=`<tr><td><strong>${u.username}</strong></td><td>${u.displayName||"—"}</td><td><span class="rpill">${u.role}</span></td><td class="caption">${(u.subRoles||[]).join(", ")||"—"}</td><td><div class="td-acts"><button class="btn-ghost btn-sm" onclick='openUserModal(true,"${d.id}","${esc(u.username)}","${u.role}",${JSON.stringify(u.subRoles||[])})'>Modifier</button><button class="btn-danger btn-sm" onclick="delUser('${d.id}','${esc(u.username)}')">Suppr.</button></div></td></tr>`;
-    });
-  });
-}
-
-window._tempFakeFollowers = [];
-window._tempFakeFollowersCount = 0;
-
-const FAKE_FIRSTS = ["lucas", "camille", "chloe", "thomas", "lea", "hugo", "manon", "nathan", "emma", "mathis", "jade", "antoine", "julie", "alexis", "marie", "enzo", "sarah"];
-const FAKE_LASTS = ["martin", "bernard", "dubois", "petit", "durand", "leroy", "moreau", "simon", "laurent", "lefevre", "michel", "garcia", "david", "bertrand", "roux"];
-
-window.generateAndSetFakeFollowers = () => {
-  const count = parseInt(document.getElementById("adm-u-fake-count").value, 10) || 0;
-  if (count <= 0) {
-    window.clearFakeFollowers();
-    return;
-  }
-
-  const list = [];
-  const displayCount = Math.min(count, 50);
+    closeModal('m-quiz-result');
+    
+    if (window._hasViewedAnswers && !window._currentQuizData.isAI) {
+      reformulateQuizWithAI();
+    } else {
+      startQuiz();
+    }
+  };
   
-  for(let i=0; i<displayCount; i++) {
-    const f = FAKE_FIRSTS[Math.floor(Math.random() * FAKE_FIRSTS.length)];
-    const l = FAKE_LASTS[Math.floor(Math.random() * FAKE_LASTS.length)];
-    const dname = `${f.charAt(0).toUpperCase() + f.slice(1)} ${l.charAt(0).toUpperCase() + l.slice(1)}`;
-    list.push({
-      username: `${f}.${l}${Math.random()>0.7 ? Math.floor(Math.random()*90)+10 : ''}`,
-      displayName: dname,
-      role: "élève",
-      avatar: "",
-      isFake: true
+  window.closeTakeQuizModal = async () => {
+    const lbChecked = document.getElementById("chk-leaderboard").checked;
+    if (!window._currentQuizData.isAI && !lbChecked) {
+       const q = query(collection(db, "quiz_attempts"), where("quizId", "==", window._currentQuizData.id), where("userId", "==", currentUser.username), orderBy("timestamp", "desc"), limit(1));
+       const snap = await getDocs(q);
+       if(!snap.empty) {
+         await updateDoc(doc(db, "quiz_attempts", snap.docs[0].id), { showInLeaderboard: false });
+         loadLeaderboard(window._currentQuizData.id);
+       }
+    }
+  };
+  
+  window.abortQuiz = () => {
+    if(confirm("Veux-tu vraiment quitter le quiz en cours ?")) {
+      closeModal('m-take-quiz');
+      window._currentQuizData = null;
+    }
+  };
+  
+  // ... Utilitaires Admin ...
+  window.handleAddMatiere=async()=>{
+    const name=document.getElementById("mat-name").value.trim(), icon=document.getElementById("mat-icon").value.trim();
+    if(!name||!icon){showToast("Remplis le nom et l'icône.");return;}
+    await addDoc(collection(db,"subjects"),{name,icon}); closeModal("m-add-mat"); document.getElementById("mat-name").value=""; document.getElementById("mat-icon").value=""; showToast("Matière ajoutée ✓");
+  };
+  window.editMatiere=(id,name,icon)=>{
+    document.getElementById("m-edit-mat-title").innerText="Modifier la matière"; document.getElementById("edit-mat-id").value=id; document.getElementById("adm-m-name").value=name; document.getElementById("adm-m-icon").value=icon; openModal("m-edit-mat");
+  };
+  window.openMatiereModal=(isEdit,id="",name="",icon="")=>{ if(isEdit) editMatiere(id,name,icon); else openModal("m-add-mat"); };
+  window.saveMatiereConfig=async()=>{
+    const id=document.getElementById("edit-mat-id").value, name=document.getElementById("adm-m-name").value.trim(), icon=document.getElementById("adm-m-icon").value.trim();
+    if(!name||!icon) return;
+    if(id) await updateDoc(doc(db,"subjects",id),{name,icon}); else await addDoc(collection(db,"subjects"),{name,icon});
+    closeModal("m-edit-mat"); showToast("Matière mise à jour ✓");
+  };
+  window.delMatiere=async(id)=>{if(confirm("Supprimer cette matière ? Les ressources associées resteront en base.")) await deleteDoc(doc(db,"subjects",id));};
+  
+  function syncAdminUsers(){
+    onSnapshot(collection(db,"users"),snap=>{
+      const tb=document.getElementById("admin-users-tb"); tb.innerHTML="";
+      snap.forEach(d=>{
+        const u=d.data();
+        tb.innerHTML+=`<tr><td><strong>${u.username}</strong></td><td>${u.displayName||"—"}</td><td><span class="rpill">${u.role}</span></td><td class="caption">${(u.subRoles||[]).join(", ")||"—"}</td><td><div class="td-acts"><button class="btn-ghost btn-sm" onclick='openUserModal(true,"${d.id}","${esc(u.username)}","${u.role}",${JSON.stringify(u.subRoles||[])})'>Modifier</button><button class="btn-danger btn-sm" onclick="delUser('${d.id}','${esc(u.username)}')">Suppr.</button></div></td></tr>`;
+      });
     });
   }
-
-  window._tempFakeFollowers = list;
-  window._tempFakeFollowersCount = count;
-  document.getElementById("adm-fake-preview").innerText = `${window.formatNumber(count)} abonnés simulés configurés.`;
-  showToast(`${window.formatNumber(count)} faux abonnés générés ✓`);
-};
-
-window.clearFakeFollowers = () => {
+  
   window._tempFakeFollowers = [];
   window._tempFakeFollowersCount = 0;
-  document.getElementById("adm-u-fake-count").value = "";
-  document.getElementById("adm-fake-preview").innerText = "Aucun faux abonné.";
-  showToast("Faux abonnés retirés (pense à enregistrer) ✓");
-};
-
-window.openUserModal=(isEdit,docId="",username="",role="élève",subRoles=[])=>{
-  document.getElementById("m-user-title").innerText=isEdit?"Modifier le compte":"Nouveau compte";
-  document.getElementById("edit-user-id").value=docId; 
-  document.getElementById("adm-u-id").value=username; 
-  document.getElementById("adm-u-id").disabled=isEdit; 
-  document.getElementById("adm-pwd-wrap").style.display=isEdit?"none":"flex"; 
   
-  document.getElementById("adm-u-role").value=role; 
-  document.getElementById("adm-u-admin").checked=subRoles.includes("admin"); 
-  document.getElementById("adm-u-vol").checked=subRoles.includes("volontaire"); 
+  const FAKE_FIRSTS = ["lucas", "camille", "chloe", "thomas", "lea", "hugo", "manon", "nathan", "emma", "mathis", "jade", "antoine", "julie", "alexis", "marie", "enzo", "sarah"];
+  const FAKE_LASTS = ["martin", "bernard", "dubois", "petit", "durand", "leroy", "moreau", "simon", "laurent", "lefevre", "michel", "garcia", "david", "bertrand", "roux"];
   
-  let userObj = isEdit ? window.usersMap.get(username) : null;
-  document.getElementById("adm-u-verified").checked = userObj ? !!userObj.isVerified : false;
+  window.generateAndSetFakeFollowers = () => {
+    const count = parseInt(document.getElementById("adm-u-fake-count").value, 10) || 0;
+    if (count <= 0) {
+      window.clearFakeFollowers();
+      return;
+    }
   
-  const fakes = userObj ? (userObj.fakeFollowers || []) : [];
-  const fakeCount = userObj && userObj.fakeFollowersCount !== undefined ? userObj.fakeFollowersCount : fakes.length;
-  window._tempFakeFollowers = [...fakes];
-  window._tempFakeFollowersCount = fakeCount;
+    const list = [];
+    const displayCount = Math.min(count, 50);
+    
+    for(let i=0; i<displayCount; i++) {
+      const f = FAKE_FIRSTS[Math.floor(Math.random() * FAKE_FIRSTS.length)];
+      const l = FAKE_LASTS[Math.floor(Math.random() * FAKE_LASTS.length)];
+      const dname = `${f.charAt(0).toUpperCase() + f.slice(1)} ${l.charAt(0).toUpperCase() + l.slice(1)}`;
+      list.push({
+        username: `${f}.${l}${Math.random()>0.7 ? Math.floor(Math.random()*90)+10 : ''}`,
+        displayName: dname,
+        role: "élève",
+        avatar: "",
+        isFake: true
+      });
+    }
   
-  document.getElementById("adm-u-fake-count").value = fakeCount || "";
-  document.getElementById("adm-fake-preview").innerText = fakeCount ? `${window.formatNumber(fakeCount)} faux abonnés actifs.` : "Aucun faux abonné.";
-
-  openModal("m-user");
-};
-
-window.saveUserConfig=async()=>{
-  const docId=document.getElementById("edit-user-id").value;
-  const username=document.getElementById("adm-u-id").value.trim().toLowerCase();
-  const role=document.getElementById("adm-u-role").value;
-  const isVerified=document.getElementById("adm-u-verified").checked;
-
-  if(!username) return;
-
-  const subs=[];
-  if(document.getElementById("adm-u-admin").checked) subs.push("admin"); 
-  if(document.getElementById("adm-u-vol").checked) subs.push("volontaire");
-
-  const updates = { 
-    role, 
-    subRoles: subs, 
-    isVerified, 
-    fakeFollowers: window._tempFakeFollowers,
-    fakeFollowersCount: window._tempFakeFollowersCount || 0
+    window._tempFakeFollowers = list;
+    window._tempFakeFollowersCount = count;
+    document.getElementById("adm-fake-preview").innerText = `${window.formatNumber(count)} abonnés simulés configurés.`;
+    showToast(`${window.formatNumber(count)} faux abonnés générés ✓`);
   };
-
-  if(docId){ 
-    await updateDoc(doc(db,"users",docId), updates); 
-    showToast("Compte mis à jour ✓"); 
-  } else {
-    const pwd=document.getElementById("adm-u-pwd").value.trim()||"stmg2026";
-    const exist=await getDocs(query(collection(db,"users"),where("username","==",username))); 
-    if(!exist.empty){showToast("Identifiant déjà pris.");return;}
-    const autoName=displayNameFromId(username);
-    await addDoc(collection(db,"users"),{
-      username, displayName:autoName, password:pwd, avatar:"", bio:"", banner:"",
-      instagram:"", linkedin:"", followers:[], following:[], isTempPassword:true,
-      allowMessages:true, emailNotifs:false, email:"", ...updates
-    }); 
-    showToast(`Compte de ${autoName} créé ✓`);
+  
+  window.clearFakeFollowers = () => {
+    window._tempFakeFollowers = [];
+    window._tempFakeFollowersCount = 0;
+    document.getElementById("adm-u-fake-count").value = "";
+    document.getElementById("adm-fake-preview").innerText = "Aucun faux abonné.";
+    showToast("Faux abonnés retirés (pense à enregistrer) ✓");
+  };
+  
+  window.openUserModal=(isEdit,docId="",username="",role="élève",subRoles=[])=>{
+    document.getElementById("m-user-title").innerText=isEdit?"Modifier le compte":"Nouveau compte";
+    document.getElementById("edit-user-id").value=docId; 
+    document.getElementById("adm-u-id").value=username; 
+    document.getElementById("adm-u-id").disabled=isEdit; 
+    document.getElementById("adm-pwd-wrap").style.display=isEdit?"none":"flex"; 
+    
+    document.getElementById("adm-u-role").value=role; 
+    document.getElementById("adm-u-admin").checked=subRoles.includes("admin"); 
+    document.getElementById("adm-u-vol").checked=subRoles.includes("volontaire"); 
+    
+    let userObj = isEdit ? window.usersMap.get(username) : null;
+    document.getElementById("adm-u-verified").checked = userObj ? !!userObj.isVerified : false;
+    
+    const fakes = userObj ? (userObj.fakeFollowers || []) : [];
+    const fakeCount = userObj && userObj.fakeFollowersCount !== undefined ? userObj.fakeFollowersCount : fakes.length;
+    window._tempFakeFollowers = [...fakes];
+    window._tempFakeFollowersCount = fakeCount;
+    
+    document.getElementById("adm-u-fake-count").value = fakeCount || "";
+    document.getElementById("adm-fake-preview").innerText = fakeCount ? `${window.formatNumber(fakeCount)} faux abonnés actifs.` : "Aucun faux abonné.";
+  
+    openModal("m-user");
+  };
+  
+  window.saveUserConfig=async()=>{
+    const docId=document.getElementById("edit-user-id").value;
+    const username=document.getElementById("adm-u-id").value.trim().toLowerCase();
+    const role=document.getElementById("adm-u-role").value;
+    const isVerified=document.getElementById("adm-u-verified").checked;
+  
+    if(!username) return;
+  
+    const subs=[];
+    if(document.getElementById("adm-u-admin").checked) subs.push("admin"); 
+    if(document.getElementById("adm-u-vol").checked) subs.push("volontaire");
+  
+    const updates = { 
+      role, 
+      subRoles: subs, 
+      isVerified, 
+      fakeFollowers: window._tempFakeFollowers,
+      fakeFollowersCount: window._tempFakeFollowersCount || 0
+    };
+  
+    if(docId){ 
+      await updateDoc(doc(db,"users",docId), updates); 
+      showToast("Compte mis à jour ✓"); 
+    } else {
+      const pwd=document.getElementById("adm-u-pwd").value.trim()||"stmg2026";
+      const exist=await getDocs(query(collection(db,"users"),where("username","==",username))); 
+      if(!exist.empty){showToast("Identifiant déjà pris.");return;}
+      const autoName=displayNameFromId(username);
+      await addDoc(collection(db,"users"),{
+        username, displayName:autoName, password:pwd, avatar:"", bio:"", banner:"",
+        instagram:"", linkedin:"", followers:[], following:[], isTempPassword:true,
+        allowMessages:true, emailNotifs:false, email:"", ...updates
+      }); 
+      showToast(`Compte de ${autoName} créé ✓`);
+    }
+    closeModal("m-user");
+  };
+  
+  window.delUser=async(docId,uname)=>{if(uname==="dan.bouillet"){showToast("Compte protégé.");return;}if(confirm(`Supprimer l'accès de ${uname} ?`)) await deleteDoc(doc(db,"users",docId));};
+  
+  function syncAdminMats(){
+    onSnapshot(collection(db,"subjects"),snap=>{
+      const tb=document.getElementById("admin-mat-tb"); tb.innerHTML="";
+      snap.forEach(d=>{const m=d.data();tb.innerHTML+=`<tr><td style="font-size:22px">${m.icon}</td><td><strong>${m.name}</strong></td><td><div class="td-acts"><button class="btn-ghost btn-sm" onclick="editMatiere('${d.id}','${esc(m.name)}','${m.icon}')">Modifier</button><button class="btn-danger btn-sm" onclick="delMatiere('${d.id}')">Suppr.</button></div></td></tr>`;});
+    });
   }
-  closeModal("m-user");
-};
-
-window.delUser=async(docId,uname)=>{if(uname==="dan.bouillet"){showToast("Compte protégé.");return;}if(confirm(`Supprimer l'accès de ${uname} ?`)) await deleteDoc(doc(db,"users",docId));};
-
-function syncAdminMats(){
-  onSnapshot(collection(db,"subjects"),snap=>{
-    const tb=document.getElementById("admin-mat-tb"); tb.innerHTML="";
-    snap.forEach(d=>{const m=d.data();tb.innerHTML+=`<tr><td style="font-size:22px">${m.icon}</td><td><strong>${m.name}</strong></td><td><div class="td-acts"><button class="btn-ghost btn-sm" onclick="editMatiere('${d.id}','${esc(m.name)}','${m.icon}')">Modifier</button><button class="btn-danger btn-sm" onclick="delMatiere('${d.id}')">Suppr.</button></div></td></tr>`;});
-  });
-}
-
-window.switchTab = target => { window.location.hash = `#page-${target}`; };
-
-window.toggleDrawer=()=>{document.getElementById("mob-drawer").classList.toggle("open");document.getElementById("hamburger-btn").classList.toggle("open");};
-window.closeDrawer=()=>{document.getElementById("mob-drawer").classList.remove("open");document.getElementById("hamburger-btn").classList.remove("open");};
-window.toggleDropdown=()=>document.getElementById("profil-dropdown").classList.toggle("show");
-window.closeDropdown=()=>document.getElementById("profil-dropdown").classList.remove("show");
-document.addEventListener("click",e=>{const dd=document.getElementById("profil-dropdown"), av=document.getElementById("nav-avatar");if(dd&&!dd.contains(e.target)&&av&&!av.contains(e.target))dd.classList.remove("show");});
-window.openModal=id=>{
-  document.getElementById(id).classList.add("active");
-  if(id === 'm-new-chat') renderContactSearch();
-};
-window.closeModal=id=>document.getElementById(id).classList.remove("active");
-window.closeOnOut=(e,id)=>{if(e.target.id===id)closeModal(id);};
-
-function esc(s){return(s||"").replace(/'/g,"\\'").replace(/"/g,"&quot;");} window.esc=esc;
-
-</script>
-</body>
-</html>
+  
+  window.switchTab = target => { window.location.hash = `#page-${target}`; };
+  
+  window.toggleDrawer=()=>{document.getElementById("mob-drawer").classList.toggle("open");document.getElementById("hamburger-btn").classList.toggle("open");};
+  window.closeDrawer=()=>{document.getElementById("mob-drawer").classList.remove("open");document.getElementById("hamburger-btn").classList.remove("open");};
+  window.toggleDropdown=()=>document.getElementById("profil-dropdown").classList.toggle("show");
+  window.closeDropdown=()=>document.getElementById("profil-dropdown").classList.remove("show");
+  document.addEventListener("click",e=>{const dd=document.getElementById("profil-dropdown"), av=document.getElementById("nav-avatar");if(dd&&!dd.contains(e.target)&&av&&!av.contains(e.target))dd.classList.remove("show");});
+  window.openModal=id=>{
+    document.getElementById(id).classList.add("active");
+    if(id === 'm-new-chat') renderContactSearch();
+  };
+  window.closeModal=id=>document.getElementById(id).classList.remove("active");
+  window.closeOnOut=(e,id)=>{if(e.target.id===id)closeModal(id);};
+  
+  function esc(s){return(s||"").replace(/'/g,"\\'").replace(/"/g,"&quot;");} window.esc=esc;
+  
+  </script>
