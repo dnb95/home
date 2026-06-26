@@ -928,6 +928,18 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   </main>
 </div>
 
+<div id="m-share" class="moverlay" onclick="closeOnOut(event,'m-share')">
+  <div class="mbox" style="max-width: 420px;">
+    <h2>Partager</h2>
+    <p class="caption" style="margin-bottom:16px;">Choisis une discussion récente à qui envoyer ceci :</p>
+    <div id="share-contacts-list" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+    </div>
+    <div class="mact mt-3">
+      <button class="btn-ghost" style="width:100%;" onclick="closeModal('m-share')">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <div id="m-filters" class="moverlay" onclick="closeOnOut(event,'m-filters')">
@@ -1091,11 +1103,16 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     <p class="caption mt-1 mb-2">Décris le sujet et laisse l'IA préparer les questions.</p>
     <div class="input-group mt-2">
       <label>Matière *</label>
-      <select id="quiz-ia-matiere"></select>
+      <select id="quiz-ia-matiere" onchange="if(this.value==='autre') document.getElementById('quiz-ia-matiere-custom').style.display='block'; else document.getElementById('quiz-ia-matiere-custom').style.display='none';"></select>
+      <input type="text" id="quiz-ia-matiere-custom" placeholder="Précise la matière..." style="display:none; margin-top:8px;">
     </div>
     <div class="input-group">
       <label>Sujet principal *</label>
       <input type="text" id="quiz-ia-topic" placeholder="Ex: La révolution française, Les fonctions dérivées...">
+    </div>
+    <div class="input-group">
+      <label>Nombre de questions *</label>
+      <input type="number" id="quiz-ia-count" value="5" min="1" max="50">
     </div>
     <div class="input-group">
       <label>Précisions (facultatif)</label>
@@ -1207,9 +1224,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window._pubSubjFilter = "all";
   window._pubTabActive  = "cours";
   
-  window._pubLikesData = null;
-  window._pubLikesUnsub = null;
-  window._pubLikesSubjFilter = 'all';
+  window._pubLikesData = { posts: [], quizzes: [], ai_quizzes: [] };
+  window._pubLikesUnsubPosts = null;
+  window._pubLikesUnsubQuizzes = null;
+  window._pubLikesUnsubAIQuizzes = null;
   
   window._activeChatId = null;
   window._activeChatPartnerId = null;
@@ -1718,6 +1736,8 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         selQuizCreate.innerHTML += opt;
         selQuizIA.innerHTML += opt;
       });
+      // Ajout de l'option "Autre" pour les quiz IA
+      selQuizIA.innerHTML += `<option value="autre">Autre (préciser...)</option>`;
     });
   }
   
@@ -1777,6 +1797,198 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   };
   
+  /* --- HELPERS DE RENDU HTML (POUR UNIFIER L'AFFICHAGE) --- */
+  window.getPostHTML = (p, context) => {
+    const pId = p.id;
+    const isAdmin = currentUser?.role === "admin" || (currentUser?.subRoles && currentUser.subRoles.includes("admin"));
+    const canDel = isAdmin || p.authorId === currentUser?.username;
+    const hasLiked = (p.likes || []).includes(currentUser?.username);
+    const likeCount = (p.likes || []).length;
+
+    const liveAuthor = window.usersMap.get(p.authorId) || {};
+    const liveRole   = liveAuthor.role || p.authorRole || "élève";
+    const liveName   = liveAuthor.displayName || p.authorDisplayName || p.authorId;
+    const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : p.authorAvatar;
+    const authorBadge = getBadge(liveAuthor);
+    const subjIcon   = window.subjectsMap.get(p.matiere) || "📚";
+
+    const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
+    const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : "eleve";
+    
+    const typeLabels = { cours: "Cours", fiches: "Fiche", revisions: "Révisions" };
+    const typeLabel  = typeLabels[p.type] || p.type;
+
+    const targetUrl = p.fileData || p.url;
+    const isPDF     = p.fileType === "application/pdf" || targetUrl?.toLowerCase().endsWith(".pdf");
+    const isImage   = !isPDF && (p.fileType?.startsWith("image/") || targetUrl?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || targetUrl?.includes("res.cloudinary.com/"));
+
+    let mediaBox = "", fileChip = "";
+
+    if(targetUrl) {
+      if(isImage) {
+        mediaBox = `<div class="post-media-preview" onclick="window.open('${targetUrl}','_blank')"><img src="${targetUrl}" alt="Aperçu"></div>`;
+      } else {
+        const cleanName = p.fileName || p.title || "Document";
+        fileChip = `
+        <div class="file-chip mt-1">
+          <div class="file-chip-info" title="${esc(cleanName)}">
+            <span style="font-size:22px">${isPDF ? "📄" : "🔗"}</span>
+            <span>${cleanName}</span>
+          </div>
+          <a href="${targetUrl}" target="_blank" rel="noopener" class="btn-download">📥 Consulter</a>
+        </div>`;
+      }
+    }
+
+    let comments = p.comments || [];
+    let commentsCount = comments.reduce((acc, c) => acc + 1 + (c.replies ? c.replies.length : 0), 0);
+    
+    comments.sort((a,b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return (a.timestamp || 0) - (b.timestamp || 0);
+    });
+
+    let cmtHTML = "";
+    comments.forEach(c => {
+      const cmtId = c.id || String(c.timestamp); 
+      const cmtAuthor = window.usersMap.get(c.userId) || {};
+      const cmtName = cmtAuthor.displayName || c.displayName || c.userId;
+      const cmtBadge = getBadge(cmtAuthor);
+      const canModCmt = isAdmin || currentUser?.username === c.userId || currentUser?.username === p.authorId;
+      const canPin = isAdmin || currentUser?.username === p.authorId;
+      
+      let repliesHTML = "";
+      if (c.replies && c.replies.length > 0) {
+        c.replies.sort((r1, r2) => (r1.timestamp || 0) - (r2.timestamp || 0)).forEach(r => {
+          const rId = r.id || String(r.timestamp);
+          const rAuthor = window.usersMap.get(r.userId) || {};
+          const rName = rAuthor.displayName || r.displayName || r.userId;
+          const rBadge = getBadge(rAuthor);
+          const canDelRep = isAdmin || currentUser?.username === r.userId || currentUser?.username === p.authorId;
+          
+          repliesHTML += `
+          <div class="cmt-reply">
+            <a href="#${r.userId}" class="cmt-user">${rName}${rBadge}</a> : ${r.text}
+            ${canDelRep ? `<div class="cmt-actions"><button class="del" onclick="delCmt('${pId}','${cmtId}','${rId}')">Supprimer</button></div>` : ''}
+          </div>`;
+        });
+      }
+
+      cmtHTML += `
+      <div class="cmt-block ${c.isPinned ? 'pinned' : ''}">
+        <div class="cmt-header">
+          <div class="cmt-row">
+            ${c.isPinned ? '📌 ' : ''}<a href="#${c.userId}" class="cmt-user">${cmtName}${cmtBadge}</a> : ${c.text}
+          </div>
+        </div>
+        <div class="cmt-actions">
+          <button onclick="toggleReplyBox('${pId}','${cmtId}','${context}')">Répondre</button>
+          ${canPin ? `<button onclick="pinCmt('${pId}','${cmtId}')">${c.isPinned ? 'Désépingler' : 'Épingler'}</button>` : ''}
+          ${canModCmt ? `<button class="del" onclick="delCmt('${pId}','${cmtId}')">Supprimer</button>` : ''}
+        </div>
+        ${repliesHTML ? `<div class="cmt-replies">${repliesHTML}</div>` : ''}
+        <form class="cmt-form" id="reply-form-${context}-${pId}-${cmtId}" style="display:none;" onsubmit="addReply(event,'${pId}','${cmtId}')">
+          <input type="text" placeholder="Répondre..." required>
+          <button type="submit" class="cmt-send">Envoyer</button>
+        </form>
+      </div>`;
+    });
+
+    const dateStr = p.timestamp ? new Date(p.timestamp).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Date inconnue";
+
+    return `
+      <div class="post-card">
+        <div style="display:flex;flex-direction:column;gap:14px;flex:1">
+          <div class="post-header">
+            <a href="#${p.authorId}" class="post-av">${avContent}</a>
+            <div style="flex:1;min-width:0">
+              <a href="#${p.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
+              <div class="post-meta">
+                <span class="rbadge ${roleClass}">${liveRole}</span>
+                <span class="type-tag ${p.type}">${typeLabel}</span>
+                <span class="subj-tag">${subjIcon} ${p.matiere}</span>
+              </div>
+            </div>
+            ${canDel ? `<button class="btn-danger btn-sm" onclick="deletePost('${pId}')">Supprimer</button>` : ""}
+          </div>
+          <div>
+            <div class="post-title">${p.title}</div>
+            ${p.description ? `<p class="post-desc">${p.description}</p>` : ""}
+          </div>
+          ${mediaBox}
+          ${fileChip}
+        </div>
+        <div>
+          <div class="post-date">Publié le ${dateStr}</div>
+          <div class="post-actions">
+            <button class="like-btn ${hasLiked ? "liked" : ""}" onclick="toggleLike('${pId}')">
+              ${hasLiked ? "❤️" : "🤍"} ${likeCount}
+            </button>
+            <button class="comment-tog-btn" onclick="toggleComments('${pId}','${context}')">💬 ${commentsCount} commentaires</button>
+            <button class="like-btn" onclick="openShareModal('${pId}', 'post', '${esc(p.title)}')">↗️ Partager</button>
+          </div>
+          <div class="comments-wrap" id="comments-wrap-${context}-${pId}">
+            <div class="comments-box">
+              ${cmtHTML}
+            </div>
+            <form class="cmt-form mt-1" onsubmit="addComment(event,'${pId}')">
+              <input type="text" placeholder="Ajouter un commentaire…" required>
+              <button type="submit" class="cmt-send">Commenter</button>
+            </form>
+          </div>
+        </div>
+      </div>`;
+  };
+
+  window.getQuizHTML = (q) => {
+    const qId = q.id;
+    const isAdmin = currentUser?.role === "admin" || (currentUser?.subRoles && currentUser.subRoles.includes("admin"));
+    const canDel = isAdmin || q.authorId === currentUser?.username;
+
+    const liveAuthor = window.usersMap.get(q.authorId) || {};
+    const liveRole   = liveAuthor.role || q.authorRole || "élève";
+    const liveName   = liveAuthor.displayName || q.authorDisplayName || q.authorId;
+    const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : q.authorAvatar;
+    const authorBadge = getBadge(liveAuthor);
+    const subjIcon   = window.subjectsMap.get(q.matiere) || "📚";
+
+    const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
+    const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : "eleve";
+    const dateStr = q.timestamp ? new Date(q.timestamp).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "Inconnue";
+
+    const hasLiked = (q.likes || []).includes(currentUser?.username);
+    const likeCount = (q.likes || []).length;
+
+    return `
+      <div class="quiz-card">
+        <div class="post-header">
+          <a href="#${q.authorId}" class="post-av">${avContent}</a>
+          <div style="flex:1;min-width:0">
+            <a href="#${q.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
+            <div class="post-meta">
+              <span class="rbadge ${roleClass}">${liveRole}</span>
+              <span class="subj-tag">${subjIcon} ${q.matiere}</span>
+              <span class="type-tag" style="background:var(--primary); color:#fff;">${q.isAI ? 'Quiz IA' : 'Quiz'}</span>
+            </div>
+          </div>
+          ${canDel ? `<button class="btn-danger btn-sm" onclick="${q.isAI ? 'deleteAIQuiz' : 'deleteQuiz'}('${qId}')">Supprimer</button>` : ""}
+        </div>
+        <div>
+          <div class="post-title">${q.title}</div>
+          ${q.description ? `<p class="post-desc">${q.description}</p>` : ""}
+          <div class="caption mt-1">${(q.questions || []).length} questions • Créé le ${dateStr}</div>
+        </div>
+        <div class="post-actions" style="margin-top: 8px; border-top: 1px solid var(--hl); padding-top: 12px;">
+          <button class="like-btn ${hasLiked ? 'liked' : ''}" onclick="toggleQuizLike('${qId}', ${q.isAI})">
+            ${hasLiked ? '❤️' : '🤍'} ${likeCount}
+          </button>
+          <button class="like-btn" onclick="openShareModal('${qId}', '${q.isAI ? 'ai_quiz' : 'quiz'}', '${esc(q.title)}')">↗️ Partager</button>
+        </div>
+        <button class="btn-pill mt-1" style="justify-content:center; width:100%;" onclick="checkAndStartQuiz('${qId}', ${q.isAI})">Commencer le quiz</button>
+      </div>`;
+  };
+
   /* --- SYSTEME DE POSTS (Cours / Fiches) --- */
   function loadCoursFeed() {
     if(window._coursUnsub) { window._coursUnsub(); window._coursUnsub = null; }
@@ -1833,145 +2045,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   
     postsArray.forEach(p => {
-      const pId = p.id;
-      const isAdmin = currentUser?.role === "admin" || (currentUser?.subRoles && currentUser.subRoles.includes("admin"));
-      const canDel = isAdmin || p.authorId === currentUser?.username;
-      const hasLiked = (p.likes || []).includes(currentUser?.username);
-      const likeCount = (p.likes || []).length;
-  
-      const liveAuthor = window.usersMap.get(p.authorId) || {};
-      const liveRole   = liveAuthor.role || p.authorRole || "élève";
-      const liveName   = liveAuthor.displayName || p.authorDisplayName || p.authorId;
-      const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : p.authorAvatar;
-      const authorBadge = getBadge(liveAuthor);
-      const subjIcon   = window.subjectsMap.get(p.matiere) || "📚";
-  
-      const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
-      const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : "eleve";
-      
-      const typeLabels = { cours: "Cours", fiches: "Fiche", revisions: "Révisions" };
-      const typeLabel  = typeLabels[p.type] || p.type;
-  
-      const targetUrl = p.fileData || p.url;
-      const isPDF     = p.fileType === "application/pdf" || targetUrl?.toLowerCase().endsWith(".pdf");
-      const isImage   = !isPDF && (p.fileType?.startsWith("image/") || targetUrl?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || targetUrl?.includes("res.cloudinary.com/"));
-  
-      let mediaBox = "", fileChip = "";
-  
-      if(targetUrl) {
-        if(isImage) {
-          mediaBox = `<div class="post-media-preview" onclick="window.open('${targetUrl}','_blank')"><img src="${targetUrl}" alt="Aperçu"></div>`;
-        } else {
-          const cleanName = p.fileName || p.title || "Document";
-          fileChip = `
-          <div class="file-chip mt-1">
-            <div class="file-chip-info" title="${esc(cleanName)}">
-              <span style="font-size:22px">${isPDF ? "📄" : "🔗"}</span>
-              <span>${cleanName}</span>
-            </div>
-            <a href="${targetUrl}" target="_blank" rel="noopener" class="btn-download">📥 Consulter</a>
-          </div>`;
-        }
-      }
-  
-      let comments = p.comments || [];
-      let commentsCount = comments.reduce((acc, c) => acc + 1 + (c.replies ? c.replies.length : 0), 0);
-      
-      comments.sort((a,b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        return (a.timestamp || 0) - (b.timestamp || 0);
-      });
-  
-      let cmtHTML = "";
-      comments.forEach(c => {
-        const cmtId = c.id || String(c.timestamp); 
-        const cmtAuthor = window.usersMap.get(c.userId) || {};
-        const cmtName = cmtAuthor.displayName || c.displayName || c.userId;
-        const cmtBadge = getBadge(cmtAuthor);
-        const canModCmt = isAdmin || currentUser?.username === c.userId || currentUser?.username === p.authorId;
-        const canPin = isAdmin || currentUser?.username === p.authorId;
-        
-        let repliesHTML = "";
-        if (c.replies && c.replies.length > 0) {
-          c.replies.sort((r1, r2) => (r1.timestamp || 0) - (r2.timestamp || 0)).forEach(r => {
-            const rId = r.id || String(r.timestamp);
-            const rAuthor = window.usersMap.get(r.userId) || {};
-            const rName = rAuthor.displayName || r.displayName || r.userId;
-            const rBadge = getBadge(rAuthor);
-            const canDelRep = isAdmin || currentUser?.username === r.userId || currentUser?.username === p.authorId;
-            
-            repliesHTML += `
-            <div class="cmt-reply">
-              <a href="#${r.userId}" class="cmt-user">${rName}${rBadge}</a> : ${r.text}
-              ${canDelRep ? `<div class="cmt-actions"><button class="del" onclick="delCmt('${pId}','${cmtId}','${rId}')">Supprimer</button></div>` : ''}
-            </div>`;
-          });
-        }
-  
-        cmtHTML += `
-        <div class="cmt-block ${c.isPinned ? 'pinned' : ''}">
-          <div class="cmt-header">
-            <div class="cmt-row">
-              ${c.isPinned ? '📌 ' : ''}<a href="#${c.userId}" class="cmt-user">${cmtName}${cmtBadge}</a> : ${c.text}
-            </div>
-          </div>
-          <div class="cmt-actions">
-            <button onclick="toggleReplyBox('${pId}','${cmtId}','${context}')">Répondre</button>
-            ${canPin ? `<button onclick="pinCmt('${pId}','${cmtId}')">${c.isPinned ? 'Désépingler' : 'Épingler'}</button>` : ''}
-            ${canModCmt ? `<button class="del" onclick="delCmt('${pId}','${cmtId}')">Supprimer</button>` : ''}
-          </div>
-          ${repliesHTML ? `<div class="cmt-replies">${repliesHTML}</div>` : ''}
-          <form class="cmt-form" id="reply-form-${context}-${pId}-${cmtId}" style="display:none;" onsubmit="addReply(event,'${pId}','${cmtId}')">
-            <input type="text" placeholder="Répondre..." required>
-            <button type="submit" class="cmt-send">Envoyer</button>
-          </form>
-        </div>`;
-      });
-  
-      const dateStr = p.timestamp ? new Date(p.timestamp).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Date inconnue";
-  
-      container.innerHTML += `
-        <div class="post-card">
-          <div style="display:flex;flex-direction:column;gap:14px;flex:1">
-            <div class="post-header">
-              <a href="#${p.authorId}" class="post-av">${avContent}</a>
-              <div style="flex:1;min-width:0">
-                <a href="#${p.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
-                <div class="post-meta">
-                  <span class="rbadge ${roleClass}">${liveRole}</span>
-                  <span class="type-tag ${p.type}">${typeLabel}</span>
-                  <span class="subj-tag">${subjIcon} ${p.matiere}</span>
-                </div>
-              </div>
-              ${canDel ? `<button class="btn-danger btn-sm" onclick="deletePost('${pId}')">Supprimer</button>` : ""}
-            </div>
-            <div>
-              <div class="post-title">${p.title}</div>
-              ${p.description ? `<p class="post-desc">${p.description}</p>` : ""}
-            </div>
-            ${mediaBox}
-            ${fileChip}
-          </div>
-          <div>
-            <div class="post-date">Publié le ${dateStr}</div>
-            <div class="post-actions">
-              <button class="like-btn ${hasLiked ? "liked" : ""}" onclick="toggleLike('${pId}')">
-                ${hasLiked ? "❤️" : "🤍"} ${likeCount}
-              </button>
-              <button class="comment-tog-btn" onclick="toggleComments('${pId}','${context}')">💬 ${commentsCount} commentaires</button>
-            </div>
-            <div class="comments-wrap" id="comments-wrap-${context}-${pId}">
-              <div class="comments-box">
-                ${cmtHTML}
-              </div>
-              <form class="cmt-form mt-1" onsubmit="addComment(event,'${pId}')">
-                <input type="text" placeholder="Ajouter un commentaire…" required>
-                <button type="submit" class="cmt-send">Commenter</button>
-              </form>
-            </div>
-          </div>
-        </div>`;
+      container.innerHTML += window.getPostHTML(p, context);
     });
   }
   
@@ -2159,7 +2233,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     await updateDoc(ref, { likes });
   };
   
-  // Fonction dédiée aux likes de Quiz
   window.toggleQuizLike = async (quizId, isAI) => {
     const colName = isAI ? "ai_quizzes" : "quizzes";
     const ref = doc(db, colName, quizId);
@@ -2265,6 +2338,67 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.deleteQuiz = async (id) => { if(confirm("Supprimer ce quiz ?")) await deleteDoc(doc(db, "quizzes", id)); };
   window.deleteAIQuiz = async (id) => { if(confirm("Supprimer ce quiz IA ?")) await deleteDoc(doc(db, "ai_quizzes", id)); loadAIQuizHistory(); };
   
+  /* --- PARTAGE PAR MESSAGES --- */
+  window.openShareModal = (itemId, itemType, itemTitle) => {
+    window._shareItem = { id: itemId, type: itemType, title: itemTitle };
+    const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
+    
+    getDocs(q).then(snap => {
+      let html = "";
+      snap.docs.sort((a,b) => (b.data().lastTimestamp || 0) - (a.data().lastTimestamp || 0)).forEach(d => {
+        const c = d.data();
+        const partnerUname = c.participants.find(u => u !== currentUser.username);
+        const pUser = window.usersMap.get(partnerUname) || {displayName: partnerUname, username: partnerUname};
+        
+        const avHtml = pUser.avatar 
+          ? `<img src="${pUser.avatar}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;">` 
+          : `<div class="drawer-av" style="width:38px;height:38px;flex-shrink:0;">${(pUser.displayName || pUser.username).substring(0,2).toUpperCase()}</div>`;
+
+        html += `
+          <div class="follow-user-row" onclick="shareToChat('${d.id}', '${partnerUname}')" style="display:flex; align-items:center; gap:12px; cursor:pointer;">
+             ${avHtml}
+             <div style="flex:1;min-width:0;">
+                 <div style="font-weight:600;font-size:15px;color:var(--ink);">${pUser.displayName || pUser.username}</div>
+                 <div style="font-size:13px;color:var(--ink-m);">@${partnerUname}</div>
+             </div>
+          </div>
+        `;
+      });
+      if(!html) html = "<div class='empty-text'>Aucune discussion récente. Va dans Messages pour en créer une.</div>";
+      document.getElementById("share-contacts-list").innerHTML = html;
+      openModal('m-share');
+    });
+  };
+
+  window.shareToChat = async (chatId, partnerUname) => {
+    if(!window._shareItem) return;
+    
+    let typeLabel = "ce document";
+    if (window._shareItem.type === 'quiz' || window._shareItem.type === 'ai_quiz') typeLabel = "ce quiz";
+
+    const txt = `[Partage] Je te partage ${typeLabel} : ${window._shareItem.title}`;
+    
+    await addDoc(collection(db, "dm_messages"), {
+      chatId: chatId,
+      senderId: currentUser.username,
+      text: txt,
+      fileUrl: "",
+      timestamp: Date.now()
+    });
+
+    await updateDoc(doc(db, "dm_chats", chatId), {
+      lastMessage: `Partage : ${window._shareItem.title.substring(0, 20)}...`,
+      lastTimestamp: Date.now()
+    });
+
+    closeModal('m-share');
+    showToast("Partagé avec succès ✓");
+    
+    const pUser = window.usersMap.get(partnerUname);
+    if (pUser) sendEmailNotif('message', pUser);
+  };
+
+
   /* --- SYSTEME DE PROFILS PUBLICS TIKTOK STYLE --- */
   window.switchPubTab = (tabId) => {
     window._pubTabActive = tabId;
@@ -2404,7 +2538,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           renderQuizFeedToContainer(rawDocs, document.getElementById("pub-quiz-ia-feed"), "Aucun quiz IA généré pour l'instant.");
         });
       } else if (window._pubTabActive === 'likes') {
-        if(!window._pubLikesUnsub) loadPubLikes();
+        loadPubLikes();
       }
     }, 100);
   };
@@ -2418,25 +2552,68 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window.loadPubLikes = () => {
     if(!window._currentViewedUser) return;
-    if(window._pubLikesUnsub) { window._pubLikesUnsub(); window._pubLikesUnsub = null; }
+    if(window._pubLikesUnsubPosts) { window._pubLikesUnsubPosts(); }
+    if(window._pubLikesUnsubQuizzes) { window._pubLikesUnsubQuizzes(); }
+    if(window._pubLikesUnsubAIQuizzes) { window._pubLikesUnsubAIQuizzes(); }
   
     const uname = window._currentViewedUser.username;
-    const qLikes = query(collection(db, "posts"), where("likes", "array-contains", uname));
-  
+    window._pubLikesData = { posts: [], quizzes: [], ai_quizzes: [] };
+
     document.getElementById("pub-likes-feed").innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
+
+    const triggerRender = () => {
+      if(window._pubTabActive === 'likes') renderPubLikes();
+    };
   
-    window._pubLikesUnsub = onSnapshot(qLikes, snap => {
-      window._pubLikesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderPubLikes();
+    const qPosts = query(collection(db, "posts"), where("likes", "array-contains", uname));
+    window._pubLikesUnsubPosts = onSnapshot(qPosts, snap => {
+      window._pubLikesData.posts = snap.docs.map(d => ({ id: d.id, _feedType: 'post', ...d.data() }));
+      triggerRender();
+    });
+
+    const qQuizzes = query(collection(db, "quizzes"), where("likes", "array-contains", uname));
+    window._pubLikesUnsubQuizzes = onSnapshot(qQuizzes, snap => {
+      window._pubLikesData.quizzes = snap.docs.map(d => ({ id: d.id, _feedType: 'quiz', ...d.data() }));
+      triggerRender();
+    });
+
+    const qAIQuizzes = query(collection(db, "ai_quizzes"), where("likes", "array-contains", uname));
+    window._pubLikesUnsubAIQuizzes = onSnapshot(qAIQuizzes, snap => {
+      window._pubLikesData.ai_quizzes = snap.docs.map(d => ({ id: d.id, _feedType: 'quiz', ...d.data() }));
+      triggerRender();
     });
   };
   
   window.renderPubLikes = () => {
-    if(!window._pubLikesData) return;
     const sortOrder = document.getElementById("pub-likes-sort").value;
-    const rawDocs = window._pubLikesData;
+    
+    const rawDocs = [
+      ...window._pubLikesData.posts,
+      ...window._pubLikesData.quizzes,
+      ...window._pubLikesData.ai_quizzes
+    ];
   
-    renderFeedFromDocs(rawDocs, document.getElementById("pub-likes-feed"), "Aucun document aimé pour le moment.", sortOrder, 'publikes');
+    const container = document.getElementById("pub-likes-feed");
+    container.innerHTML = "";
+
+    if (rawDocs.length === 0) {
+      container.innerHTML = `<div class="empty-text">Aucun document ou quiz aimé pour le moment.</div>`;
+      return;
+    }
+
+    if (sortOrder === 'oldest') {
+      rawDocs.sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
+    } else {
+      rawDocs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }
+  
+    rawDocs.forEach(item => {
+      if (item._feedType === 'post') {
+        container.innerHTML += window.getPostHTML(item, 'publikes');
+      } else {
+        container.innerHTML += window.getQuizHTML(item);
+      }
+    });
   };
   
   window.toggleFollowCurrentProfile = async () => {
@@ -2891,7 +3068,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const quiz = {
       title, matiere, description: desc,
       questions, isAI: false,
-      likes: [], // Initialisation des likes pour les quiz manuels
+      likes: [], 
       authorId: currentUser.username, 
       authorDisplayName: currentUser.displayName || currentUser.username,
       authorAvatar: currentUser.avatar || "", 
@@ -2939,7 +3116,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       return;
     }
   
-    // Intégration du tri par popularité (Likes) pour les quiz
     if (sortOrder === 'likes') {
       quizzesArray.sort((a,b) => (b.likes || []).length - (a.likes || []).length);
     } else if (sortOrder === 'oldest') {
@@ -2949,50 +3125,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   
     quizzesArray.forEach(q => {
-      const qId = q.id;
-      const isAdmin = currentUser?.role === "admin" || (currentUser?.subRoles && currentUser.subRoles.includes("admin"));
-      const canDel = isAdmin || q.authorId === currentUser?.username;
-  
-      const liveAuthor = window.usersMap.get(q.authorId) || {};
-      const liveRole   = liveAuthor.role || q.authorRole || "élève";
-      const liveName   = liveAuthor.displayName || q.authorDisplayName || q.authorId;
-      const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : q.authorAvatar;
-      const authorBadge = getBadge(liveAuthor);
-      const subjIcon   = window.subjectsMap.get(q.matiere) || "📚";
-  
-      const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
-      const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : "eleve";
-      const dateStr = q.timestamp ? new Date(q.timestamp).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "Inconnue";
-  
-      const hasLiked = (q.likes || []).includes(currentUser?.username);
-      const likeCount = (q.likes || []).length;
-  
-      container.innerHTML += `
-        <div class="quiz-card">
-          <div class="post-header">
-            <a href="#${q.authorId}" class="post-av">${avContent}</a>
-            <div style="flex:1;min-width:0">
-              <a href="#${q.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
-              <div class="post-meta">
-                <span class="rbadge ${roleClass}">${liveRole}</span>
-                <span class="subj-tag">${subjIcon} ${q.matiere}</span>
-                <span class="type-tag" style="background:var(--primary); color:#fff;">${q.isAI ? 'Quiz IA' : 'Quiz'}</span>
-              </div>
-            </div>
-            ${canDel ? `<button class="btn-danger btn-sm" onclick="${q.isAI ? 'deleteAIQuiz' : 'deleteQuiz'}('${qId}')">Supprimer</button>` : ""}
-          </div>
-          <div>
-            <div class="post-title">${q.title}</div>
-            ${q.description ? `<p class="post-desc">${q.description}</p>` : ""}
-            <div class="caption mt-1">${q.questions.length} questions • Créé le ${dateStr}</div>
-          </div>
-          <div class="post-actions" style="margin-top: 8px; border-top: 1px solid var(--hl); padding-top: 12px;">
-            <button class="like-btn ${hasLiked ? 'liked' : ''}" onclick="toggleQuizLike('${qId}', ${q.isAI})">
-              ${hasLiked ? '❤️' : '🤍'} ${likeCount}
-            </button>
-          </div>
-          <button class="btn-pill mt-1" style="justify-content:center; width:100%;" onclick="checkAndStartQuiz('${qId}', ${q.isAI})">Commencer le quiz</button>
-        </div>`;
+      container.innerHTML += window.getQuizHTML(q);
     });
   }
   
@@ -3017,7 +3150,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           <div style="background:var(--file-bg); padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
             <div>
               <div style="font-weight:600; color:var(--ink);">${q.title}</div>
-              <div class="caption">${q.matiere} • ${q.questions.length} questions • ${dateStr}</div>
+              <div class="caption">${q.matiere} • ${(q.questions || []).length} questions • ${dateStr}</div>
             </div>
             <div style="display:flex; gap:8px;">
               <button class="btn-pill-van btn-sm" onclick="checkAndStartQuiz('${d.id}', true)">Refaire</button>
@@ -3031,12 +3164,17 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   // 3. GENERER QUIZ IA
   window.generateAIQuiz = async () => {
-    const matiere = document.getElementById("quiz-ia-matiere").value;
+    let matiere = document.getElementById("quiz-ia-matiere").value;
+    if(matiere === 'autre') {
+      matiere = document.getElementById("quiz-ia-matiere-custom").value.trim();
+    }
+    
     const topic = document.getElementById("quiz-ia-topic").value.trim();
+    const nbQuestions = document.getElementById("quiz-ia-count").value || 5;
     const desc = document.getElementById("quiz-ia-desc").value.trim();
   
-    if (!topic) { 
-      showToast("Saisis un sujet principal."); 
+    if (!topic || !matiere) { 
+      showToast("Saisis un sujet principal et une matière."); 
       return; 
     }
   
@@ -3057,7 +3195,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     ]
   }`;
   
-    const userPrompt = `Crée un quiz de 5 questions sur le sujet : "${topic}". Informations complémentaires : "${desc}". Les options doivent être plausibles. correctIndex doit être l'index (0 à 3) de la bonne réponse. RAPPEL : UNIQUEMENT LE JSON.`;
+    const userPrompt = `Crée un quiz de ${nbQuestions} questions sur le sujet : "${topic}". Informations complémentaires : "${desc}". Les options doivent être plausibles. correctIndex doit être l'index (0 à 3) de la bonne réponse. RAPPEL : UNIQUEMENT LE JSON.`;
   
     try {
       const quizData = await callGroqAPI(systemPrompt, userPrompt);
@@ -3072,7 +3210,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         description: desc,
         questions: quizData.questions,
         isAI: true,
-        likes: [], // Initialisation des likes pour les quiz IA
+        likes: [], 
         authorId: currentUser.username,
         authorDisplayName: currentUser.displayName || currentUser.username,
         authorAvatar: currentUser.avatar || "",
@@ -3085,6 +3223,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       closeModal("m-ia-quiz");
       document.getElementById("quiz-ia-topic").value = "";
       document.getElementById("quiz-ia-desc").value = "";
+      document.getElementById("quiz-ia-matiere-custom").value = "";
+      document.getElementById("quiz-ia-matiere-custom").style.display = "none";
+      document.getElementById("quiz-ia-matiere").value = Array.from(window.subjectsMap.keys())[0];
       
       showToast("Quiz généré avec succès !");
       syncContrib();
@@ -3186,7 +3327,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     optsContainer.innerHTML = "";
     
     qData.options.forEach((opt, idx) => {
-      // Force de la couleur var(--ink) pour rendre lisible en mode sombre comme clair
       optsContainer.innerHTML += `<button class="quiz-option" style="color: var(--ink);" onclick="selectQuizOption(${idx}, this)">${opt}</button>`;
     });
     
@@ -3289,7 +3429,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.closeTakeQuizModal = async () => {
-    // Les classements étant retirés, plus d'actions spécifiques nécessaires ici
+    //
   };
   
   window.abortQuiz = () => {
