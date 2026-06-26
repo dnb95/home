@@ -419,6 +419,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 </style>
 </head>
 <body>
+<style>
+  .rbadge.hs { background: #8e8e93; color: #fff; }
+  .nav-unread-dot { display:none; width:8px; height:8px; background:var(--danger); border-radius:50%; margin-left:6px; vertical-align:middle; }
+  .msg-unread-preview { font-weight:800!important; color:var(--ink)!important; }
+  .msg-status { font-size:11px; color:var(--ink-m); margin-left:6px; font-weight:normal; }
+</style>
 
 <div id="view-login" class="login-screen">
   <div class="login-box">
@@ -455,7 +461,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       <button class="nav-tab"         data-target="cours"     onclick="switchTab('cours')">Cours</button>
       <button class="nav-tab"         data-target="fichesrev" onclick="switchTab('fichesrev')">Fiches &amp; Révisions</button>
       <button class="nav-tab"         data-target="quiz"      onclick="switchTab('quiz')">Quiz</button>
-      <button class="nav-tab"         data-target="messages"  onclick="switchTab('messages')">Messages</button>
+      <button class="nav-tab"         data-target="messages"  onclick="switchTab('messages')">Messages <span class="nav-unread-dot"></span></button>
       <button class="nav-tab hidden"  data-target="depot"     id="tab-depot" onclick="switchTab('depot')">Déposer un cours</button>
       <button class="nav-tab hidden"  data-target="creerquiz" id="tab-creer-quiz" onclick="switchTab('creerquiz')">Créer un quiz</button>
       <button class="nav-tab hidden admin-only" data-target="admin" id="tab-admin" onclick="switchTab('admin')">Admin</button>
@@ -500,7 +506,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           <span class="d-icon">🎯</span> Quiz
         </button>
         <button class="drawer-btn" data-tab="messages" onclick="switchTab('messages');closeDrawer()">
-          <span class="d-icon">💬</span> Messages
+          <span class="d-icon">💬</span> Messages <span class="nav-unread-dot"></span>
         </button>
         <button class="drawer-btn hidden" id="drawer-depot" data-tab="depot" onclick="switchTab('depot');closeDrawer()">
           <span class="d-icon">➕</span> Déposer un cours
@@ -580,7 +586,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           <h1>Quiz</h1>
           <p class="tagline">Teste tes connaissances et challenge tes amis</p>
         </div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <button class="btn-pill" onclick="openModal('m-ia-quiz')">✨ Créer un quiz avec l'IA</button>
           <button class="btn-pill-van" onclick="openFilterModal('quiz')">⚙️ Filtres</button>
         </div>
@@ -815,7 +821,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           </div>
           <div class="input-group">
             <label>Compte Instagram</label>
-            <input type="text" id="prof-insta-input" placeholder="ex: @dan.bouillet">
+            <input type="text" id="prof-insta-input" placeholder="ex: @username">
           </div>
           <div class="input-group">
             <label>Lien LinkedIn</label>
@@ -940,6 +946,15 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   </div>
 </div>
 
+<div id="m-view-post" class="moverlay" onclick="closeOnOut(event,'m-view-post')">
+  <div class="mbox" style="max-width:600px; padding:24px;">
+    <div id="view-post-content"></div>
+    <div class="mact mt-3">
+      <button class="btn-ghost" style="width:100%; border:1px solid var(--hl);" onclick="closeModal('m-view-post')">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <div id="m-filters" class="moverlay" onclick="closeOnOut(event,'m-filters')">
@@ -950,7 +965,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       <select id="filter-subject"></select>
     </div>
     <div class="input-group" id="filter-type-group">
-      <label>Type de document</label>
+      <label id="filter-type-label">Type de document</label>
       <select id="filter-type">
         <option value="all">Tout</option>
         <option value="fiches">Fiches</option>
@@ -1041,6 +1056,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         <option value="élève">Élève</option>
         <option value="professeur">Professeur</option>
         <option value="admin">Administrateur</option>
+        <option value="HS">Hors-Série</option>
       </select>
     </div>
     <div class="input-group">
@@ -1112,7 +1128,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     </div>
     <div class="input-group">
       <label>Nombre de questions *</label>
-      <input type="number" id="quiz-ia-count" value="5" min="1" max="50">
+      <input type="number" id="quiz-ia-count" value="5" min="1" max="20">
     </div>
     <div class="input-group">
       <label>Précisions (facultatif)</label>
@@ -1198,7 +1214,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   emailjs.init("2VkygefcXxbSOlhFX");
   
-  // API GROQ
   const GROQ_API_KEY = "gsk_6eXCMxw6tuEMF9l" + "9dhgWWGdyb3FYgEMb" + "hom4ALVfRXf4X0VaByU6";
   const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
   const GROQ_MODEL   = "llama-3.3-70b-versatile";
@@ -1210,7 +1225,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window._coursUnsub   = null;
   window._frUnsub      = null;
+  
   window._quizUnsub    = null;
+  window._aiQuizUnsub  = null;
+  window._liveQuizzesData = [];
+  window._liveAIQuizzesData = [];
+
   window._pubFeedUnsub = null;
   window._dmChatsUnsub = null;
   window._dmMsgsUnsub  = null;
@@ -1219,7 +1239,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window._filterContext = 'cours'; 
   window._coursFilter = { subject: 'all', order: 'recent' };
   window._frFilter    = { subject: 'all', type: 'all', order: 'recent' };
-  window._quizFilter  = { subject: 'all', order: 'recent' };
+  window._quizFilter  = { subject: 'all', type: 'all', order: 'recent' };
   
   window._pubSubjFilter = "all";
   window._pubTabActive  = "cours";
@@ -1236,7 +1256,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   const CLOUDINARY_CLOUD_NAME    = "dmtggmxrm";
   const CLOUDINARY_UPLOAD_PRESET = "iAcqTr_Pg13v5d-Es84wIkdUqaw";
   
-  // Quiz Logic State
   window._currentQuizData = null;
   window._quizMode = null; 
   window._currentQuestionIndex = 0;
@@ -1252,6 +1271,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window.getBadge = (userObj) => {
     return (userObj && userObj.isVerified) ? `<img src="https://cdn.prod.website-files.com/6214eaa668d0de27c3ea80cf/652fd0e960df145545f25f12_Pastille%20bleu%20certification%20instagram.png" class="verified-icon" title="Compte certifié">` : '';
+  };
+
+  window.updateUnreadDots = (count) => {
+    document.querySelectorAll('.nav-unread-dot').forEach(d => {
+      d.style.display = count > 0 ? 'inline-block' : 'none';
+    });
   };
   
   function loadTheme() {
@@ -1369,26 +1394,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   
     const q = query(collection(db, "users"), where("username", "==", id));
-    const snap = await getDocs(q);
-  
-    if(snap.empty) {
-      if(id === "dan.bouillet" && pwd === "1") {
-        const u = {
-          username: "dan.bouillet", displayName: "Dan Bouillet", password: "1",
-          role: "admin", subRoles: ["admin", "volontaire"], avatar: "",
-          bio: "", banner: "", instagram: "", linkedin: "", followers: [], following: [],
-          isTempPassword: false, allowMessages: true, emailNotifs: false, email: ""
-        };
-        const r = await addDoc(collection(db, "users"), u); 
-        u.id = r.id;
-        await seedSubjects();
-        hydrateSession(u); 
-        return;
-      }
-      showToast("Identifiant introuvable."); 
-      return;
-    }
-    
+    const snap = await getDocs(q);    
     const d = snap.docs[0];
     const u = { id: d.id, ...d.data() };
     
@@ -1462,7 +1468,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   
     const isAdmin  = u.role === "admin" || (u.subRoles && u.subRoles.includes("admin"));
-    const canDepot = u.role === "professeur" || u.role === "admin" || (u.subRoles && (u.subRoles.includes("volontaire") || u.subRoles.includes("admin")));
+    const canDepot = u.role === "professeur" || u.role === "admin" || u.role === "HS" || (u.subRoles && (u.subRoles.includes("volontaire") || u.subRoles.includes("admin")));
   
     document.getElementById("tab-admin").classList.toggle("hidden", !isAdmin);
     document.getElementById("tab-depot").classList.toggle("hidden", !canDepot);
@@ -1493,12 +1499,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     loadAnnonces();
     loadCoursFeed();
     loadFRFeed();
+    loadDMChats(); 
     
     if (document.getElementById("page-quiz").classList.contains("active")) {
       loadQuizFeed();
-    }
-    if (document.getElementById("page-messages").classList.contains("active")) {
-      loadDMChats();
     }
   }
   
@@ -1683,12 +1687,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   async function syncContrib() {
     const q1 = query(collection(db, "posts"), where("authorId", "==", currentUser.username));
     const q2 = query(collection(db, "quizzes"), where("authorId", "==", currentUser.username));
+    const q3 = query(collection(db, "ai_quizzes"), where("authorId", "==", currentUser.username));
     
     const snap1 = await getDocs(q1);
     const snap2 = await getDocs(q2);
+    const snap3 = await getDocs(q3);
     
     const el = document.getElementById("contrib-count"); 
-    if(el) el.innerText = snap1.size + snap2.size;
+    if(el) el.innerText = snap1.size + snap2.size + snap3.size;
   }
   
   window.changePassword = async () => {
@@ -1736,7 +1742,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         selQuizCreate.innerHTML += opt;
         selQuizIA.innerHTML += opt;
       });
-      // Ajout de l'option "Autre" pour les quiz IA
       selQuizIA.innerHTML += `<option value="autre">Autre (préciser...)</option>`;
     });
   }
@@ -1750,6 +1755,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.openFilterModal = (context) => {
     window._filterContext = context;
     const typeGroup = document.getElementById("filter-type-group");
+    const typeLabel = document.getElementById("filter-type-label");
     const subjSelect = document.getElementById("filter-subject");
     const orderSelect = document.getElementById("filter-order");
     const typeSelect = document.getElementById("filter-type");
@@ -1765,11 +1771,24 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       subjSelect.value = window._coursFilter.subject;
       orderSelect.value = window._coursFilter.order;
     } else if (context === 'quiz') {
-      typeGroup.style.display = 'none';
+      typeGroup.style.display = 'flex';
+      typeLabel.innerText = "Type de quiz";
+      typeSelect.innerHTML = `
+        <option value="all">Tous</option>
+        <option value="manuel">Classiques</option>
+        <option value="ia">Générés par l'IA</option>
+      `;
+      typeSelect.value = window._quizFilter.type;
       subjSelect.value = window._quizFilter.subject;
       orderSelect.value = window._quizFilter.order;
     } else {
       typeGroup.style.display = 'flex';
+      typeLabel.innerText = "Type de document";
+      typeSelect.innerHTML = `
+        <option value="all">Tout</option>
+        <option value="fiches">Fiches</option>
+        <option value="revisions">Révisions</option>
+      `;
       subjSelect.value = window._frFilter.subject;
       typeSelect.value = window._frFilter.type;
       orderSelect.value = window._frFilter.order;
@@ -1785,6 +1804,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       loadCoursFeed();
     } else if (window._filterContext === 'quiz') {
       window._quizFilter.subject = document.getElementById("filter-subject").value;
+      window._quizFilter.type = document.getElementById("filter-type").value;
       window._quizFilter.order = document.getElementById("filter-order").value;
       closeModal("m-filters");
       loadQuizFeed();
@@ -1813,7 +1833,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const subjIcon   = window.subjectsMap.get(p.matiere) || "📚";
 
     const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
-    const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : "eleve";
+    const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : liveRole === "HS" ? "hs" : "eleve";
     
     const typeLabels = { cours: "Cours", fiches: "Fiche", revisions: "Révisions" };
     const typeLabel  = typeLabels[p.type] || p.type;
@@ -1954,7 +1974,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const subjIcon   = window.subjectsMap.get(q.matiere) || "📚";
 
     const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
-    const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : "eleve";
+    const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : liveRole === "HS" ? "hs" : "eleve";
     const dateStr = q.timestamp ? new Date(q.timestamp).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "Inconnue";
 
     const hasLiked = (q.likes || []).includes(currentUser?.username);
@@ -2003,7 +2023,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       : query(collection(db, "posts"), where("matiere", "==", window._coursFilter.subject), where("type", "==", "cours"));
       
     window._coursUnsub = onSnapshot(q, snap => {
-      renderFeedFromDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })), container, "Aucun cours disponible pour le moment", window._coursFilter.order, "cours");
+      let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const canSeeHS = currentUser && (currentUser.role === "admin" || currentUser.role === "HS" || (currentUser.subRoles && currentUser.subRoles.includes("admin")));
+      if (!canSeeHS) {
+        docs = docs.filter(p => p.authorRole !== "HS");
+      }
+      renderFeedFromDocs(docs, container, "Aucun cours disponible pour le moment", window._coursFilter.order, "cours");
     });
   }
   
@@ -2025,7 +2050,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
     
     window._frUnsub = onSnapshot(q, snap => {
-      renderFeedFromDocs(snap.docs.map(d => ({ id: d.id, ...d.data() })), container, "Aucune fiche ni révision pour le moment", window._frFilter.order, "fr");
+      let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const canSeeHS = currentUser && (currentUser.role === "admin" || currentUser.role === "HS" || (currentUser.subRoles && currentUser.subRoles.includes("admin")));
+      if (!canSeeHS) {
+        docs = docs.filter(p => p.authorRole !== "HS");
+      }
+      renderFeedFromDocs(docs, container, "Aucune fiche ni révision pour le moment", window._frFilter.order, "fr");
     });
   }
   
@@ -2338,7 +2368,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.deleteQuiz = async (id) => { if(confirm("Supprimer ce quiz ?")) await deleteDoc(doc(db, "quizzes", id)); };
   window.deleteAIQuiz = async (id) => { if(confirm("Supprimer ce quiz IA ?")) await deleteDoc(doc(db, "ai_quizzes", id)); loadAIQuizHistory(); };
   
-  /* --- PARTAGE PAR MESSAGES --- */
+  /* --- PARTAGE PAR MESSAGES ET LECTURE DIRECTE --- */
   window.openShareModal = (itemId, itemType, itemTitle) => {
     window._shareItem = { id: itemId, type: itemType, title: itemTitle };
     const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
@@ -2373,22 +2403,22 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.shareToChat = async (chatId, partnerUname) => {
     if(!window._shareItem) return;
     
-    let typeLabel = "ce document";
-    if (window._shareItem.type === 'quiz' || window._shareItem.type === 'ai_quiz') typeLabel = "ce quiz";
-
-    const txt = `[Partage] Je te partage ${typeLabel} : ${window._shareItem.title}`;
-    
     await addDoc(collection(db, "dm_messages"), {
       chatId: chatId,
       senderId: currentUser.username,
-      text: txt,
+      text: "", 
       fileUrl: "",
+      sharedItemId: window._shareItem.id,
+      sharedItemType: window._shareItem.type,
+      sharedItemTitle: window._shareItem.title,
       timestamp: Date.now()
     });
 
     await updateDoc(doc(db, "dm_chats", chatId), {
       lastMessage: `Partage : ${window._shareItem.title.substring(0, 20)}...`,
-      lastTimestamp: Date.now()
+      lastTimestamp: Date.now(),
+      lastSenderId: currentUser.username,
+      readBy: [currentUser.username]
     });
 
     closeModal('m-share');
@@ -2396,6 +2426,24 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     
     const pUser = window.usersMap.get(partnerUname);
     if (pUser) sendEmailNotif('message', pUser);
+  };
+
+  window.openSharedItem = async (id, type) => {
+    if (type === 'quiz') {
+      checkAndStartQuiz(id, false);
+    } else if (type === 'ai_quiz') {
+      checkAndStartQuiz(id, true);
+    } else if (type === 'post') {
+      const snap = await getDoc(doc(db, "posts", id));
+      if (!snap.exists()) {
+        showToast("Ce document n'existe plus ou a été supprimé.");
+        return;
+      }
+      const p = { id: snap.id, ...snap.data() };
+      const html = window.getPostHTML(p, 'shared');
+      document.getElementById("view-post-content").innerHTML = html;
+      openModal("m-view-post");
+    }
   };
 
 
@@ -2462,7 +2510,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
       const roleEl = document.getElementById("pub-role"); 
       roleEl.innerText = targetUser.role || "élève";
-      roleEl.className = "rbadge " + (targetUser.role === "professeur" ? "professeur" : targetUser.role === "admin" ? "admin" : "eleve");
+      roleEl.className = "rbadge " + (targetUser.role === "professeur" ? "professeur" : targetUser.role === "admin" ? "admin" : targetUser.role === "HS" ? "hs" : "eleve");
   
       const fakesCount = targetUser.fakeFollowersCount !== undefined ? targetUser.fakeFollowersCount : (targetUser.fakeFollowers || []).length;
       const realsCount = (targetUser.followers || []).length;
@@ -2642,7 +2690,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     if(fBtn) { 
       if(!isFollowing) {
         fBtn.innerText = "Abonné ✓";
-        fBtn.className = "btn-pill btn-following";
+        fBtn.className = "btn-pill btn-following"; 
       } else {
         fBtn.innerText = "S'abonner";
         fBtn.className = "btn-pill";
@@ -2712,13 +2760,16 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     window._dmChatsUnsub = onSnapshot(q, snap => {
       const box = document.getElementById("dm-contacts-list");
       if (snap.empty) { 
-        box.innerHTML = `<div class="empty-text">Aucune discussion</div>`; 
+        box.innerHTML = `<div class="empty-text">Aucune discussion</div>`;
+        updateUnreadDots(0); 
         return; 
       }
       
       let html = "";
       let chats = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
       
+      let unreadCount = 0;
+
       chats.forEach(c => {
         const partnerUname = c.participants.find(u => u !== currentUser.username);
         const partnerUser = window.usersMap.get(partnerUname) || { username: partnerUname, displayName: partnerUname };
@@ -2727,18 +2778,31 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         const init = dName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
         const avHtml = partnerUser.avatar ? `<img src="${partnerUser.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
         
+        const isUnreadByMe = c.lastSenderId && c.lastSenderId !== currentUser.username && (!c.readBy || !c.readBy.includes(currentUser.username));
+        if (isUnreadByMe) unreadCount++;
+
+        const amILastSender = c.lastSenderId === currentUser.username;
+        let statusText = "";
+        if (amILastSender) {
+           const isReadByPartner = c.readBy && c.readBy.includes(partnerUname);
+           statusText = isReadByPartner ? `<span class="msg-status">· Vu</span>` : `<span class="msg-status">· Envoyé</span>`;
+        }
+
+        const previewClass = isUnreadByMe ? "msg-unread-preview" : "";
         const isActive = window._activeChatId === c.id;
+
         html += `
           <div class="dm-contact-row ${isActive ? 'active' : ''}" onclick="openChat('${c.id}', '${partnerUname}')">
              <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
              <div style="flex:1;min-width:0;">
                <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dName}${partnerBadge}</div>
-               <div style="font-size:13px;color:var(--ink-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.lastMessage || 'Nouvelle discussion'}</div>
+               <div style="font-size:13px;color:var(--ink-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="${previewClass}">${c.lastMessage || 'Nouvelle discussion'} ${statusText}</div>
              </div>
           </div>
         `;
       });
       box.innerHTML = html;
+      updateUnreadDots(unreadCount);
     });
   }
   
@@ -2791,9 +2855,18 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   };
   
-  window.openChat = (chatId, partnerUname) => {
+  window.openChat = async (chatId, partnerUname) => {
     window._activeChatId = chatId;
     window._activeChatPartnerId = partnerUname;
+
+
+    const chatSnap = await getDoc(doc(db, "dm_chats", chatId));
+    if (chatSnap.exists()) {
+      const c = chatSnap.data();
+      if (c.lastSenderId && c.lastSenderId !== currentUser.username && (!c.readBy || !c.readBy.includes(currentUser.username))) {
+        await updateDoc(doc(db, "dm_chats", chatId), { readBy: [...(c.readBy||[]), currentUser.username] });
+      }
+    }
     
     document.getElementById("dm-form").style.display = "flex";
     document.querySelectorAll(".dm-contact-row").forEach(r => r.classList.remove("active"));
@@ -2845,11 +2918,27 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
            }
         }
         
+        let shareHtml = "";
+        if (m.sharedItemId) {
+          const icon = (m.sharedItemType === 'post') ? '📄' : '🎯';
+          const typeLabel = (m.sharedItemType === 'post') ? 'Document' : (m.sharedItemType === 'ai_quiz' ? 'Quiz IA' : 'Quiz');
+          shareHtml = `
+            <div style="margin-top: ${m.text || attachHtml ? '8px' : '0'}; padding:12px; background:var(--card-bg); border:1px solid var(--hl); border-radius:12px; color:var(--ink);">
+              <div style="font-weight:600; font-size:14px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                <span style="font-size:18px;">${icon}</span> ${typeLabel} partagé
+              </div>
+              <div style="font-size:13px; margin-bottom:12px; line-height:1.4;">${m.sharedItemTitle}</div>
+              <button class="btn-pill" style="width:100%; justify-content:center; padding:8px 12px; font-size:13px;" onclick="openSharedItem('${m.sharedItemId}', '${m.sharedItemType}')">Ouvrir</button>
+            </div>
+          `;
+        }
+        
         box.innerHTML += `
           <div class="dm-msg-wrapper ${isMe ? 'me' : 'them'}">
             <div class="dm-msg-bubble">
               ${attachHtml}
               ${m.text ? `<div>${m.text}</div>` : ''}
+              ${shareHtml}
             </div>
             <div class="dm-msg-time">${dStr}</div>
           </div>
@@ -2913,7 +3002,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const shortMsg = txt ? (txt.length > 25 ? txt.substring(0, 25) + "..." : txt) : "Pièce jointe 📎";
     await updateDoc(doc(db, "dm_chats", window._activeChatId), {
       lastMessage: shortMsg,
-      lastTimestamp: Date.now()
+      lastTimestamp: Date.now(),
+      lastSenderId: currentUser.username,
+      readBy: [currentUser.username]
     });
   
     const pUser = window.usersMap.get(window._activeChatPartnerId);
@@ -2926,9 +3017,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     btn.disabled = false;
   };
   
-  /* --- SYSTEME DE QUIZ AMÉLIORÉ --- */
-  
-  // Fonction API Groq avec le modèle Llama 3.3
+
   async function callGroqAPI(systemPrompt, userPrompt) {
     const conversationHistory = [
       { role: "system", content: systemPrompt },
@@ -2968,7 +3057,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   }
   
-  // 1. CREER UN QUIZ MANUEL
   let quizQuestionCount = 0;
   window.addQuizQuestionField = () => {
     if (quizQuestionCount >= 50) { 
@@ -3091,21 +3179,47 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   };
   
-  // 2. AFFICHER LES FEED QUIZ
   function loadQuizFeed() {
-    if(window._quizUnsub) { window._quizUnsub(); window._quizUnsub = null; }
+    if (window._quizUnsub) { window._quizUnsub(); window._quizUnsub = null; }
+    if (window._aiQuizUnsub) { window._aiQuizUnsub(); window._aiQuizUnsub = null; }
     
     const container = document.getElementById("quiz-feed"); 
     if(!container) return;
     
     container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
     
-    const q = window._quizFilter.subject === "all"
+    const renderCombined = () => {
+      let combined = [...(window._liveQuizzesData || []), ...(window._liveAIQuizzesData || [])];
+      
+
+      const canSeeHS = currentUser && (currentUser.role === "admin" || currentUser.role === "HS" || (currentUser.subRoles && currentUser.subRoles.includes("admin")));
+      if (!canSeeHS) {
+        combined = combined.filter(q => q.authorRole !== "HS");
+      }
+      
+
+      if (window._quizFilter.type === 'manuel') combined = combined.filter(q => !q.isAI);
+      if (window._quizFilter.type === 'ia') combined = combined.filter(q => q.isAI);
+
+      renderQuizFeedToContainer(combined, container, "Aucun quiz disponible", window._quizFilter.order);
+    };
+
+    const qQuizzes = window._quizFilter.subject === "all"
       ? query(collection(db, "quizzes"))
       : query(collection(db, "quizzes"), where("matiere", "==", window._quizFilter.subject));
       
-    window._quizUnsub = onSnapshot(q, snap => {
-      renderQuizFeedToContainer(snap.docs.map(d => ({ id: d.id, ...d.data() })), container, "Aucun quiz disponible", window._quizFilter.order);
+    window._quizUnsub = onSnapshot(qQuizzes, snap => {
+      window._liveQuizzesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderCombined();
+    });
+
+    const qAI = window._quizFilter.subject === "all"
+      ? query(collection(db, "ai_quizzes"))
+      : query(collection(db, "ai_quizzes"), where("matiere", "==", window._quizFilter.subject));
+    
+    window._aiQuizUnsub = onSnapshot(qAI, snap => {
+      window._liveAIQuizzesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderCombined();
     });
   }
   
@@ -3162,7 +3276,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     });
   }
   
-  // 3. GENERER QUIZ IA
   window.generateAIQuiz = async () => {
     let matiere = document.getElementById("quiz-ia-matiere").value;
     if(matiere === 'autre') {
@@ -3170,7 +3283,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
     
     const topic = document.getElementById("quiz-ia-topic").value.trim();
-    const nbQuestions = document.getElementById("quiz-ia-count").value || 5;
+    const nbQuestions = Math.min(20, Math.max(1, parseInt(document.getElementById("quiz-ia-count").value) || 5));
     const desc = document.getElementById("quiz-ia-desc").value.trim();
   
     if (!topic || !matiere) { 
@@ -3240,7 +3353,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   };
   
-  // 4. LOGIQUE POUR FAIRE LE QUIZ
   window.checkAndStartQuiz = async (quizId, isAI) => {
     const collectionName = isAI ? "ai_quizzes" : "quizzes";
     const ref = doc(db, collectionName, quizId);
@@ -3370,7 +3482,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.getElementById("quiz-result-msg").innerText = `${msg} (répondu en ${timeTaken}s)`;
     openModal('m-quiz-result');
   
-    // On conserve un historique basique des essais (pour bloquer à 5 essais)
     if (!window._currentQuizData.isAI) {
       await addDoc(collection(db, "quiz_attempts"), {
         quizId: window._currentQuizData.id,
@@ -3429,7 +3540,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.closeTakeQuizModal = async () => {
-    //
   };
   
   window.abortQuiz = () => {
@@ -3439,7 +3549,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   };
   
-  // ... Utilitaires Admin ...
   window.handleAddMatiere = async () => {
     const name = document.getElementById("mat-name").value.trim();
     const icon = document.getElementById("mat-icon").value.trim();
@@ -3487,7 +3596,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.delMatiere = async (id) => {
-    if(confirm("Supprimer cette matière ? Les ressources associées resteront en base.")) {
+    if(confirm("Supprimer cette matière ? Les ressources associée resteront en base.")) {
       await deleteDoc(doc(db, "subjects", id));
     }
   };
@@ -3629,7 +3738,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.delUser = async (docId, uname) => {
-    if(uname === "dan.bouillet") {
+    if(uname === "...") {
       showToast("Compte protégé.");
       return;
     }
