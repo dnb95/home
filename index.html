@@ -416,6 +416,58 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   .tiktok-tabs { overflow-x:auto; white-space:nowrap; }
   .tk-tab { padding:12px 16px; flex:none; }
 }
+.site-footer {
+    text-align: center;
+    padding: 24px 20px;
+    border-top: 1px solid var(--hl);
+    margin-top: 40px;
+    font-size: 13px;
+    color: var(--ink-m);
+    line-height: 1.6;
+  }
+  .site-footer a {
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .site-footer a:hover {
+    color: var(--primary-f);
+    text-decoration: underline;
+  }
+  .cookie-banner {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--nav-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid var(--hl);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 9999;
+    box-shadow: 0 -10px 30px var(--shadow);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .cookie-text {
+    font-size: 14px;
+    color: var(--ink);
+    flex: 1;
+    min-width: 250px;
+    line-height: 1.5;
+  }
+  .cookie-actions {
+    display: flex;
+    gap: 8px;
+  }
+  @media(max-width:600px) {
+    .cookie-banner { flex-direction: column; align-items: stretch; padding: 20px; }
+    .cookie-actions { justify-content: stretch; width: 100%; }
+    .cookie-actions button { flex: 1; justify-content: center; }
+  }
 </style>
 </head>
 <body>
@@ -425,6 +477,16 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   .msg-unread-preview { font-weight:800!important; color:var(--ink)!important; }
   .msg-status { font-size:11px; color:var(--ink-m); margin-left:6px; font-weight:normal; }
 </style>
+
+<div id="cookie-banner" class="cookie-banner" style="display: none;">
+  <div class="cookie-text">
+    <strong>🍪 À propos des cookies :</strong> Ce site utilise Google Analytics pour analyser le trafic (nombre de visiteurs, temps passé sur les révisions, etc.) afin d'améliorer la plateforme pour tout le monde.
+  </div>
+  <div class="cookie-actions">
+    <button class="btn-ghost btn-sm" onclick="handleCookies(false)">Refuser</button>
+    <button class="btn-pill btn-sm" onclick="handleCookies(true)">Accepter</button>
+  </div>
+</div>
 
 <div id="view-login" class="login-screen">
   <div class="login-box">
@@ -931,7 +993,29 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       </table>
     </section>
 
+    <footer class="site-footer">
+      <p>DnB Reviz est un projet bénévole créé par Dan Bouillet pour aider les élèves à réviser.</p>
+      <p>© 2026 Dan Bouillet (DnB Reviz). Tous droits réservés.</p>
+      <p style="margin-top:8px;"><a onclick="openModal('m-legals')">Mentions Légales</a></p>
+    </footer>
+
   </main>
+</div>
+
+<div id="m-legals" class="moverlay" onclick="closeOnOut(event,'m-legals')">
+  <div class="mbox" style="max-width: 600px;">
+    <h2>Mentions Légales</h2>
+    <div style="font-size: 14px; color: var(--ink); line-height: 1.6; margin-top: 16px;">
+      <p><strong>Éditeur et Créateur :</strong> Dan Bouillet</p>
+      <p><strong>Hébergement :</strong> GitHub Pages (GitHub Inc.)</p>
+      <p><strong>Base de données :</strong> Firebase (Google LLC)</p>
+      <p><strong>Données Personnelles :</strong> Seuls les noms et prénoms des élèves sont stockés dans la base de données. Les mots de passe et adresses e-mail ne sont <strong>pas</strong> conservés par soucis de confidentialité, même à titre d'essai.</p>
+      <p><strong>Propriété intellectuelle :</strong> © 2026 DnB Reviz. Tous droits réservés.</p>
+    </div>
+    <div class="mact mt-3">
+      <button class="btn-pill" style="width: 100%; justify-content: center;" onclick="closeModal('m-legals')">Fermer</button>
+    </div>
+  </div>
 </div>
 
 <div id="m-share" class="moverlay" onclick="closeOnOut(event,'m-share')">
@@ -1325,7 +1409,21 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   });
   
   window.addEventListener("hashchange", handleHashChange);
-  window.addEventListener("DOMContentLoaded", () => setTimeout(handleHashChange, 50));
+  
+  window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(handleHashChange, 50);
+    if (!localStorage.getItem('dnb_cookie_consent')) {
+      document.getElementById('cookie-banner').style.display = 'flex';
+    }
+  });
+
+  window.handleCookies = (accept) => {
+    localStorage.setItem('dnb_cookie_consent', accept ? 'true' : 'false');
+    document.getElementById('cookie-banner').style.display = 'none';
+    if (accept) {
+       console.log("Google Analytics activé");
+    }
+  };
   
   function handleHashChange() {
     const hash = window.location.hash.trim();
@@ -1997,7 +2095,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         <div>
           <div class="post-title">${q.title}</div>
           ${q.description ? `<p class="post-desc">${q.description}</p>` : ""}
-          <div class="caption mt-1">${(q.questions || []).length} questions • Créé le ${dateStr}</div>
+          <div class="caption mt-1">${(q.questions || []).length} questions • Créé le ${dateStr} • <strong>Fait par ${q.attemptsCount || 0} personne(s)</strong></div>
         </div>
         <div class="post-actions" style="margin-top: 8px; border-top: 1px solid var(--hl); padding-top: 12px;">
           <button class="like-btn ${hasLiked ? 'liked' : ''}" onclick="toggleQuizLike('${qId}', ${q.isAI})">
@@ -3303,7 +3401,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         "question": "Texte de la question ?",
         "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
         "correctIndex": 0,
-        "justification": "Explication courte."
+        "justification": "Explication courte mais précise."
       }
     ]
   }`;
@@ -3318,7 +3416,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       }
   
       const newQuiz = {
-        title: `Quiz IA : ${topic}`,
+        title: `[IA] :${topic}`,
         matiere: matiere,
         description: desc,
         questions: quizData.questions,
@@ -3481,6 +3579,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     
     document.getElementById("quiz-result-msg").innerText = `${msg} (répondu en ${timeTaken}s)`;
     openModal('m-quiz-result');
+
+    const colName = window._currentQuizData.isAI ? "ai_quizzes" : "quizzes";
+    const currentCount = window._currentQuizData.attemptsCount || 0;
+    try {
+      await updateDoc(doc(db, colName, window._currentQuizData.id), { attemptsCount: currentCount + 1 });
+    } catch(err) {
+      console.error("Erreur lors de la mise à jour du compteur :", err);
+    }
   
     if (!window._currentQuizData.isAI) {
       await addDoc(collection(db, "quiz_attempts"), {
