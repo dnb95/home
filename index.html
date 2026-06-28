@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DnB Reviz</title>
 <meta property="og:title" content="DnB Reviz" />
-<meta property="og:image" content="https://i.ibb.co/BKZSSs16/banner-Dn-B.png" />
+<meta property="og:image" content="https://iili.io/CR2iW9n.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta property="og:type" content="website" />
 <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png">
@@ -476,10 +476,25 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 </head>
 <body>
 <style>
-  .rbadge.hs { background: #8e8e93; color: #fff; }
+ .rbadge.hs { background: #8e8e93; color: #fff; }
   .nav-unread-dot { display:none; width:8px; height:8px; background:var(--danger); border-radius:50%; margin-left:6px; vertical-align:middle; }
   .msg-unread-preview { font-weight:800!important; color:var(--ink)!important; }
   .msg-status { font-size:11px; color:var(--ink-m); margin-left:6px; font-weight:normal; }
+  
+  .soc-pill.tiktok:hover { color: #000; border-color: rgba(0,0,0,.3); }
+  [data-theme=dark] .soc-pill.tiktok:hover { color: #fff; border-color: rgba(255,255,255,.3); }
+  
+  .pinned-post-wrapper {
+    background: var(--ann-bg); 
+    border: 1px solid var(--ann-b); 
+    border-radius: 18px; 
+    padding: 20px; 
+    margin-bottom: 32px;
+  }
+  .pinned-post-wrapper .post-card {
+    border: 1px solid var(--primary);
+    box-shadow: 0 4px 14px rgba(0,0,0,.05);
+  }
 </style>
 
 <div id="cookie-banner" class="cookie-banner" style="display: none;">
@@ -487,7 +502,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     <strong>🍪 À propos des cookies :</strong> Ce site utilise Google Analytics pour analyser le trafic (nombre de visiteurs, temps passé sur les révisions, etc.) afin d'améliorer la plateforme pour tout le monde.
   </div>
   <div class="cookie-actions">
-    <button class="btn-ghost btn-sm" onclick="handleCookies(false)">Refuser</button>
+    <button class="btn-ghost btn-sm" onclick="handleCookies(true)">Refuser</button>
     <button class="btn-pill btn-sm" onclick="handleCookies(true)">Accepter</button>
   </div>
 </div>
@@ -620,6 +635,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         </div>
         <button class="btn-pill-van admin-only hidden" onclick="openModal('m-add-mat')">+ Ajouter une matière</button>
       </div>
+      
+      <div id="pinned-annonces-zone"></div>
+      
       <div class="grid-matieres" id="matieres-grid"></div>
       <div id="annonces-zone" class="mt-4"></div>
     </section>
@@ -740,16 +758,17 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           <input type="text" id="post-title" placeholder="Ex : Chapitre 3 — Le contrat de travail">
         </div>
         <div class="input-group">
-          <label>Matière *</label>
-          <select id="post-matiere"></select>
-        </div>
-        <div class="input-group">
           <label>Catégorie *</label>
-          <select id="post-type">
+          <select id="post-type" onchange="handlePostTypeChange()">
             <option value="cours">Cours</option>
             <option value="fiches">Fiche mémo</option>
             <option value="revisions">Révisions</option>
+            <option value="annonce" class="admin-only hidden">Annonce (Épinglée en haut des matières)</option>
           </select>
+        </div>
+        <div class="input-group" id="group-post-matiere">
+          <label>Matière *</label>
+          <select id="post-matiere"></select>
         </div>
         <div class="input-group">
           <label>Description (facultatif)</label>
@@ -893,6 +912,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
             <label>Lien LinkedIn</label>
             <input type="url" id="prof-linkedin-input" placeholder="https://www.linkedin.com/in/...">
           </div>
+          
+          <div class="input-group admin-only hidden" id="group-tiktok">
+            <label>Compte TikTok (Admin uniquement)</label>
+            <input type="text" id="prof-tiktok-input" placeholder="ex: @username">
+          </div>
+          
           <div class="input-group">
             <label>Bannière de profil (Image ou GIF)</label>
             <div class="banner-input-wrap">
@@ -1237,7 +1262,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   <div class="mbox" style="max-width:600px;">
     <div class="q-header">
       <h2 id="take-quiz-title" style="margin:0">Titre Quiz</h2>
-      <span class="type-tag" id="take-quiz-progress" style="background:var(--primary-l); color:var(--primary-f); font-size:14px;">1/10</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button class="btn-utility btn-sm" style="padding: 4px 10px; font-size:16px;" onclick="readQuestionAloud()" title="Lire la question à voix haute">🔊</button>
+        <span class="type-tag" id="take-quiz-progress" style="background:var(--primary-l); color:var(--primary-f); font-size:14px;">1/10</span>
+      </div>
     </div>
     <div id="take-quiz-loading" style="display:none; text-align:center; padding:40px 0;">
       <div class="spinner" style="margin:0 auto 10px;"></div>
@@ -1313,6 +1341,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window._coursUnsub   = null;
   window._frUnsub      = null;
+  window._pinnedUnsub  = null;
   
   window._quizUnsub    = null;
   window._aiQuizUnsub  = null;
@@ -1497,6 +1526,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
     const q = query(collection(db, "users"), where("username", "==", id));
     const snap = await getDocs(q);    
+    if (snap.empty) {
+      showToast("Identifiant introuvable.");
+      return;
+    }
     const d = snap.docs[0];
     const u = { id: d.id, ...d.data() };
     
@@ -1558,6 +1591,13 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.getElementById("prof-insta-input").value    = u.instagram || "";
     document.getElementById("prof-linkedin-input").value = u.linkedin || "";
     document.getElementById("prof-banner-input").value   = u.banner || "";
+    
+    const isAdmin  = u.role === "admin" || (u.subRoles && u.subRoles.includes("admin"));
+    const groupTiktok = document.getElementById("group-tiktok");
+    if(groupTiktok && isAdmin) {
+      groupTiktok.classList.remove("hidden");
+      document.getElementById("prof-tiktok-input").value = u.tiktok || "";
+    }
   
     if (document.getElementById("tog-allow-msgs")) {
       document.getElementById("tog-allow-msgs").checked = u.allowMessages !== false;
@@ -1569,7 +1609,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       document.getElementById("setting-email").value = u.email || "";
     }
   
-    const isAdmin  = u.role === "admin" || (u.subRoles && u.subRoles.includes("admin"));
     const canDepot = u.role === "professeur" || u.role === "admin" || u.role === "HS" || (u.subRoles && (u.subRoles.includes("volontaire") || u.subRoles.includes("admin")));
   
     document.getElementById("tab-admin").classList.toggle("hidden", !isAdmin);
@@ -1599,6 +1638,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
     
     loadAnnonces();
+    loadPinnedAnnonces();
     loadCoursFeed();
     loadFRFeed();
     loadDMChats(); 
@@ -1728,10 +1768,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const insta    = document.getElementById("prof-insta-input").value.trim();
     const linkedin = document.getElementById("prof-linkedin-input").value.trim();
     const banner   = document.getElementById("prof-banner-input").value.trim();
+    const tkInput  = document.getElementById("prof-tiktok-input");
+    const tiktok   = tkInput ? tkInput.value.trim() : "";
   
     if(!d) return;
   
-    const updates = { displayName: d, bio, instagram: insta, linkedin, banner };
+    const updates = { displayName: d, bio, instagram: insta, linkedin, banner, tiktok };
     await updateDoc(doc(db, "users", currentUser.id), updates);
     
     Object.assign(currentUser, updates);
@@ -1919,7 +1961,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
   };
   
-  /* --- HELPERS DE RENDU HTML (POUR UNIFIER L'AFFICHAGE) --- */
   window.getPostHTML = (p, context) => {
     const pId = p.id;
     const isAdmin = currentUser?.role === "admin" || (currentUser?.subRoles && currentUser.subRoles.includes("admin"));
@@ -1932,13 +1973,16 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const liveName   = liveAuthor.displayName || p.authorDisplayName || p.authorId;
     const liveAv     = liveAuthor.avatar !== undefined ? liveAuthor.avatar : p.authorAvatar;
     const authorBadge = getBadge(liveAuthor);
-    const subjIcon   = window.subjectsMap.get(p.matiere) || "📚";
+    
+    const subjIcon = p.type === "annonce" ? "📌" : (window.subjectsMap.get(p.matiere) || "📚");
 
     const avContent = liveAv ? `<img src="${liveAv}" alt="">` : liveName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
     const roleClass = liveRole === "professeur" ? "professeur" : liveRole === "admin" ? "admin" : liveRole === "HS" ? "hs" : "eleve";
     
-    const typeLabels = { cours: "Cours", fiches: "Fiche", revisions: "Révisions" };
+    const typeLabels = { cours: "Cours", fiches: "Fiche", revisions: "Révisions", annonce: "Annonce Épinglée" };
     const typeLabel  = typeLabels[p.type] || p.type;
+    
+    const tagBgClass = p.type === "annonce" ? "background:var(--danger);color:#fff;" : "";
 
     const targetUrl = p.fileData || p.url;
     const isPDF     = p.fileType === "application/pdf" || targetUrl?.toLowerCase().endsWith(".pdf");
@@ -2028,7 +2072,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
               <a href="#${p.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
               <div class="post-meta">
                 <span class="rbadge ${roleClass}">${liveRole}</span>
-                <span class="type-tag ${p.type}">${typeLabel}</span>
+                <span class="type-tag ${p.type}" style="${tagBgClass}">${typeLabel}</span>
                 <span class="subj-tag">${subjIcon} ${p.matiere}</span>
               </div>
             </div>
@@ -2111,7 +2155,32 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       </div>`;
   };
 
-  /* --- SYSTEME DE POSTS (Cours / Fiches) --- */
+  /* --- SYSTEME DE POSTS (Cours / Fiches / Annonces épinglées) --- */
+  function loadPinnedAnnonces() {
+    if(window._pinnedUnsub) { window._pinnedUnsub(); window._pinnedUnsub = null; }
+    const zone = document.getElementById("pinned-annonces-zone");
+    if(!zone) return;
+    
+    const qPinned = query(collection(db, "posts"), where("type", "==", "annonce"));
+    window._pinnedUnsub = onSnapshot(qPinned, snap => {
+      if(snap.empty) {
+        zone.innerHTML = "";
+        return;
+      }
+      let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      docs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+      
+      let html = `<div class="pinned-post-wrapper">
+                    <h3 style="margin-bottom:16px; color:var(--ink); display:flex; align-items:center; gap:8px;">📌 Annonces Importantes</h3>
+                    <div style="display:flex; flex-direction:column; gap:16px;">`;
+      docs.forEach(p => {
+        html += window.getPostHTML(p, "pinned");
+      });
+      html += `</div></div>`;
+      zone.innerHTML = html;
+    });
+  }
+
   function loadCoursFeed() {
     if(window._coursUnsub) { window._coursUnsub(); window._coursUnsub = null; }
     
@@ -2189,12 +2258,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     onSnapshot(collection(db, "annonces"), (snap) => {
       const titleRow = `
       <div class="ann-section-title">
-        📢 Annonces
+        📢 Petites Annonces
         ${isAdmin ? `<button class="btn-pill-van btn-sm" onclick="openAnnonceModal('')">+ Nouvelle annonce</button>` : ""}
       </div>`;
       
       if(snap.empty) {
-        zone.innerHTML = isAdmin ? titleRow + `<div class="empty-text">Aucune annonce pour le moment</div>` : ""; 
+        zone.innerHTML = isAdmin ? titleRow + `<div class="empty-text">Aucune petite annonce pour le moment</div>` : ""; 
         return;
       }
       
@@ -2271,15 +2340,34 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.getElementById("file-prev").style.display = "none";
   };
   
+  window.handlePostTypeChange = () => {
+    const type = document.getElementById("post-type").value;
+    const matiereGroup = document.getElementById("group-post-matiere");
+    if(type === "annonce") {
+      matiereGroup.style.display = "none";
+    } else {
+      matiereGroup.style.display = "flex";
+    }
+  };
+  
   window.handleCreatePost = async () => {
     const title = document.getElementById("post-title").value.trim();
-    const matiere = document.getElementById("post-matiere").value;
     const type = document.getElementById("post-type").value;
+    
+    let matiere = "Général";
+    if (type !== "annonce") {
+      matiere = document.getElementById("post-matiere").value;
+      if(!matiere) {
+        showToast("Matière requise.");
+        return;
+      }
+    }
+    
     const desc = document.getElementById("post-desc").value.trim();
     const urlInput = document.getElementById("post-url").value.trim();
     
-    if(!title || !matiere) {
-      showToast("Titre et matière requis.");
+    if(!title) {
+      showToast("Titre requis.");
       return;
     }
   
@@ -2326,7 +2414,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       }
   
       if(type === "cours") switchTab('cours'); 
+      else if(type === "annonce") switchTab('matieres');
       else switchTab('fichesrev');
+      
     } catch(e) { 
       showToast("Erreur d'envoi."); 
     }
@@ -2629,6 +2719,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       if(targetUser.linkedin) {
         const cleanLd = targetUser.linkedin.startsWith("http") ? targetUser.linkedin : "https://" + targetUser.linkedin;
         socBox.innerHTML += `<a href="${cleanLd}" target="_blank" class="soc-pill linkedin"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg><span>LinkedIn</span></a>`;
+      }
+      if(targetUser.tiktok) {
+        const cleanTk = targetUser.tiktok.replace("https://tiktok.com/", "").replace("https://www.tiktok.com/", "").replace("@", "").trim();
+        socBox.innerHTML += `<a href="https://tiktok.com/@${cleanTk}" target="_blank" class="soc-pill tiktok"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91 0 .73 1.5 1.93 2.7 3.44 3.26v4.06c-1.33-.28-2.58-.93-3.56-1.87-.01 2.21-.01 4.41-.02 6.62-.2 2.6-1.6 5.06-3.86 6.36-2.6 1.5-5.91 1.25-8.15-.65-2.07-1.77-2.98-4.66-2.22-7.25.75-2.52 2.87-4.46 5.48-4.93v4.25c-1.2.29-2.23 1.16-2.6 2.37-.38 1.25.04 2.65 1.05 3.44 1.1.84 2.7.93 3.9.23 1.15-.67 1.83-1.89 1.83-3.21.02-4.8.02-9.6.02-14.4 0-.01-.01-.02-.02-.03z"/></svg><span>${cleanTk}</span></a>`;
       }
   
       const followBtn = document.getElementById("pub-follow-btn");
@@ -3556,6 +3650,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.nextQuizQuestion = () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     if (window._currentQuestionIndex < window._currentQuizData.questions.length - 1) {
       window._currentQuestionIndex++;
       renderCurrentQuestion();
@@ -3563,8 +3658,28 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       submitQuiz();
     }
   };
+
+  window.readQuestionAloud = () => {
+    if (!window.speechSynthesis) {
+      showToast("La lecture audio n'est pas supportée par ton navigateur.");
+      return;
+    }
+    
+    window.speechSynthesis.cancel(); 
+    if (!window._currentQuizData) return;
+    
+    const qData = window._currentQuizData.questions[window._currentQuestionIndex];
+    const qText = qData.question;
+    const optionsText = qData.options.join(", ou ");
+    const textToRead = `${qText}. Les réponses possibles sont : ${optionsText}.`;
+    
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.lang = 'fr-FR'; 
+    window.speechSynthesis.speak(utterance);
+  };
   
   window.submitQuiz = async () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     closeModal('m-take-quiz');
     
     let score = 0;
@@ -3650,10 +3765,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.closeTakeQuizModal = async () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
   };
   
   window.abortQuiz = () => {
     if(confirm("Veux-tu vraiment quitter le quiz en cours ?")) {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
       closeModal('m-take-quiz');
       window._currentQuizData = null;
     }
@@ -3838,7 +3955,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       const autoName = displayNameFromId(username);
       await addDoc(collection(db, "users"), {
         username, displayName: autoName, password: pwd, avatar: "", bio: "", banner: "",
-        instagram: "", linkedin: "", followers: [], following: [], isTempPassword: true,
+        instagram: "", linkedin: "", tiktok: "", followers: [], following: [], isTempPassword: true,
         allowMessages: true, emailNotifs: false, email: "", ...updates
       }); 
       
