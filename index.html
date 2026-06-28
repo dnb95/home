@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DnB Reviz</title>
 <meta property="og:title" content="DnB Reviz" />
-<meta property="og:image" content="https://iili.io/CR2iW9n.png" />
+<meta property="og:image" content="https://i.ibb.co/BKZSSs16/banner-Dn-B.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta property="og:type" content="website" />
 <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png">
@@ -476,7 +476,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 </head>
 <body>
 <style>
- .rbadge.hs { background: #8e8e93; color: #fff; }
+  .rbadge.hs { background: #8e8e93; color: #fff; }
   .nav-unread-dot { display:none; width:8px; height:8px; background:var(--danger); border-radius:50%; margin-left:6px; vertical-align:middle; }
   .msg-unread-preview { font-weight:800!important; color:var(--ink)!important; }
   .msg-status { font-size:11px; color:var(--ink-m); margin-left:6px; font-weight:normal; }
@@ -494,6 +494,18 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   .pinned-post-wrapper .post-card {
     border: 1px solid var(--primary);
     box-shadow: 0 4px 14px rgba(0,0,0,.05);
+  }
+
+  @media(max-width: 850px) {
+    .pinned-post-wrapper {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      margin-bottom: 24px !important;
+    }
+    .pinned-post-wrapper h3 {
+      font-size: 18px;
+    }
   }
 </style>
 
@@ -902,7 +914,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           </div>
           <div class="input-group">
             <label>Biographie</label>
-            <textarea id="prof-bio-input" placeholder="Parle de tes spécialités, de ce que tu révises..."></textarea>
+            <textarea id="prof-bio-input" placeholder="Parle de tes spécialités, de ce que tu révises... (Les Admins peuvent mentionner des membres avec @pseudo)"></textarea>
           </div>
           <div class="input-group">
             <label>Compte Instagram</label>
@@ -1330,9 +1342,11 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   emailjs.init("2VkygefcXxbSOlhFX");
   
+  // Utilisation du modèle llama-3.3-70b-versatile. 
+  // C'est de loin le modèle gratuit le plus performant pour ce type de requête complexe sur l'API Groq.
   const GROQ_API_KEY = "gsk_6eXCMxw6tuEMF9l" + "9dhgWWGdyb3FYgEMb" + "hom4ALVfRXf4X0VaByU6";
   const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-  const GROQ_MODEL   = "llama-3.3-70b-versatile";
+  const GROQ_MODEL   = "llama-3.3-70b-versatile"; 
   
   window.currentUser = null;
   window.usersMap    = new Map();
@@ -1420,21 +1434,21 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     snap.forEach(d => {
       const u = d.data();
       window.usersMap.set(u.username, { id: d.id, ...u });
-      if(currentUser && u.username === currentUser.username) {
+      if (currentUser && u.username === currentUser.username) {
         Object.assign(currentUser, { id: d.id, ...u });
       }
     });
     
-    if(document.getElementById("page-cours").classList.contains("active")) loadCoursFeed();
-    if(document.getElementById("page-fichesrev").classList.contains("active")) loadFRFeed();
-    if(document.getElementById("page-quiz").classList.contains("active")) loadQuizFeed();
+    if (document.getElementById("page-cours").classList.contains("active")) loadCoursFeed();
+    if (document.getElementById("page-fichesrev").classList.contains("active")) loadFRFeed();
+    if (document.getElementById("page-quiz").classList.contains("active")) loadQuizFeed();
     
-    if(window._currentViewedUser) {
+    if (window._currentViewedUser) {
       renderPublicProfile(window._currentViewedUser.username);
-      if(window._pubTabActive === 'likes') renderPubLikes();
+      if (window._pubTabActive === 'likes') renderPubLikes();
     }
     
-    if(currentUser) {
+    if (currentUser) {
       const myBadge = getBadge(currentUser);
       document.getElementById("drop-name").innerHTML = (currentUser.displayName || currentUser.username) + myBadge;
       document.getElementById("drawer-name").innerHTML = (currentUser.displayName || currentUser.username) + myBadge;
@@ -1448,6 +1462,15 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     if (!localStorage.getItem('dnb_cookie_consent')) {
       document.getElementById('cookie-banner').style.display = 'flex';
     }
+
+    // --- FIX IOS : Remplacement de l'icône de navigation sur les appareils Apple ---
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      const navImg = document.querySelector('.header-left img');
+      if (navImg) {
+          navImg.src = 'https://i.ibb.co/tPpXJLTz/Dn-BChrome.png';
+      }
+    }
   });
 
   window.handleCookies = (accept) => {
@@ -1460,16 +1483,18 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   function handleHashChange() {
     const hash = window.location.hash.trim();
-    if(!hash || hash === "#") {
+    if (!hash || hash === "#") {
       showInternalView('matieres'); 
       return;
     }
-    if(hash.startsWith("#page-")) {
+    if (hash.startsWith("#page-")) {
       showInternalView(hash.replace("#page-", "")); 
       return;
     }
     const uname = decodeURIComponent(hash.substring(1)).toLowerCase().trim();
-    if(uname) renderPublicProfile(uname);
+    if (uname) {
+        renderPublicProfile(uname);
+    }
   }
   
   function showInternalView(target) {
@@ -1501,12 +1526,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   signInAnonymously(auth).then(async () => {
     const s = localStorage.getItem("dnb_reviz_session");
-    if(s) {
+    if (s) {
       const cached = JSON.parse(s);
       hydrateSession(cached);
       try {
         const freshSnap = await getDoc(doc(db, "users", cached.id));
-        if(freshSnap.exists()) {
+        if (freshSnap.exists()) {
           hydrateSession({ id: freshSnap.id, ...freshSnap.data() });
         }
       } catch(e) {
@@ -1519,7 +1544,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.handleLogin = async () => {
     const id  = document.getElementById("login-id").value.trim().toLowerCase();
     const pwd = document.getElementById("login-pwd").value.trim();
-    if(!id || !pwd) {
+    if (!id || !pwd) {
       showToast("Remplis tous les champs.");
       return;
     }
@@ -1533,15 +1558,15 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const d = snap.docs[0];
     const u = { id: d.id, ...d.data() };
     
-    if(u.password !== pwd) {
+    if (u.password !== pwd) {
       showToast("Mot de passe incorrect.");
       return;
     }
     hydrateSession(u);
   };
   
-  document.getElementById("login-pwd").addEventListener("keydown", e => { if(e.key === "Enter") handleLogin(); });
-  document.getElementById("login-id").addEventListener("keydown", e => { if(e.key === "Enter") handleLogin(); });
+  document.getElementById("login-pwd").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
+  document.getElementById("login-id").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
   
   window.handleLogout = () => {
     localStorage.removeItem("dnb_reviz_session");
@@ -1560,7 +1585,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       { name: "Langues Vivantes", icon: "🗣️" },
       { name: "Spécialité MSGN", icon: "🚀" }
     ];
-    for(const m of base) {
+    for (const m of base) {
       await addDoc(collection(db, "subjects"), m);
     }
   }
@@ -1594,7 +1619,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     
     const isAdmin  = u.role === "admin" || (u.subRoles && u.subRoles.includes("admin"));
     const groupTiktok = document.getElementById("group-tiktok");
-    if(groupTiktok && isAdmin) {
+    if (groupTiktok && isAdmin) {
       groupTiktok.classList.remove("hidden");
       document.getElementById("prof-tiktok-input").value = u.tiktok || "";
     }
@@ -1620,19 +1645,20 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const drawerDepot = document.getElementById("drawer-depot");
     const drawerAdmin = document.getElementById("drawer-admin");
     const drawerCreerQuiz = document.getElementById("drawer-creer-quiz");
-    if(drawerDepot) drawerDepot.classList.toggle("hidden", !canDepot);
-    if(drawerCreerQuiz) drawerCreerQuiz.classList.toggle("hidden", !canDepot);
-    if(drawerAdmin) drawerAdmin.classList.toggle("hidden", !isAdmin);
+    
+    if (drawerDepot) drawerDepot.classList.toggle("hidden", !canDepot);
+    if (drawerCreerQuiz) drawerCreerQuiz.classList.toggle("hidden", !canDepot);
+    if (drawerAdmin) drawerAdmin.classList.toggle("hidden", !isAdmin);
   
     document.getElementById("drawer-role").innerText = u.role;
     setDrawerAvatar(u.avatar, u.displayName || u.username);
   
-    if(u.isTempPassword) openModal("m-force-pwd");
+    if (u.isTempPassword) openModal("m-force-pwd");
   
     loadMatieres();
     syncContrib();
     
-    if(isAdmin) {
+    if (isAdmin) {
       syncAdminUsers();
       syncAdminMats();
     }
@@ -1653,13 +1679,13 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     
     ["nav-initials", "prof-initials"].forEach(id => {
       const el = document.getElementById(id);
-      if(el) el.innerText = initials;
+      if (el) el.innerText = initials;
     });
     
     ["nav-av-img", "prof-av-img"].forEach(id => {
       const el = document.getElementById(id); 
-      if(!el) return;
-      if(data) {
+      if (!el) return;
+      if (data) {
         el.src = data;
         el.style.display = "block";
       } else {
@@ -1668,9 +1694,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     });
     
     const navI = document.getElementById("nav-initials");
-    if(navI) navI.style.display = data ? "none" : "block";
+    if (navI) navI.style.display = data ? "none" : "block";
     const pI = document.getElementById("prof-initials");
-    if(pI) pI.style.display = data ? "none" : "block";
+    if (pI) pI.style.display = data ? "none" : "block";
   }
   
   function setDrawerAvatar(data, name) {
@@ -1678,22 +1704,22 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const el = document.getElementById("drawer-initials");
     const img = document.getElementById("drawer-av-img");
     
-    if(el) el.innerText = initials;
-    if(img) {
-      if(data) {
+    if (el) el.innerText = initials;
+    if (img) {
+      if (data) {
         img.src = data;
         img.style.display = "block";
-        if(el) el.style.display = "none";
+        if (el) el.style.display = "none";
       } else {
         img.style.display = "none";
-        if(el) el.style.display = "block";
+        if (el) el.style.display = "block";
       }
     }
   }
   
   window.handleForcePwd = async () => {
     const p = document.getElementById("force-pwd").value.trim();
-    if(p.length < 4) {
+    if (p.length < 4) {
       showToast("Min. 4 caractères.");
       return;
     }
@@ -1717,15 +1743,15 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       body: fd
     });
     
-    if(!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
     const data = await res.json();
-    if(data.error) throw new Error(data.error.message);
+    if (data.error) throw new Error(data.error.message);
     return data.secure_url; 
   }
   
   window.uploadAvatar = (e) => {
     const file = e.target.files[0]; 
-    if(!file) return;
+    if (!file) return;
     
     const r = new FileReader();
     r.onload = (ev) => {
@@ -1750,14 +1776,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window.uploadMyBanner = async (e) => {
     const file = e.target.files[0]; 
-    if(!file) return;
+    if (!file) return;
     
     showToast("Upload de la bannière en cours...");
     try {
       const url = await uploadToCloudinary(file);
       document.getElementById("prof-banner-input").value = url;
       showToast("Bannière chargée ✓ N'oublie pas d'Enregistrer");
-    } catch(err) { 
+    } catch (err) { 
       showToast("Erreur Cloudinary"); 
     }
   };
@@ -1771,7 +1797,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const tkInput  = document.getElementById("prof-tiktok-input");
     const tiktok   = tkInput ? tkInput.value.trim() : "";
   
-    if(!d) return;
+    if (!d) return;
   
     const updates = { displayName: d, bio, instagram: insta, linkedin, banner, tiktok };
     await updateDoc(doc(db, "users", currentUser.id), updates);
@@ -1790,7 +1816,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.goToMyLikes = () => {
-    if(!currentUser) return;
+    if (!currentUser) return;
     window.location.hash = '#' + currentUser.username;
     setTimeout(() => {
       switchPubTab('likes');
@@ -1838,12 +1864,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const snap3 = await getDocs(q3);
     
     const el = document.getElementById("contrib-count"); 
-    if(el) el.innerText = snap1.size + snap2.size + snap3.size;
+    if (el) el.innerText = snap1.size + snap2.size + snap3.size;
   }
   
   window.changePassword = async () => {
     const p = document.getElementById("setting-pwd").value.trim(); 
-    if(!p) return;
+    if (!p) return;
     
     await updateDoc(doc(db, "users", currentUser.id), { password: p, isTempPassword: false });
     currentUser.password = p;
@@ -1990,8 +2016,8 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
     let mediaBox = "", fileChip = "";
 
-    if(targetUrl) {
-      if(isImage) {
+    if (targetUrl) {
+      if (isImage) {
         mediaBox = `<div class="post-media-preview" onclick="window.open('${targetUrl}','_blank')"><img src="${targetUrl}" alt="Aperçu"></div>`;
       } else {
         const cleanName = p.fileName || p.title || "Document";
@@ -2157,13 +2183,13 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
   /* --- SYSTEME DE POSTS (Cours / Fiches / Annonces épinglées) --- */
   function loadPinnedAnnonces() {
-    if(window._pinnedUnsub) { window._pinnedUnsub(); window._pinnedUnsub = null; }
+    if (window._pinnedUnsub) { window._pinnedUnsub(); window._pinnedUnsub = null; }
     const zone = document.getElementById("pinned-annonces-zone");
-    if(!zone) return;
+    if (!zone) return;
     
     const qPinned = query(collection(db, "posts"), where("type", "==", "annonce"));
     window._pinnedUnsub = onSnapshot(qPinned, snap => {
-      if(snap.empty) {
+      if (snap.empty) {
         zone.innerHTML = "";
         return;
       }
@@ -2182,10 +2208,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   }
 
   function loadCoursFeed() {
-    if(window._coursUnsub) { window._coursUnsub(); window._coursUnsub = null; }
+    if (window._coursUnsub) { window._coursUnsub(); window._coursUnsub = null; }
     
     const container = document.getElementById("cours-feed"); 
-    if(!container) return;
+    if (!container) return;
     
     container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
     
@@ -2204,17 +2230,17 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   }
   
   function loadFRFeed() {
-    if(window._frUnsub) { window._frUnsub(); window._frUnsub = null; }
+    if (window._frUnsub) { window._frUnsub(); window._frUnsub = null; }
     
     const container = document.getElementById("fr-feed"); 
-    if(!container) return;
+    if (!container) return;
     
     container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
     
     const types = window._frFilter.type === "all" ? ["fiches", "revisions"] : [window._frFilter.type];
     let q;
     
-    if(window._frFilter.subject === "all") {
+    if (window._frFilter.subject === "all") {
       q = types.length > 1 ? query(collection(db, "posts"), where("type", "in", types)) : query(collection(db, "posts"), where("type", "==", types[0]));
     } else {
       q = types.length > 1 ? query(collection(db, "posts"), where("matiere", "==", window._frFilter.subject), where("type", "in", types)) : query(collection(db, "posts"), where("matiere", "==", window._frFilter.subject), where("type", "==", types[0]));
@@ -2232,7 +2258,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent', context = 'main') {
     container.innerHTML = "";
-    if(postsArray.length === 0) {
+    if (postsArray.length === 0) {
       container.innerHTML = `<div class="empty-text">${emptyMsg || "Aucune ressource pour l'instant"}</div>`; 
       return;
     }
@@ -2253,7 +2279,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   function loadAnnonces() {
     const isAdmin = currentUser.role === "admin" || (currentUser.subRoles && currentUser.subRoles.includes("admin"));
     const zone = document.getElementById("annonces-zone"); 
-    if(!zone) return;
+    if (!zone) return;
   
     onSnapshot(collection(db, "annonces"), (snap) => {
       const titleRow = `
@@ -2262,7 +2288,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         ${isAdmin ? `<button class="btn-pill-van btn-sm" onclick="openAnnonceModal('')">+ Nouvelle annonce</button>` : ""}
       </div>`;
       
-      if(snap.empty) {
+      if (snap.empty) {
         zone.innerHTML = isAdmin ? titleRow + `<div class="empty-text">Aucune petite annonce pour le moment</div>` : ""; 
         return;
       }
@@ -2294,12 +2320,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const title = document.getElementById("ann-title").value.trim();
     const body = document.getElementById("ann-body").value.trim();
     
-    if(!title) {
+    if (!title) {
       showToast("Titre requis.");
       return;
     }
     
-    if(id) {
+    if (id) {
       await updateDoc(doc(db, "annonces", id), { title, body }); 
     } else {
       await addDoc(collection(db, "annonces"), { title, body, timestamp: Date.now() });
@@ -2310,14 +2336,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.delAnnonce = async (id) => {
-    if(confirm("Supprimer cette annonce ?")) await deleteDoc(doc(db, "annonces", id));
+    if (confirm("Supprimer cette annonce ?")) await deleteDoc(doc(db, "annonces", id));
   };
   
   window.handleFileSelect = (e) => {
     const file = e.target.files[0]; 
-    if(!file) return;
+    if (!file) return;
     
-    if(file.size > 25 * 1024 * 1024) {
+    if (file.size > 25 * 1024 * 1024) {
       e.target.value = ""; 
       window._uploadedFile = null; 
       document.getElementById("file-prev").style.display = "none"; 
@@ -2343,7 +2369,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.handlePostTypeChange = () => {
     const type = document.getElementById("post-type").value;
     const matiereGroup = document.getElementById("group-post-matiere");
-    if(type === "annonce") {
+    if (type === "annonce") {
       matiereGroup.style.display = "none";
     } else {
       matiereGroup.style.display = "flex";
@@ -2357,7 +2383,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     let matiere = "Général";
     if (type !== "annonce") {
       matiere = document.getElementById("post-matiere").value;
-      if(!matiere) {
+      if (!matiere) {
         showToast("Matière requise.");
         return;
       }
@@ -2366,28 +2392,28 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const desc = document.getElementById("post-desc").value.trim();
     const urlInput = document.getElementById("post-url").value.trim();
     
-    if(!title) {
+    if (!title) {
       showToast("Titre requis.");
       return;
     }
   
     let fileUrl = "", fileName = "", fileType = "";
   
-    if(window._uploadedFile) {
+    if (window._uploadedFile) {
       const btn = document.querySelector('[onclick="handleCreatePost()"]'); 
-      if(btn) { btn.disabled = true; btn.innerText = "Upload en cours…"; }
+      if (btn) { btn.disabled = true; btn.innerText = "Upload en cours…"; }
       
       try {
         fileUrl = await uploadToCloudinary(window._uploadedFile); 
         fileName = window._uploadedFile.name; 
         fileType = window._uploadedFile.type;
-      } catch(err) {
+      } catch (err) {
         showToast("Erreur upload Cloudinary."); 
-        if(btn) { btn.disabled = false; btn.innerText = "Partager avec la classe"; } 
+        if (btn) { btn.disabled = false; btn.innerText = "Partager avec la classe"; } 
         return;
       }
       
-      if(btn) { btn.disabled = false; btn.innerText = "Partager avec la classe"; }
+      if (btn) { btn.disabled = false; btn.innerText = "Partager avec la classe"; }
     }
   
     const post = {
@@ -2413,8 +2439,8 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
          });
       }
   
-      if(type === "cours") switchTab('cours'); 
-      else if(type === "annonce") switchTab('matieres');
+      if (type === "cours") switchTab('cours'); 
+      else if (type === "annonce") switchTab('matieres');
       else switchTab('fichesrev');
       
     } catch(e) { 
@@ -2423,14 +2449,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   const dz = document.getElementById("drop-zone");
-  if(dz) {
+  if (dz) {
     dz.addEventListener("dragover", e => { e.preventDefault(); dz.style.borderColor = "var(--primary)"; });
     dz.addEventListener("dragleave", () => { dz.style.borderColor = ""; });
     dz.addEventListener("drop", e => {
       e.preventDefault(); 
       dz.style.borderColor = ""; 
       const files = e.dataTransfer.files;
-      if(files[0]) { 
+      if (files[0]) { 
         const inp = document.getElementById("post-file");
         const dt = new DataTransfer(); 
         dt.items.add(files[0]); 
@@ -2443,10 +2469,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.toggleLike = async (postId) => {
     const ref = doc(db, "posts", postId);
     const snap = await getDoc(ref); 
-    if(!snap.exists()) return;
+    if (!snap.exists()) return;
     
     let likes = snap.data().likes || [];
-    if(likes.includes(currentUser.username)) {
+    if (likes.includes(currentUser.username)) {
       likes = likes.filter(u => u !== currentUser.username); 
     } else {
       likes.push(currentUser.username);
@@ -2459,10 +2485,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const colName = isAI ? "ai_quizzes" : "quizzes";
     const ref = doc(db, colName, quizId);
     const snap = await getDoc(ref); 
-    if(!snap.exists()) return;
+    if (!snap.exists()) return;
     
     let likes = snap.data().likes || [];
-    if(likes.includes(currentUser.username)) {
+    if (likes.includes(currentUser.username)) {
       likes = likes.filter(u => u !== currentUser.username); 
     } else {
       likes.push(currentUser.username);
@@ -2473,12 +2499,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window.toggleComments = (postId, context = 'main') => {
     const wrp = document.getElementById(`comments-wrap-${context}-${postId}`);
-    if(wrp) wrp.classList.toggle('show');
+    if (wrp) wrp.classList.toggle('show');
   };
   
   window.toggleReplyBox = (postId, cmtId, context = 'main') => {
     const f = document.getElementById(`reply-form-${context}-${postId}-${cmtId}`);
-    if(f) f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+    if (f) f.style.display = f.style.display === 'none' ? 'flex' : 'none';
   };
   
   function generateId() { return Date.now().toString() + Math.random().toString(36).substr(2, 5); }
@@ -2487,11 +2513,11 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     e.preventDefault(); 
     const input = e.target.querySelector("input");
     const txt = input.value.trim(); 
-    if(!txt) return;
+    if (!txt) return;
     
     const ref = doc(db, "posts", postId);
     const snap = await getDoc(ref); 
-    if(!snap.exists()) return;
+    if (!snap.exists()) return;
     
     const comments = snap.data().comments || [];
     comments.push({ id: generateId(), userId: currentUser.username, displayName: currentUser.displayName || currentUser.username, text: txt, timestamp: Date.now(), isPinned: false, replies: [] });
@@ -2504,17 +2530,17 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     e.preventDefault(); 
     const input = e.target.querySelector("input");
     const txt = input.value.trim(); 
-    if(!txt) return;
+    if (!txt) return;
     
     const ref = doc(db, "posts", postId);
     const snap = await getDoc(ref); 
-    if(!snap.exists()) return;
+    if (!snap.exists()) return;
     
     const comments = snap.data().comments || [];
     const idx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
     
-    if(idx > -1) {
-      if(!comments[idx].replies) comments[idx].replies = [];
+    if (idx > -1) {
+      if (!comments[idx].replies) comments[idx].replies = [];
       comments[idx].replies.push({ id: generateId(), userId: currentUser.username, displayName: currentUser.displayName || currentUser.username, text: txt, timestamp: Date.now() });
       await updateDoc(ref, { comments }); 
       input.value = "";
@@ -2522,17 +2548,17 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.delCmt = async (postId, cmtId, replyId = null) => {
-    if(!confirm("Supprimer ce commentaire ?")) return;
+    if (!confirm("Supprimer ce commentaire ?")) return;
     
     const ref = doc(db, "posts", postId);
     const snap = await getDoc(ref); 
-    if(!snap.exists()) return;
+    if (!snap.exists()) return;
     
     let comments = snap.data().comments || [];
     
     if (replyId) {
       const cIdx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
-      if(cIdx > -1 && comments[cIdx].replies) {
+      if (cIdx > -1 && comments[cIdx].replies) {
          comments[cIdx].replies = comments[cIdx].replies.filter(r => r.id !== replyId && String(r.timestamp) !== replyId);
       }
     } else {
@@ -2545,20 +2571,20 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.pinCmt = async (postId, cmtId) => {
     const ref = doc(db, "posts", postId);
     const snap = await getDoc(ref); 
-    if(!snap.exists()) return;
+    if (!snap.exists()) return;
     
     let comments = snap.data().comments || [];
     const idx = comments.findIndex(c => c.id === cmtId || String(c.timestamp) === cmtId);
     
-    if(idx > -1) {
+    if (idx > -1) {
       comments[idx].isPinned = !comments[idx].isPinned;
       await updateDoc(ref, { comments });
     }
   };
   
-  window.deletePost = async (id) => { if(confirm("Supprimer ce document ?")) await deleteDoc(doc(db, "posts", id)); };
-  window.deleteQuiz = async (id) => { if(confirm("Supprimer ce quiz ?")) await deleteDoc(doc(db, "quizzes", id)); };
-  window.deleteAIQuiz = async (id) => { if(confirm("Supprimer ce quiz IA ?")) await deleteDoc(doc(db, "ai_quizzes", id)); loadAIQuizHistory(); };
+  window.deletePost = async (id) => { if (confirm("Supprimer ce document ?")) await deleteDoc(doc(db, "posts", id)); };
+  window.deleteQuiz = async (id) => { if (confirm("Supprimer ce quiz ?")) await deleteDoc(doc(db, "quizzes", id)); };
+  window.deleteAIQuiz = async (id) => { if (confirm("Supprimer ce quiz IA ?")) await deleteDoc(doc(db, "ai_quizzes", id)); loadAIQuizHistory(); };
   
   /* --- PARTAGE PAR MESSAGES ET LECTURE DIRECTE --- */
   window.openShareModal = (itemId, itemType, itemTitle) => {
@@ -2586,14 +2612,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           </div>
         `;
       });
-      if(!html) html = "<div class='empty-text'>Aucune discussion récente. Va dans Messages pour en créer une.</div>";
+      if (!html) html = "<div class='empty-text'>Aucune discussion récente. Va dans Messages pour en créer une.</div>";
       document.getElementById("share-contacts-list").innerHTML = html;
       openModal('m-share');
     });
   };
 
   window.shareToChat = async (chatId, partnerUname) => {
-    if(!window._shareItem) return;
+    if (!window._shareItem) return;
     
     await addDoc(collection(db, "dm_messages"), {
       chatId: chatId,
@@ -2649,13 +2675,21 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.getElementById(`pub-tab-${tabId}`).style.display = 'block';
   
     const fContainer = document.getElementById("pub-filter-container");
-    if(tabId === 'cours' || tabId === 'quiz') fContainer.style.display = 'block';
+    if (tabId === 'cours' || tabId === 'quiz') fContainer.style.display = 'block';
     else fContainer.style.display = 'none';
   
     if (window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
-    if(tabId === 'likes') renderPubLikes();
+    if (tabId === 'likes') renderPubLikes();
   };
   
+  // Fonction de sécurité pour éviter les attaques XSS lors de l'affichage de la biographie
+  function escapeHTML(str) {
+      if (!str) return "";
+      return str.replace(/[&<>'"]/g, tag => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[tag]));
+  }
+
   window.renderPublicProfile = (uname) => {
     document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
     document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
@@ -2669,7 +2703,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
     setTimeout(() => {
       const targetUser = window.usersMap.get(uname);
-      if(!targetUser) { 
+      if (!targetUser) { 
         loading.style.display = "none"; 
         showToast("Membre introuvable"); 
         window.location.hash = "#page-matieres"; 
@@ -2684,7 +2718,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       document.getElementById("pub-banner").style.backgroundImage = targetUser.banner ? `url('${targetUser.banner}')` : "";
   
       const imgEl = document.getElementById("pub-av-img"), initEl = document.getElementById("pub-av-init");
-      if(targetUser.avatar) {
+      if (targetUser.avatar) {
         imgEl.src = targetUser.avatar; 
         imgEl.style.display = "block"; 
         initEl.style.display = "none";
@@ -2698,7 +2732,21 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       document.getElementById("pub-name").innerHTML = (targetUser.displayName || targetUser.username) + badge;
   
       document.getElementById("pub-id").innerText   = targetUser.username;
-      document.getElementById("pub-bio").innerText  = targetUser.bio || "Aucune biographie.";
+      
+      // --- NOUVEAUTÉ : Mentions dans la biographie (Admin) ---
+      let bioContent = targetUser.bio || "Aucune biographie.";
+      const isAdmin = targetUser.role === "admin" || (targetUser.subRoles && targetUser.subRoles.includes("admin"));
+      
+      if (isAdmin && bioContent !== "Aucune biographie.") {
+          // On sécurise d'abord le texte pour empêcher le code HTML malveillant
+          bioContent = escapeHTML(bioContent);
+          // On remplace tous les @pseudo par des liens cliquables pointant vers la section idoine
+          bioContent = bioContent.replace(/@([a-zA-Z0-9._]+)/g, '<a style="color:var(--primary); font-weight:600; text-decoration:none;" href="#$1">@$1</a>');
+          document.getElementById("pub-bio").innerHTML = bioContent;
+      } else {
+          // Les utilisateurs classiques n'ont pas droit à ce formatage (protection)
+          document.getElementById("pub-bio").innerText = bioContent;
+      }
   
       const roleEl = document.getElementById("pub-role"); 
       roleEl.innerText = targetUser.role || "élève";
@@ -2712,24 +2760,24 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
       const socBox = document.getElementById("pub-socials"); 
       socBox.innerHTML = "";
-      if(targetUser.instagram) {
+      if (targetUser.instagram) {
         const cleanInsta = targetUser.instagram.replace("https://instagram.com/", "").replace("https://www.instagram.com/", "").replace("@", "").trim();
         socBox.innerHTML += `<a href="https://instagram.com/${cleanInsta}" target="_blank" class="soc-pill insta"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg><span>${cleanInsta}</span></a>`;
       }
-      if(targetUser.linkedin) {
+      if (targetUser.linkedin) {
         const cleanLd = targetUser.linkedin.startsWith("http") ? targetUser.linkedin : "https://" + targetUser.linkedin;
         socBox.innerHTML += `<a href="${cleanLd}" target="_blank" class="soc-pill linkedin"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg><span>LinkedIn</span></a>`;
       }
-      if(targetUser.tiktok) {
+      if (targetUser.tiktok) {
         const cleanTk = targetUser.tiktok.replace("https://tiktok.com/", "").replace("https://www.tiktok.com/", "").replace("@", "").trim();
         socBox.innerHTML += `<a href="https://tiktok.com/@${cleanTk}" target="_blank" class="soc-pill tiktok"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91 0 .73 1.5 1.93 2.7 3.44 3.26v4.06c-1.33-.28-2.58-.93-3.56-1.87-.01 2.21-.01 4.41-.02 6.62-.2 2.6-1.6 5.06-3.86 6.36-2.6 1.5-5.91 1.25-8.15-.65-2.07-1.77-2.98-4.66-2.22-7.25.75-2.52 2.87-4.46 5.48-4.93v4.25c-1.2.29-2.23 1.16-2.6 2.37-.38 1.25.04 2.65 1.05 3.44 1.1.84 2.7.93 3.9.23 1.15-.67 1.83-1.89 1.83-3.21.02-4.8.02-9.6.02-14.4 0-.01-.01-.02-.02-.03z"/></svg><span>${cleanTk}</span></a>`;
       }
   
       const followBtn = document.getElementById("pub-follow-btn");
-      if(currentUser && targetUser.username === currentUser.username) followBtn.style.display = "none";
+      if (currentUser && targetUser.username === currentUser.username) followBtn.style.display = "none";
       else {
         followBtn.style.display = "inline-flex";
-        if((currentUser?.following || []).includes(targetUser.username)) { 
+        if ((currentUser?.following || []).includes(targetUser.username)) { 
           followBtn.innerText = "Abonné ✓"; 
           followBtn.className = "btn-pill btn-following"; 
         } else { 
@@ -2738,9 +2786,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         }
       }
   
-      if(window._pubFeedUnsub) { window._pubFeedUnsub(); window._pubFeedUnsub = null; }
+      if (window._pubFeedUnsub) { window._pubFeedUnsub(); window._pubFeedUnsub = null; }
       
-      if(window._pubTabActive === 'cours') {
+      if (window._pubTabActive === 'cours') {
         const qFeed = query(collection(db, "posts"), where("authorId", "==", targetUser.username));
         window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
           const rawDocs = snapFeed.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -2791,14 +2839,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     window._pubSubjFilter = val;
     document.querySelectorAll("#pub-subj-filter-bar .filter-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    if(window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
+    if (window._currentViewedUser) renderPublicProfile(window._currentViewedUser.username);
   };
   
   window.loadPubLikes = () => {
-    if(!window._currentViewedUser) return;
-    if(window._pubLikesUnsubPosts) { window._pubLikesUnsubPosts(); }
-    if(window._pubLikesUnsubQuizzes) { window._pubLikesUnsubQuizzes(); }
-    if(window._pubLikesUnsubAIQuizzes) { window._pubLikesUnsubAIQuizzes(); }
+    if (!window._currentViewedUser) return;
+    if (window._pubLikesUnsubPosts) { window._pubLikesUnsubPosts(); }
+    if (window._pubLikesUnsubQuizzes) { window._pubLikesUnsubQuizzes(); }
+    if (window._pubLikesUnsubAIQuizzes) { window._pubLikesUnsubAIQuizzes(); }
   
     const uname = window._currentViewedUser.username;
     window._pubLikesData = { posts: [], quizzes: [], ai_quizzes: [] };
@@ -2806,7 +2854,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.getElementById("pub-likes-feed").innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
 
     const triggerRender = () => {
-      if(window._pubTabActive === 'likes') renderPubLikes();
+      if (window._pubTabActive === 'likes') renderPubLikes();
     };
   
     const qPosts = query(collection(db, "posts"), where("likes", "array-contains", uname));
@@ -2861,17 +2909,17 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.toggleFollowCurrentProfile = async () => {
-    if(!window._currentViewedUser || !currentUser) return;
+    if (!window._currentViewedUser || !currentUser) return;
     const targetUname = window._currentViewedUser.username; 
-    if(targetUname === currentUser.username) return;
+    if (targetUname === currentUser.username) return;
     
     const targetDoc = window.usersMap.get(targetUname); 
-    if(!targetDoc) return;
+    if (!targetDoc) return;
   
     let myFollowing = [...(currentUser.following || [])], theirFollowers = [...(targetDoc.followers || [])];
     const isFollowing = myFollowing.includes(targetUname);
   
-    if(isFollowing) {
+    if (isFollowing) {
       myFollowing = myFollowing.filter(x => x !== targetUname); 
       theirFollowers = theirFollowers.filter(x => x !== currentUser.username);
     } else {
@@ -2883,8 +2931,8 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
     
     const fBtn = document.getElementById("pub-follow-btn");
-    if(fBtn) { 
-      if(!isFollowing) {
+    if (fBtn) { 
+      if (!isFollowing) {
         fBtn.innerText = "Abonné ✓";
         fBtn.className = "btn-pill btn-following"; 
       } else {
@@ -2900,7 +2948,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.openFollowersModal = (mode) => {
-    if(!window._currentViewedUser) return;
+    if (!window._currentViewedUser) return;
     const isFollowers = mode === 'followers';
     document.getElementById("m-follows-title").innerText = isFollowers ? "Abonnés" : "Abonnements";
     
@@ -2917,7 +2965,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const totalAvailable = fullList.length;
     fullList = fullList.slice(0, 50);
   
-    if(fullList.length === 0) {
+    if (fullList.length === 0) {
       box.innerHTML = `<div class="empty-text" style="padding:40px 0">Personne ici</div>`;
     } else {
       fullList.forEach(u => {
@@ -3055,7 +3103,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     window._activeChatId = chatId;
     window._activeChatPartnerId = partnerUname;
 
-
     const chatSnap = await getDoc(doc(db, "dm_chats", chatId));
     if (chatSnap.exists()) {
       const c = chatSnap.data();
@@ -3067,7 +3114,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.getElementById("dm-form").style.display = "flex";
     document.querySelectorAll(".dm-contact-row").forEach(r => r.classList.remove("active"));
     
-    if(window.innerWidth <= 850) {
+    if (window.innerWidth <= 850) {
       document.getElementById("dm-sidebar").classList.add("hide-mobile");
       document.getElementById("dm-chat-area").classList.remove("hide-mobile");
     }
@@ -3081,7 +3128,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const avImg = document.getElementById("dm-active-av");
     const avInit = document.getElementById("dm-active-init");
     
-    if(pUser.avatar) { 
+    if (pUser.avatar) { 
       avImg.src = pUser.avatar; 
       avImg.style.display = "block"; 
       avInit.style.display = "none"; 
@@ -3091,7 +3138,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       avInit.innerText = init; 
     }
   
-    if(window._dmMsgsUnsub) window._dmMsgsUnsub();
+    if (window._dmMsgsUnsub) window._dmMsgsUnsub();
     
     const q = query(collection(db, "dm_messages"), where("chatId", "==", chatId));
     window._dmMsgsUnsub = onSnapshot(q, snap => {
@@ -3151,9 +3198,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window.handleDMFile = (e) => {
     const file = e.target.files[0]; 
-    if(!file) return;
+    if (!file) return;
     
-    if(file.size > 25 * 1024 * 1024) { 
+    if (file.size > 25 * 1024 * 1024) { 
       e.target.value = ""; 
       openModal("m-filesize"); 
       return; 
@@ -3166,18 +3213,18 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window.handleSendDM = async (e) => {
     e.preventDefault();
-    if(!window._activeChatId) return;
+    if (!window._activeChatId) return;
     
     const input = document.getElementById("dm-text-input");
     const txt = input.value.trim();
     
-    if(!txt && !window._dmFileToUpload) return;
+    if (!txt && !window._dmFileToUpload) return;
     
     const btn = e.target.querySelector("button");
     btn.disabled = true;
   
     let fileUrl = "";
-    if(window._dmFileToUpload) {
+    if (window._dmFileToUpload) {
       try { 
         fileUrl = await uploadToCloudinary(window._dmFileToUpload); 
       } catch(er) { 
@@ -3230,8 +3277,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         body: JSON.stringify({
           model: GROQ_MODEL,
           messages: conversationHistory,
-          temperature: 0.7,
-          max_tokens: 2000 
+          temperature: 0.6, // Légèrement réduit pour une structure JSON consistante
+          max_tokens: 3000,
+          response_format: { type: "json_object" } // On oblige l'IA à répondre avec un JSON valide
         }),
       });
   
@@ -3314,7 +3362,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
     qBoxes.forEach((box, index) => {
       const qTextInput = box.querySelector(".input-q-text");
-      if(!qTextInput) return;
+      if (!qTextInput) return;
       
       const qText = qTextInput.value.trim();
       const optsInputs = box.querySelectorAll(".input-opt");
@@ -3380,7 +3428,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     if (window._aiQuizUnsub) { window._aiQuizUnsub(); window._aiQuizUnsub = null; }
     
     const container = document.getElementById("quiz-feed"); 
-    if(!container) return;
+    if (!container) return;
     
     container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
     
@@ -3421,7 +3469,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   function renderQuizFeedToContainer(quizzesArray, container, emptyMsg, sortOrder = 'recent') {
     container.innerHTML = "";
-    if(quizzesArray.length === 0) {
+    if (quizzesArray.length === 0) {
       container.innerHTML = `<div class="empty-text">${emptyMsg || "Aucun quiz pour l'instant"}</div>`; 
       return;
     }
@@ -3440,14 +3488,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   }
   
   function loadAIQuizHistory() {
-    if(!currentUser) return;
+    if (!currentUser) return;
     const container = document.getElementById("settings-ai-quiz-history");
-    if(!container) return;
+    if (!container) return;
     
     const qFeed = query(collection(db, "ai_quizzes"), where("authorId", "==", currentUser.username));
     
     onSnapshot(qFeed, snap => {
-      if(snap.empty) {
+      if (snap.empty) {
         container.innerHTML = `<div class="empty-text">Aucun quiz IA généré.</div>`;
         return;
       }
@@ -3474,7 +3522,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   window.generateAIQuiz = async () => {
     let matiere = document.getElementById("quiz-ia-matiere").value;
-    if(matiere === 'autre') {
+    if (matiere === 'autre') {
       matiere = document.getElementById("quiz-ia-matiere-custom").value.trim();
     }
     
@@ -3490,21 +3538,26 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.getElementById("quiz-ia-actions").style.display = "none";
     document.getElementById("quiz-ia-loading").style.display = "block";
   
-    const systemPrompt = `Tu es un professeur expert en "${matiere}". Crée un quiz éducatif.
-  RÈGLE ABSOLUE : Tu dois répondre UNIQUEMENT par un objet JSON valide, sans AUCUN texte avant ou après, sans AUCUN formatage markdown (\`\`\`json).
-  Le JSON DOIT respecter cette structure exacte :
-  {
-    "questions": [
-      {
-        "question": "Texte de la question ?",
-        "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
-        "correctIndex": 0,
-        "justification": "Explication courte mais précise."
-      }
-    ]
-  }`;
+    const systemPrompt = `Tu es un professeur expert dans la matière enseignée.
+Ta mission est de créer un quiz éducatif de très haute qualité pour tester les connaissances des élèves.
+Les questions doivent être variées, sans ambiguïté et adaptées au sujet donné. Les mauvaises réponses (distracteurs) doivent être plausibles.
+
+RÈGLE ABSOLUE : Tu dois répondre UNIQUEMENT par un objet JSON valide, sans AUCUN texte avant ou après, et sans markdown.
+Le JSON doit OBLIGATOIREMENT avoir cette structure exacte :
+{
+  "questions": [
+    {
+      "question": "Pose la question de façon claire et précise ?",
+      "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
+      "correctIndex": 0,
+      "justification": "Explication pédagogique détaillée expliquant pourquoi cette réponse est la bonne et pourquoi les autres sont fausses."
+    }
+  ]
+}`;
   
-    const userPrompt = `Crée un quiz de ${nbQuestions} questions sur le sujet : "${topic}". Informations complémentaires : "${desc}". Les options doivent être plausibles. correctIndex doit être l'index (0 à 3) de la bonne réponse. RAPPEL : UNIQUEMENT LE JSON.`;
+    const userPrompt = `Crée un quiz de ${nbQuestions} questions sur le sujet : "${topic}" en matière "${matiere}". Informations complémentaires : "${desc}".
+Assure-toi que les questions couvrent bien le sujet et que l'attribut "correctIndex" (un entier entre 0 et 3) pointe bien vers la bonne réponse dans le tableau "options".
+RENVOIE UNIQUEMENT LE JSON.`;
   
     try {
       const quizData = await callGroqAPI(systemPrompt, userPrompt);
@@ -3514,7 +3567,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       }
   
       const newQuiz = {
-        title: `[IA] :${topic}`,
+        title: `[IA] : ${topic}`,
         matiere: matiere,
         description: desc,
         questions: quizData.questions,
@@ -3566,7 +3619,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       const attSnap = await getDocs(attQ);
       
       if (attSnap.size >= 5) {
-        if(confirm("Tu as atteint la limite de 5 essais pour ce quiz.\nVeux-tu le recommencer via l'IA ? L'IA reformulera les questions et mélangera les réponses pour t'entraîner (ton score ne sera pas sauvegardé).")) {
+        if (confirm("Tu as atteint la limite de 5 essais pour ce quiz.\nVeux-tu le recommencer via l'IA ? L'IA reformulera les questions et mélangera les réponses pour t'entraîner (ton score ne sera pas sauvegardé).")) {
            window._currentQuizData = qData;
            reformulateQuizWithAI();
         }
@@ -3616,7 +3669,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     window._hasViewedAnswers = false;
     window._quizStartTime = Date.now();
     
-    if(!alreadyOpen) openModal("m-take-quiz");
+    if (!alreadyOpen) openModal("m-take-quiz");
     
     document.getElementById("take-quiz-title").innerText = window._currentQuizData.title;
     document.getElementById("take-quiz-content").style.display = "block";
@@ -3703,7 +3756,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const currentCount = window._currentQuizData.attemptsCount || 0;
     try {
       await updateDoc(doc(db, colName, window._currentQuizData.id), { attemptsCount: currentCount + 1 });
-    } catch(err) {
+    } catch (err) {
       console.error("Erreur lors de la mise à jour du compteur :", err);
     }
   
@@ -3769,7 +3822,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.abortQuiz = () => {
-    if(confirm("Veux-tu vraiment quitter le quiz en cours ?")) {
+    if (confirm("Veux-tu vraiment quitter le quiz en cours ?")) {
       if (window.speechSynthesis) window.speechSynthesis.cancel();
       closeModal('m-take-quiz');
       window._currentQuizData = null;
@@ -3780,7 +3833,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const name = document.getElementById("mat-name").value.trim();
     const icon = document.getElementById("mat-icon").value.trim();
     
-    if(!name || !icon) {
+    if (!name || !icon) {
       showToast("Remplis le nom et l'icône.");
       return;
     }
@@ -3801,7 +3854,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.openMatiereModal = (isEdit, id = "", name = "", icon = "") => { 
-    if(isEdit) editMatiere(id, name, icon); 
+    if (isEdit) editMatiere(id, name, icon); 
     else openModal("m-add-mat"); 
   };
   
@@ -3810,9 +3863,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const name = document.getElementById("adm-m-name").value.trim();
     const icon = document.getElementById("adm-m-icon").value.trim();
     
-    if(!name || !icon) return;
+    if (!name || !icon) return;
     
-    if(id) {
+    if (id) {
       await updateDoc(doc(db, "subjects", id), { name, icon });
     } else {
       await addDoc(collection(db, "subjects"), { name, icon });
@@ -3823,7 +3876,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.delMatiere = async (id) => {
-    if(confirm("Supprimer cette matière ? Les ressources associée resteront en base.")) {
+    if (confirm("Supprimer cette matière ? Les ressources associée resteront en base.")) {
       await deleteDoc(doc(db, "subjects", id));
     }
   };
@@ -3868,7 +3921,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const list = [];
     const displayCount = Math.min(count, 50);
     
-    for(let i = 0; i < displayCount; i++) {
+    for (let i = 0; i < displayCount; i++) {
       const f = FAKE_FIRSTS[Math.floor(Math.random() * FAKE_FIRSTS.length)];
       const l = FAKE_LASTS[Math.floor(Math.random() * FAKE_LASTS.length)];
       const dname = `${f.charAt(0).toUpperCase() + f.slice(1)} ${l.charAt(0).toUpperCase() + l.slice(1)}`;
@@ -3926,11 +3979,11 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const role = document.getElementById("adm-u-role").value;
     const isVerified = document.getElementById("adm-u-verified").checked;
   
-    if(!username) return;
+    if (!username) return;
   
     const subs = [];
-    if(document.getElementById("adm-u-admin").checked) subs.push("admin"); 
-    if(document.getElementById("adm-u-vol").checked) subs.push("volontaire");
+    if (document.getElementById("adm-u-admin").checked) subs.push("admin"); 
+    if (document.getElementById("adm-u-vol").checked) subs.push("volontaire");
   
     const updates = { 
       role, 
@@ -3940,14 +3993,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       fakeFollowersCount: window._tempFakeFollowersCount || 0
     };
   
-    if(docId) { 
+    if (docId) { 
       await updateDoc(doc(db, "users", docId), updates); 
       showToast("Compte mis à jour ✓"); 
     } else {
       const pwd = document.getElementById("adm-u-pwd").value.trim() || "stmg2026";
       const exist = await getDocs(query(collection(db, "users"), where("username", "==", username))); 
       
-      if(!exist.empty) {
+      if (!exist.empty) {
         showToast("Identifiant déjà pris.");
         return;
       }
@@ -3965,11 +4018,11 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   window.delUser = async (docId, uname) => {
-    if(uname === "...") {
+    if (uname === "...") {
       showToast("Compte protégé.");
       return;
     }
-    if(confirm(`Supprimer l'accès de ${uname} ?`)) {
+    if (confirm(`Supprimer l'accès de ${uname} ?`)) {
       await deleteDoc(doc(db, "users", docId));
     }
   };
@@ -3996,7 +4049,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     });
   }
   
-  window.switchTab = target => { window.location.hash = `#page-${target}`; };
+  window.switchTab = (target) => { 
+      window.location.hash = `#page-${target}`; 
+  };
   
   window.toggleDrawer = () => {
     document.getElementById("mob-drawer").classList.toggle("open");
@@ -4014,18 +4069,18 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   document.addEventListener("click", e => {
     const dd = document.getElementById("profil-dropdown");
     const av = document.getElementById("nav-avatar");
-    if(dd && !dd.contains(e.target) && av && !av.contains(e.target)) {
+    if (dd && !dd.contains(e.target) && av && !av.contains(e.target)) {
       dd.classList.remove("show");
     }
   });
   
   window.openModal = id => {
     document.getElementById(id).classList.add("active");
-    if(id === 'm-new-chat') renderContactSearch();
+    if (id === 'm-new-chat') renderContactSearch();
   };
   
   window.closeModal = id => document.getElementById(id).classList.remove("active");
-  window.closeOnOut = (e, id) => { if(e.target.id === id) closeModal(id); };
+  window.closeOnOut = (e, id) => { if (e.target.id === id) closeModal(id); };
   
   function esc(s) { 
     return (s || "").replace(/'/g, "\\'").replace(/"/g, "&quot;"); 
