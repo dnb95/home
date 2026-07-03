@@ -2474,7 +2474,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       docs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
       
       let html = `<div class="pinned-post-wrapper">
-                    <h3 style="margin-bottom:16px; color:var(--ink); display:flex; align-items:center; gap:8px;">📌 Annonces Épinglés</h3>
+                    <h3 style="margin-bottom:16px; color:var(--ink); display:flex; align-items:center; gap:8px;">📌 Annonces Épinglées</h3>
                     <div style="display:flex; flex-direction:column; gap:16px;">`;
       docs.forEach(p => {
         html += window.getPostHTML(p, "pinned");
