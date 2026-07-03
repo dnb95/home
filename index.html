@@ -476,6 +476,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 </head>
 <body>
 <style>
+  /* --- STYLES & PATCHS 2026 (ANIMATIONS, ACCUEIL & SLIDER) --- */
+  
+  /* Badges & Utilitaires existants */
   .rbadge.hs { background: #8e8e93; color: #fff; }
   .nav-unread-dot { display:none; width:8px; height:8px; background:var(--danger); border-radius:50%; margin-left:6px; vertical-align:middle; }
   .msg-unread-preview { font-weight:800!important; color:var(--ink)!important; }
@@ -496,6 +499,152 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     box-shadow: 0 4px 14px rgba(0,0,0,.05);
   }
 
+  /* --- ANIMATIONS ET TRANSITIONS FLUIDES 2026 --- */
+  .page-view {
+    display: none;
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
+  }
+
+  .page-view.active {
+    display: block;
+    animation: pageFadeIn2026 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes pageFadeIn2026 {
+    0% {
+      opacity: 0;
+      transform: translateY(14px) scale(0.985);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Désactivation conditionnelle via paramètre utilisateur */
+  body.no-transitions .page-view,
+  body.no-transitions .page-view.active {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  /* --- COMPOSANTS DE LA NOUVELLE PAGE ACCUEIL --- */
+  .quick-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0 36px 0;
+  }
+
+  .quick-nav-card {
+    background: var(--card-bg);
+    border: 1px solid var(--hl);
+    border-radius: 18px;
+    padding: 22px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, background 0.2s, box-shadow 0.25s;
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 16px;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .quick-nav-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    background: var(--primary-l);
+    color: var(--primary-f);
+    box-shadow: 0 8px 24px var(--shadow-m);
+  }
+
+  .quick-nav-icon {
+    font-size: 32px;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .quick-nav-card:hover .quick-nav-icon {
+    transform: scale(1.15);
+  }
+
+  /* Slider horizontal pour les matières */
+  .slider-matieres-wrap {
+    position: relative;
+    margin-top: 16px;
+  }
+
+  .slider-matieres {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 4px 4px 20px 4px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--hl);
+  }
+
+  .slider-matieres::-webkit-scrollbar {
+    height: 6px;
+  }
+  .slider-matieres::-webkit-scrollbar-track {
+    background: var(--hl2);
+    border-radius: 999px;
+  }
+  .slider-matieres::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 999px;
+  }
+
+  .slider-matiere-card {
+    flex: 0 0 220px;
+    scroll-snap-align: start;
+    background: var(--card-bg);
+    border: 1px solid var(--hl);
+    border-radius: 20px;
+    padding: 24px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 170px;
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slider-matiere-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    opacity: 0;
+    transition: opacity 0.25s;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .slider-matiere-card:hover {
+    background: var(--card-h);
+    border-color: var(--primary-l);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px var(--shadow);
+  }
+
+  .slider-matiere-card:hover::before {
+    opacity: 1;
+  }
+
   @media(max-width: 850px) {
     .pinned-post-wrapper {
       background: transparent !important;
@@ -505,6 +654,28 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     }
     .pinned-post-wrapper h3 {
       font-size: 18px;
+    }
+    .quick-nav-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .quick-nav-card {
+      padding: 16px 10px;
+      font-size: 14px;
+    }
+    .quick-nav-icon {
+      font-size: 26px;
+    }
+    .slider-matiere-card {
+      flex: 0 0 180px;
+      min-height: 150px;
+      padding: 18px 16px 16px;
+    }
+  }
+
+  @media(max-width: 450px) {
+    .quick-nav-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>
@@ -524,7 +695,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     <div class="login-logo">
       <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png" alt="DnB">
       <h1>DnB Reviz</h1>
-      <p>L'espace de cours de ta classe</p>
+      <p>Bêta.</p>
     </div>
     <div class="input-group">
       <label>Identifiant</label>
@@ -532,10 +703,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     </div>
     <div class="input-group">
       <label>Mot de passe</label>
-      <input type="password" id="login-pwd" placeholder="••••••••" autocomplete="current-password">
+      <input type="password" id="login-pwd" placeholder="XX/XX/XXXX" autocomplete="current-password">
     </div>
     <button onclick="handleLogin()" class="btn-pill mt-2" style="width:100%;justify-content:center;padding:13px">Se connecter</button>
-    <p class="caption mt-2" style="text-align:center">Accès réservé aux membres de l'établissement</p>
+    <p class="caption mt-2" style="text-align:center">Si tu n'as pas de compte, contacte Dan.</p>
   </div>
 </div>
 
@@ -545,12 +716,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
-    <a href="#page-matieres" class="header-left">
+    <a href="#page-accueil" class="header-left">
       <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png" alt="DnB">
       <span class="brand">DnB <span>Reviz</span></span>
     </a>
     <nav class="header-center">
-      <button class="nav-tab active"  data-target="matieres"  onclick="switchTab('matieres')">Matières</button>
+      <button class="nav-tab active"  data-target="accueil"   onclick="switchTab('accueil')">Accueil</button>
       <button class="nav-tab"         data-target="cours"     onclick="switchTab('cours')">Cours</button>
       <button class="nav-tab"         data-target="fichesrev" onclick="switchTab('fichesrev')">Fiches &amp; Révisions</button>
       <button class="nav-tab"         data-target="quiz"      onclick="switchTab('quiz')">Quiz</button>
@@ -586,8 +757,8 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         <span class="brand">DnB <span>Reviz</span></span>
       </div>
       <div class="drawer-nav" id="drawer-nav">
-        <button class="drawer-btn active" data-tab="matieres" onclick="switchTab('matieres');closeDrawer()">
-          <span class="d-icon">📚</span> Matières
+        <button class="drawer-btn active" data-tab="accueil" onclick="switchTab('accueil');closeDrawer()">
+          <span class="d-icon">🏠</span> Accueil
         </button>
         <button class="drawer-btn" data-tab="cours" onclick="switchTab('cours');closeDrawer()">
           <span class="d-icon">📖</span> Cours
@@ -639,18 +810,40 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   </div>
 
   <main>
-    <section id="page-matieres" class="page-view active">
-      <div class="ph-row">
+    <section id="page-accueil" class="page-view active">
+      <div class="ph-row" style="margin-bottom: 20px;">
         <div>
-          <h1>Matières</h1>
-          <p class="tagline">Choisis une matière pour accéder à ses ressources</p>
+          <h1>Accueil</h1>
+          <p class="tagline">Bienvenue sur DnB Reviz.</p>
         </div>
         <button class="btn-pill-van admin-only hidden" onclick="openModal('m-add-mat')">+ Ajouter une matière</button>
       </div>
       
       <div id="pinned-annonces-zone"></div>
       
-      <div class="grid-matieres" id="matieres-grid"></div>
+      <div class="quick-nav-grid">
+        <div class="quick-nav-card" onclick="switchTab('cours')">
+          <span class="quick-nav-icon">📖</span>
+          <span>Cours</span>
+        </div>
+        <div class="quick-nav-card" onclick="switchTab('fichesrev')">
+          <span class="quick-nav-icon">📝</span>
+          <span>Révisions</span>
+        </div>
+        <div class="quick-nav-card" onclick="switchTab('quiz')">
+          <span class="quick-nav-icon">🎯</span>
+          <span>Quiz</span>
+        </div>
+      </div>
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px; margin-bottom:12px;">
+        <h2>Matières</h2>
+        <span class="caption">Fais défiler &amp; clique pour filtrer →</span>
+      </div>
+      <div class="slider-matieres-wrap">
+        <div class="slider-matieres" id="matieres-grid"></div>
+      </div>
+
       <div id="annonces-zone" class="mt-4"></div>
     </section>
 
@@ -658,7 +851,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       <div class="ph-row">
         <div>
           <h1>Cours</h1>
-          <p class="tagline">Consulte les cours partagés par la classe</p>
+          <p class="tagline">Consulte les cours partagés.</p>
         </div>
         <button class="btn-pill-van" onclick="openFilterModal('cours')">⚙️ Filtres</button>
       </div>
@@ -669,7 +862,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       <div class="ph-row">
         <div>
           <h1>Fiches &amp; Révisions</h1>
-          <p class="tagline">Retrouve les fiches mémo et documents de révision</p>
+          <p class="tagline">Retrouve les fiches de révisions.</p>
         </div>
         <button class="btn-pill-van" onclick="openFilterModal('fichesrev')">⚙️ Filtres</button>
       </div>
@@ -680,7 +873,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       <div class="ph-row">
         <div>
           <h1>Quiz</h1>
-          <p class="tagline">Teste tes connaissances et challenge tes amis</p>
+          <p class="tagline">Teste tes connaissances.</p>
         </div>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <button class="btn-pill" onclick="openModal('m-ia-quiz')">✨ Créer un quiz avec l'IA</button>
@@ -775,7 +968,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
             <option value="cours">Cours</option>
             <option value="fiches">Fiche mémo</option>
             <option value="revisions">Révisions</option>
-            <option value="annonce" class="admin-only hidden">Annonce (Épinglée en haut des matières)</option>
+            <option value="annonce" class="admin-only hidden">Annonce (Épinglée en haut de l'accueil)</option>
           </select>
         </div>
         <div class="input-group" id="group-post-matiere">
@@ -950,7 +1143,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       <p class="tagline">Personnalise ton expérience</p>
       <div class="settings-wrap">
         <div class="settings-sec">
-          <h3>🎨 Apparence & Options</h3>
+          <h3>🎨 Apparence &amp; Options</h3>
           <div class="setting-row">
             <div>
               <div class="setting-label">Thème sombre</div>
@@ -958,6 +1151,17 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
             </div>
             <label class="tog tog-dark">
               <input type="checkbox" id="tog-dark" onchange="applyTheme(this.checked)">
+              <div class="tog-track"></div>
+              <div class="tog-thumb"></div>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Animations et transitions</div>
+              <div class="setting-desc">Activer les animations fluides lors du changement de page</div>
+            </div>
+            <label class="tog">
+              <input type="checkbox" id="tog-animations" checked onchange="toggleAnimations(this.checked)">
               <div class="tog-track"></div>
               <div class="tog-thumb"></div>
             </label>
@@ -1185,7 +1389,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       </select>
     </div>
     <div class="input-group">
-      <label>Accès & Badges</label>
+      <label>Accès &amp; Badges</label>
       <div class="chk-group" style="flex-wrap: wrap;">
         <label class="chk-label"><input type="checkbox" id="adm-u-admin"> Admin</label>
         <label class="chk-label"><input type="checkbox" id="adm-u-vol"> Volontaire</label>
@@ -1342,8 +1546,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
   emailjs.init("2VkygefcXxbSOlhFX");
   
-  // Utilisation du modèle llama-3.3-70b-versatile. 
-  // C'est de loin le modèle gratuit le plus performant pour ce type de requête complexe sur l'API Groq.
   const GROQ_API_KEY = "gsk_6eXCMxw6tuEMF9l" + "9dhgWWGdyb3FYgEMb" + "hom4ALVfRXf4X0VaByU6";
   const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
   const GROQ_MODEL   = "llama-3.3-70b-versatile"; 
@@ -1422,6 +1624,21 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
     localStorage.setItem("dnb_theme", dark ? "dark" : "light");
   };
+
+  /* --- GESTION DU PARAMÈTRE D'ANIMATIONS (2026) --- */
+  function loadAnimationsSetting() {
+    const noAnim = localStorage.getItem("dnb_no_transitions") === "true";
+    document.body.classList.toggle("no-transitions", noAnim);
+    const tog = document.getElementById("tog-animations");
+    if(tog) tog.checked = !noAnim;
+  }
+  loadAnimationsSetting();
+
+  window.toggleAnimations = (enabled) => {
+    document.body.classList.toggle("no-transitions", !enabled);
+    localStorage.setItem("dnb_no_transitions", (!enabled).toString());
+    showToast(enabled ? "Animations activées ✨" : "Animations désactivées ⚡");
+  };
   
   window.showToast = (msg) => {
     const t = document.getElementById("toast");
@@ -1462,15 +1679,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     if (!localStorage.getItem('dnb_cookie_consent')) {
       document.getElementById('cookie-banner').style.display = 'flex';
     }
-
-    // --- FIX IOS : Remplacement de l'icône de navigation sur les appareils Apple ---
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-      const navImg = document.querySelector('.header-left img');
-      if (navImg) {
-          navImg.src = 'https://i.ibb.co/tPpXJLTz/Dn-BChrome.png';
-      }
-    }
   });
 
   window.handleCookies = (accept) => {
@@ -1482,46 +1690,62 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
   
   function handleHashChange() {
-    const hash = window.location.hash.trim();
-    if (!hash || hash === "#") {
-      showInternalView('matieres'); 
+    let hash = window.location.hash.trim();
+    if (!hash || hash === "#" || hash === "#page-matieres") {
+      showInternalView('accueil'); 
       return;
     }
     if (hash.startsWith("#page-")) {
-      showInternalView(hash.replace("#page-", "")); 
+      let target = hash.replace("#page-", "");
+      if (target === 'matieres') target = 'accueil';
+      showInternalView(target); 
       return;
     }
     const uname = decodeURIComponent(hash.substring(1)).toLowerCase().trim();
     if (uname) {
         renderPublicProfile(uname);
+    } else {
+        showInternalView('accueil');
     }
   }
   
+  /* --- RÉÉCRITURE ROBUSTE DE SHOWINTERNALVIEW (ANTI-BUG) --- */
   function showInternalView(target) {
+    if (target === 'matieres') target = 'accueil';
     if (target === 'admin') {
       const isAdmin = currentUser && (currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')));
       if (!isAdmin) { 
         showToast("Accès non autorisé."); 
-        window.location.hash = ""; 
+        window.location.hash = "#page-accueil"; 
         return; 
       }
     }
   
     document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
     document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".drawer-btn[data-tab]").forEach(b => b.classList.remove("active"));
     
     const page = document.getElementById(`page-${target}`);
-    if(page) page.classList.add("active");
+    if (page) {
+      page.classList.remove("active");
+      void page.offsetWidth; 
+      page.classList.add("active");
+    }
   
     const tab = document.querySelector(`.nav-tab[data-target="${target}"]`);
-    if(tab) tab.classList.add("active");
+    if (tab) tab.classList.add("active");
   
-    document.querySelectorAll(".drawer-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === target));
+    const drawerBtn = document.querySelector(`.drawer-btn[data-tab="${target}"]`);
+    if (drawerBtn) drawerBtn.classList.add("active");
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   
     if (target === 'messages') loadDMChats();
     if (target === 'quiz') loadQuizFeed();
-    if (target === 'setting') loadAIQuizHistory();
+    if (target === 'setting') { loadAIQuizHistory(); loadAnimationsSetting(); }
+    if (target === 'cours') loadCoursFeed();
+    if (target === 'fichesrev') loadFRFeed();
+    if (target === 'accueil') { loadPinnedAnnonces(); loadAnnonces(); }
   }
   
   signInAnonymously(auth).then(async () => {
@@ -1878,6 +2102,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     showToast("Mot de passe changé ✓");
   };
   
+  /* --- CHARGEMENT DES MATIÈRES DANS LE SLIDER HORIZONTAL --- */
   function loadMatieres() {
     onSnapshot(collection(db, "subjects"), (snap) => {
       const isAdmin = currentUser.role === "admin" || (currentUser.subRoles && currentUser.subRoles.includes("admin"));
@@ -1897,14 +2122,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         window.subjectsMap.set(m.name, m.icon);
   
         mainGrid.innerHTML += `
-          <div class="matiere-card" onclick="openSubjectInMatieres('${esc(m.name)}')">
+          <div class="slider-matiere-card" onclick="openSubjectInMatieres('${esc(m.name)}')">
             ${isAdmin ? `<button class="card-del" onclick="event.stopPropagation();delMatiere('${d.id}')">✕</button>` : ""}
             <div>
-              <div class="card-icon">${m.icon}</div>
-              <div class="card-title">${m.name}</div>
+              <div class="card-icon" style="font-size:36px;margin-bottom:14px;">${m.icon}</div>
+              <div class="card-title" style="font-size:18px;font-weight:600;color:var(--ink);margin-bottom:6px;">${m.name}</div>
             </div>
-            ${isAdmin ? `<button class="btn-ghost btn-sm" style="align-self:flex-start" onclick="event.stopPropagation();editMatiere('${d.id}','${esc(m.name)}','${m.icon}')">✏️ Modifier</button>`
-                     : `<span class="caption" style="color:var(--primary);font-weight:600">Consulter →</span>`}
+            ${isAdmin ? `<button class="btn-ghost btn-sm" style="align-self:flex-start;margin-top:12px;" onclick="event.stopPropagation();editMatiere('${d.id}','${esc(m.name)}','${m.icon}')">✏️ Modifier</button>`
+                     : `<span class="caption" style="color:var(--primary);font-weight:600;margin-top:auto;display:inline-block;">Consulter →</span>`}
           </div>`;
           
         const opt = `<option value="${esc(m.name)}">${m.icon} ${m.name}</option>`;
@@ -2181,7 +2406,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       </div>`;
   };
 
-  /* --- SYSTEME DE POSTS (Cours / Fiches / Annonces épinglées) --- */
+  /* --- SYSTÈME DE POSTS (Cours / Fiches / Annonces épinglées) --- */
   function loadPinnedAnnonces() {
     if (window._pinnedUnsub) { window._pinnedUnsub(); window._pinnedUnsub = null; }
     const zone = document.getElementById("pinned-annonces-zone");
@@ -2440,7 +2665,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       }
   
       if (type === "cours") switchTab('cours'); 
-      else if (type === "annonce") switchTab('matieres');
+      else if (type === "annonce") switchTab('accueil');
       else switchTab('fichesrev');
       
     } catch(e) { 
@@ -2665,7 +2890,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   };
 
 
-  /* --- SYSTEME DE PROFILS PUBLICS TIKTOK STYLE --- */
+  /* --- SYSTÈME DE PROFILS PUBLICS TIKTOK STYLE --- */
   window.switchPubTab = (tabId) => {
     window._pubTabActive = tabId;
     document.querySelectorAll('#pub-tiktok-tabs .tk-tab').forEach(b => b.classList.remove('active'));
@@ -2682,7 +2907,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     if (tabId === 'likes') renderPubLikes();
   };
   
-  // Fonction de sécurité pour éviter les attaques XSS lors de l'affichage de la biographie
   function escapeHTML(str) {
       if (!str) return "";
       return str.replace(/[&<>'"]/g, tag => ({
@@ -2693,7 +2917,13 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window.renderPublicProfile = (uname) => {
     document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
     document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
-    document.getElementById("page-pub-profil").classList.add("active");
+    
+    const pubPage = document.getElementById("page-pub-profil");
+    if (pubPage) {
+      pubPage.classList.remove("active");
+      void pubPage.offsetWidth; 
+      pubPage.classList.add("active");
+    }
     
     const loading = document.getElementById("pub-loading-overlay");
     const wrapper = document.getElementById("pub-content-wrapper");
@@ -2706,7 +2936,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       if (!targetUser) { 
         loading.style.display = "none"; 
         showToast("Membre introuvable"); 
-        window.location.hash = "#page-matieres"; 
+        window.location.hash = "#page-accueil"; 
         return; 
       }
   
@@ -2733,18 +2963,14 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   
       document.getElementById("pub-id").innerText   = targetUser.username;
       
-      // --- NOUVEAUTÉ : Mentions dans la biographie (Admin) ---
       let bioContent = targetUser.bio || "Aucune biographie.";
       const isAdmin = targetUser.role === "admin" || (targetUser.subRoles && targetUser.subRoles.includes("admin"));
       
       if (isAdmin && bioContent !== "Aucune biographie.") {
-          // On sécurise d'abord le texte pour empêcher le code HTML malveillant
           bioContent = escapeHTML(bioContent);
-          // On remplace tous les @pseudo par des liens cliquables pointant vers la section idoine
           bioContent = bioContent.replace(/@([a-zA-Z0-9._]+)/g, '<a style="color:var(--primary); font-weight:600; text-decoration:none;" href="#$1">@$1</a>');
           document.getElementById("pub-bio").innerHTML = bioContent;
       } else {
-          // Les utilisateurs classiques n'ont pas droit à ce formatage (protection)
           document.getElementById("pub-bio").innerText = bioContent;
       }
   
@@ -3259,7 +3485,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     document.getElementById("dm-file-input").value = "";
     btn.disabled = false;
   };
-  
 
   async function callGroqAPI(systemPrompt, userPrompt) {
     const conversationHistory = [
@@ -3277,9 +3502,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         body: JSON.stringify({
           model: GROQ_MODEL,
           messages: conversationHistory,
-          temperature: 0.6, // Légèrement réduit pour une structure JSON consistante
+          temperature: 0.6,
           max_tokens: 3000,
-          response_format: { type: "json_object" } // On oblige l'IA à répondre avec un JSON valide
+          response_format: { type: "json_object" }
         }),
       });
   
