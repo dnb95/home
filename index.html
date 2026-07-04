@@ -1220,46 +1220,49 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
     <section id="page-admin" class="page-view admin-only hidden">
       <h1>Administration</h1>
-      <p class="tagline">Gestion des membres et des matières</p>
+      <p class="tagline">Gestion globale de la plateforme DnB Reviz</p>
       
-      <!-- Stats Grid -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:24px 0 32px;">
-        <div class="stat-box" style="padding:20px 16px;text-align:center;">
-          <div style="font-size:14px;font-weight:700;color:var(--ink-m);text-transform:uppercase;letter-spacing:.03em;">Membres</div>
-          <div class="stat-val" id="admin-stat-users" style="font-size:32px;font-weight:800;color:var(--primary);">0</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:24px; margin-bottom:28px;">
+        <div style="background:var(--card-bg); border:1px solid var(--hl); border-radius:18px; padding:20px; text-align:center; box-shadow:0 2px 8px var(--shadow);">
+          <div style="font-size:13px; font-weight:700; color:var(--ink-m); text-transform:uppercase;">Total Membres</div>
+          <div id="stat-admin-members" style="font-size:32px; font-weight:800; color:var(--primary); margin-top:6px;">0</div>
         </div>
-        <div class="stat-box" style="padding:20px 16px;text-align:center;">
-          <div style="font-size:14px;font-weight:700;color:var(--ink-m);text-transform:uppercase;letter-spacing:.03em;">Publications</div>
-          <div class="stat-val" id="admin-stat-posts" style="font-size:32px;font-weight:800;color:var(--primary);">0</div>
+        <div style="background:var(--card-bg); border:1px solid var(--hl); border-radius:18px; padding:20px; text-align:center; box-shadow:0 2px 8px var(--shadow);">
+          <div style="font-size:13px; font-weight:700; color:var(--ink-m); text-transform:uppercase;">Publications</div>
+          <div id="stat-admin-posts" style="font-size:32px; font-weight:800; color:#34c759; margin-top:6px;">0</div>
         </div>
-        <div class="stat-box" style="padding:20px 16px;text-align:center;">
-          <div style="font-size:14px;font-weight:700;color:var(--ink-m);text-transform:uppercase;letter-spacing:.03em;">Quiz</div>
-          <div class="stat-val" id="admin-stat-quizzes" style="font-size:32px;font-weight:800;color:var(--primary);">0</div>
+        <div style="background:var(--card-bg); border:1px solid var(--hl); border-radius:18px; padding:20px; text-align:center; box-shadow:0 2px 8px var(--shadow);">
+          <div style="font-size:13px; font-weight:700; color:var(--ink-m); text-transform:uppercase;">Total Quiz</div>
+          <div id="stat-admin-quizzes" style="font-size:32px; font-weight:800; color:#ff9500; margin-top:6px;">0</div>
         </div>
-        <div class="stat-box" style="padding:20px 16px;text-align:center;">
-          <div style="font-size:14px;font-weight:700;color:var(--ink-m);text-transform:uppercase;letter-spacing:.03em;">Commentaires</div>
-          <div class="stat-val" id="admin-stat-comments" style="font-size:32px;font-weight:800;color:var(--primary);">0</div>
+        <div style="background:var(--card-bg); border:1px solid var(--hl); border-radius:18px; padding:20px; text-align:center; box-shadow:0 2px 8px var(--shadow);">
+          <div style="font-size:13px; font-weight:700; color:var(--ink-m); text-transform:uppercase;">Commentaires</div>
+          <div id="stat-admin-comments" style="font-size:32px; font-weight:800; color:#5856d6; margin-top:6px;">0</div>
         </div>
       </div>
 
-      <!-- Tabs -->
-      <div class="tiktok-tabs" id="admin-tabs" style="margin-top:0;">
-        <button class="tk-tab active" data-atab="members" onclick="switchAdminTab('members')">👥 Membres</button>
-        <button class="tk-tab" data-atab="subjects" onclick="switchAdminTab('subjects')">📚 Matières</button>
-        <button class="tk-tab" data-atab="moderation" onclick="switchAdminTab('moderation')">
-          ⚠️ Modération
-          <span class="nav-unread-dot" id="admin-mod-dot" style="display:none;"></span>
+      <div style="display:flex; gap:10px; border-bottom:2px solid var(--hl); margin-bottom:24px; overflow-x:auto;">
+        <button class="tk-tab active" data-adm-tab="membres" onclick="switchAdminTab('membres')" style="padding:12px 20px; font-size:16px;">Membres</button>
+        <button class="tk-tab" data-adm-tab="matieres" onclick="switchAdminTab('matieres')" style="padding:12px 20px; font-size:16px;">Matières</button>
+        <button class="tk-tab" data-adm-tab="moderation" onclick="switchAdminTab('moderation')" style="padding:12px 20px; font-size:16px; position:relative;">
+          Modération
+          <span id="admin-mod-dot" style="display:none; width:10px; height:10px; background:var(--danger); border-radius:50%; position:absolute; top:8px; right:6px;"></span>
         </button>
       </div>
 
-      <!-- Members Panel -->
-      <div id="admin-panel-members" class="admin-panel">
-        <div class="adm-head">
-          <h3>Membres</h3>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <input type="text" id="admin-member-filter" placeholder="Filtrer par nom, prénom, rôle..." style="background:var(--input-bg);border:1px solid var(--input-b);border-radius:10px;padding:8px 14px;font-size:14px;color:var(--ink);outline:none;min-width:220px;" oninput="syncAdminUsers()">
-            <button class="btn-pill" onclick="openUserModal(false)">+ Créer un compte</button>
+      <div id="adm-view-membres" class="adm-tab-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+          <div style="display:flex; gap:10px; flex:1; min-width:280px; flex-wrap:wrap;">
+            <input type="text" id="adm-filter-search" placeholder="Rechercher par nom, prénom ou ID..." oninput="renderAdminUsersTable()" style="flex:1; min-width:200px; padding:10px 16px; border-radius:9999px; border:1px solid var(--input-b); background:var(--input-bg); color:var(--ink); outline:none; font-size:14px;">
+            <select id="adm-filter-role" onchange="renderAdminUsersTable()" style="padding:10px 16px; border-radius:9999px; border:1px solid var(--input-b); background:var(--input-bg); color:var(--ink); outline:none; font-size:14px; cursor:pointer;">
+              <option value="all">Tous les rôles</option>
+              <option value="élève">Élève</option>
+              <option value="professeur">Professeur</option>
+              <option value="admin">Administrateur</option>
+              <option value="HS">Hors-Série</option>
+            </select>
           </div>
+          <button class="btn-pill" onclick="openUserModal(false)">+ Créer un compte</button>
         </div>
         <table class="admin-table">
           <thead><tr><th>Identifiant</th><th>Nom</th><th>Rôle</th><th>Extras</th><th>Actions</th></tr></thead>
@@ -1267,11 +1270,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         </table>
       </div>
 
-      <!-- Subjects Panel -->
-      <div id="admin-panel-subjects" class="admin-panel" style="display:none;">
-        <div class="adm-head">
-          <h3>Matières</h3>
-          <button class="btn-pill-van" onclick="openMatiereModal(false)">+ Ajouter</button>
+      <div id="adm-view-matieres" class="adm-tab-content" style="display:none;">
+        <div class="adm-head" style="margin-top:0; margin-bottom:16px;">
+          <h3>Liste des matières</h3>
+          <button class="btn-pill-van" onclick="openMatiereModal(false)">+ Ajouter une matière</button>
         </div>
         <table class="admin-table">
           <thead><tr><th>Icône</th><th>Matière</th><th>Actions</th></tr></thead>
@@ -1279,17 +1281,13 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         </table>
       </div>
 
-      <!-- Moderation Panel -->
-      <div id="admin-panel-moderation" class="admin-panel" style="display:none;">
-        <div class="adm-head">
-          <h3>Signalements</h3>
-          <span class="caption" id="mod-count-label">0 signalement(s) en attente</span>
-        </div>
-        <div id="moderation-list" style="display:flex;flex-direction:column;gap:16px;margin-top:20px;">
-          <div class="empty-text">Aucun signalement pour le moment.</div>
-        </div>
+      <div id="adm-view-moderation" class="adm-tab-content" style="display:none;">
+        <h3 style="margin-bottom:16px;">Publications signalées</h3>
+        <table class="admin-table">
+          <thead><tr><th>Publication</th><th>Signalé par</th><th>Raison</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody id="admin-mod-tb"></tbody>
+        </table>
       </div>
-
     </section>
 
     <footer class="site-footer">
@@ -1334,6 +1332,31 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     <div id="view-post-content"></div>
     <div class="mact mt-3">
       <button class="btn-ghost" style="width:100%; border:1px solid var(--hl);" onclick="closeModal('m-view-post')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div id="m-gallery" class="moverlay" onclick="closeOnOut(event,'m-gallery')" style="z-index: 10000; background: rgba(0,0,0,0.92);">
+  <span onclick="closeModal('m-gallery')" style="position: absolute; top: 20px; right: 30px; color: #fff; font-size: 42px; cursor: pointer; z-index: 10001; font-weight: bold; line-height: 1;">&times;</span>
+  <button id="gal-prev" onclick="navGallery(-1, event)" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: #fff; border: none; font-size: 30px; width: 54px; height: 54px; border-radius: 50%; cursor: pointer; z-index: 10001; display: flex; align-items: center; justify-content: center;">&#10094;</button>
+  <div style="width: 85vw; height: 80vh; display: flex; align-items: center; justify-content: center;" onclick="event.stopPropagation();">
+    <img id="gal-img" src="" style="width: 100%; height: 100%; object-fit: fill; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" alt="Aperçu plein écran">
+  </div>
+  <button id="gal-next" onclick="navGallery(1, event)" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: #fff; border: none; font-size: 30px; width: 54px; height: 54px; border-radius: 50%; cursor: pointer; z-index: 10001; display: flex; align-items: center; justify-content: center;">&#10095;</button>
+  <div id="gal-counter" style="position: absolute; bottom: 25px; color: #fff; font-size: 16px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 6px 16px; border-radius: 20px;"></div>
+</div>
+
+<div id="m-report" class="moverlay" onclick="closeOnOut(event,'m-report')">
+  <div class="mbox" style="max-width: 450px;">
+    <h2>Signaler cette publication</h2>
+    <p class="caption mt-1 mb-2">Pourquoi signalez-vous ce contenu ?</p>
+    <input type="hidden" id="report-post-id">
+    <input type="hidden" id="report-post-title">
+    <input type="hidden" id="report-post-author">
+    <textarea id="report-reason" placeholder="Ex : Contenu inapproprié, spam, insultes..." rows="4" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--hl); font-family:inherit; outline:none; background:var(--input-bg); color:var(--ink);"></textarea>
+    <div class="mact mt-3">
+      <button class="btn-ghost" onclick="closeModal('m-report')">Annuler</button>
+      <button class="btn-danger" style="padding:10px 18px; border-radius:9999px; font-weight:600;" onclick="submitReport()">Envoyer le signalement</button>
     </div>
   </div>
 </div>
@@ -1577,44 +1600,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   </div>
 </div>
 
-<!-- Image Fullscreen Preview -->
-<div id="m-image-preview" class="moverlay" onclick="closeImagePreview(event)">
-  <div class="mbox" style="max-width:90vw; max-height:90vh; padding:0; background:transparent; box-shadow:none; border:none; position:relative; overflow:hidden;">
-    <button onclick="closeImagePreview(event)" style="position:absolute; top:12px; right:12px; background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:50%; width:40px; height:40px; font-size:22px; cursor:pointer; z-index:10;">✕</button>
-    <button id="img-prev-btn" onclick="navigateImagePreview(-1)" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.5); color:#fff; border:none; border-radius:50%; width:48px; height:48px; font-size:28px; cursor:pointer; z-index:10; display:none;">‹</button>
-    <button id="img-next-btn" onclick="navigateImagePreview(1)" style="position:absolute; right:16px; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.5); color:#fff; border:none; border-radius:50%; width:48px; height:48px; font-size:28px; cursor:pointer; z-index:10; display:none;">›</button>
-    <div style="width:100%; height:90vh; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); border-radius:16px;">
-      <img id="preview-image" src="" alt="Aperçu" style="max-width:100%; max-height:100%; object-fit:contain;">
-    </div>
-    <div id="preview-counter" style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.6); color:#fff; padding:4px 16px; border-radius:999px; font-size:14px; display:none;"></div>
-  </div>
-</div>
-
-<div id="m-report" class="moverlay" onclick="closeOnOut(event,'m-report')">
-  <div class="mbox">
-    <h2>Signaler un contenu</h2>
-    <p class="caption mt-1" style="margin-bottom:16px;">Pourquoi signales-tu ce post ?</p>
-    <div class="input-group">
-      <label>Motif</label>
-      <select id="report-reason">
-        <option value="spam">Spam / Publicité</option>
-        <option value="harassment">Harcèlement</option>
-        <option value="inappropriate">Contenu inapproprié</option>
-        <option value="other">Autre</option>
-      </select>
-    </div>
-    <div class="input-group">
-      <label>Précision (facultatif)</label>
-      <textarea id="report-detail" placeholder="Décris précisément le problème..." rows="3"></textarea>
-    </div>
-    <input type="hidden" id="report-post-id">
-    <div class="mact">
-      <button class="btn-ghost" onclick="closeModal('m-report')">Annuler</button>
-      <button class="btn-danger" onclick="submitReport()">Signaler</button>
-    </div>
-  </div>
-</div>
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
@@ -1689,12 +1674,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   window._hasViewedAnswers = false;
   
   window._currentAudio = null;
-
-  // --- Image Preview State ---
-  window._previewImages = [];
-  window._previewIndex = 0;
-  window._previewContext = null;
-  window._previewPostId = null;
+  window._galleryImages = [];
+  window._galleryIndex = 0;
+  window._allAdminUsers = [];
 
   window.formatNumber = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -1769,11 +1751,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       document.getElementById("drop-name").innerHTML = (currentUser.displayName || currentUser.username) + myBadge;
       document.getElementById("drawer-name").innerHTML = (currentUser.displayName || currentUser.username) + myBadge;
     }
-
-    // Update admin stats
-    if (currentUser && (currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')))) {
-      updateAdminStats();
-    }
   });
   
   window.addEventListener("hashchange", handleHashChange);
@@ -1822,6 +1799,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         window.location.hash = "#page-accueil"; 
         return; 
       }
+      syncAdminDashboardStats();
+      syncAdminUsers();
+      syncAdminMats();
     }
   
     document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
@@ -1849,7 +1829,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     if (target === 'cours') loadCoursFeed();
     if (target === 'fichesrev') loadFRFeed();
     if (target === 'accueil') { loadPinnedAnnonces(); loadAnnonces(); }
-    if (target === 'admin') { updateAdminStats(); loadModerations(); }
   }
   
   signInAnonymously(auth).then(async () => {
@@ -1987,10 +1966,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     syncContrib();
     
     if (isAdmin) {
+      syncAdminDashboardStats();
       syncAdminUsers();
       syncAdminMats();
-      updateAdminStats();
-      loadModerations();
     }
     
     loadAnnonces();
@@ -2335,228 +2313,60 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     if (badgeEl) badgeEl.innerText = `${idx + 1} / ${images.length}`;
   };
 
-  // --- Image Preview Functions ---
-  window.openImagePreview = (images, index, context, postId) => {
-    if (!images || images.length === 0) return;
-    window._previewImages = images;
-    window._previewIndex = index;
-    window._previewContext = context;
-    window._previewPostId = postId;
-    
-    const modal = document.getElementById('m-image-preview');
-    const img = document.getElementById('preview-image');
-    const prevBtn = document.getElementById('img-prev-btn');
-    const nextBtn = document.getElementById('img-next-btn');
-    const counter = document.getElementById('preview-counter');
-    
-    img.src = images[index];
-    prevBtn.style.display = images.length > 1 ? 'flex' : 'none';
-    nextBtn.style.display = images.length > 1 ? 'flex' : 'none';
-    counter.style.display = images.length > 1 ? 'block' : 'none';
-    counter.innerText = `${index + 1} / ${images.length}`;
-    
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
+  window.openGalleryModal = (images, index = 0) => {
+    if (!images || !images.length) return;
+    window._galleryImages = images;
+    window._galleryIndex = index;
+    updateGalleryDisplay();
+    openModal("m-gallery");
   };
 
-  window.closeImagePreview = (e) => {
-    if (e && e.target !== e.currentTarget) return;
-    document.getElementById('m-image-preview').classList.remove('active');
-    document.body.style.overflow = '';
+  window.navGallery = (dir, event) => {
+    if (event) event.stopPropagation();
+    if (window._galleryImages.length <= 1) return;
+    window._galleryIndex = (window._galleryIndex + dir + window._galleryImages.length) % window._galleryImages.length;
+    updateGalleryDisplay();
   };
 
-  window.navigateImagePreview = (dir) => {
-    const images = window._previewImages;
-    if (!images || images.length === 0) return;
-    let newIndex = window._previewIndex + dir;
-    if (newIndex < 0) newIndex = images.length - 1;
-    if (newIndex >= images.length) newIndex = 0;
-    window._previewIndex = newIndex;
-    
-    document.getElementById('preview-image').src = images[newIndex];
-    document.getElementById('preview-counter').innerText = `${newIndex + 1} / ${images.length}`;
-  };
+  function updateGalleryDisplay() {
+    const imgEl = document.getElementById("gal-img");
+    const counterEl = document.getElementById("gal-counter");
+    const prevBtn = document.getElementById("gal-prev");
+    const nextBtn = document.getElementById("gal-next");
+    if (imgEl) imgEl.src = window._galleryImages[window._galleryIndex];
+    if (counterEl) {
+      counterEl.innerText = window._galleryImages.length > 1 ? `${window._galleryIndex + 1} / ${window._galleryImages.length}` : "";
+    }
+    if (prevBtn) prevBtn.style.display = window._galleryImages.length > 1 ? "flex" : "none";
+    if (nextBtn) nextBtn.style.display = window._galleryImages.length > 1 ? "flex" : "none";
+  }
 
-  // --- Report Functions ---
-  window.openReportModal = (postId) => {
-    document.getElementById('report-post-id').value = postId;
-    document.getElementById('report-reason').value = 'spam';
-    document.getElementById('report-detail').value = '';
-    openModal('m-report');
+  window.openReportModal = (id, title, author) => {
+    document.getElementById("report-post-id").value = id;
+    document.getElementById("report-post-title").value = title;
+    document.getElementById("report-post-author").value = author;
+    document.getElementById("report-reason").value = "";
+    openModal("m-report");
   };
 
   window.submitReport = async () => {
-    const postId = document.getElementById('report-post-id').value;
-    const reason = document.getElementById('report-reason').value;
-    const detail = document.getElementById('report-detail').value.trim();
-    
-    if (!postId) { showToast("Erreur : post non identifié."); return; }
+    const postId = document.getElementById("report-post-id").value;
+    const postTitle = document.getElementById("report-post-title").value;
+    const postAuthor = document.getElementById("report-post-author").value;
+    const reason = document.getElementById("report-reason").value.trim() || "Aucune raison précisée";
     
     try {
       await addDoc(collection(db, "reports"), {
-        postId: postId,
-        reporterId: currentUser.username,
-        reporterDisplayName: currentUser.displayName || currentUser.username,
-        reason: reason,
-        detail: detail,
-        status: 'pending',
+        postId, postTitle, postAuthor,
+        reporterId: currentUser ? currentUser.username : "Anonyme",
+        reason, status: "pending",
         timestamp: Date.now()
       });
-      closeModal('m-report');
-      showToast("Signalement envoyé. Merci !");
-      loadModerations();
+      closeModal("m-report");
+      showToast("Publication signalée à la modération ✓");
     } catch(e) {
-      showToast("Erreur lors du signalement.");
+      showToast("Erreur lors de l'envoi du signalement.");
     }
-  };
-
-  // --- Moderation Functions ---
-  let _modUnsub = null;
-
-  function loadModerations() {
-    if (_modUnsub) { _modUnsub(); _modUnsub = null; }
-    if (!currentUser || !(currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')))) return;
-    
-    const q = query(collection(db, "reports"), where("status", "==", "pending"));
-    _modUnsub = onSnapshot(q, snap => {
-      const container = document.getElementById("moderation-list");
-      const label = document.getElementById("mod-count-label");
-      const dot = document.getElementById("admin-mod-dot");
-      
-      const count = snap.size;
-      label.innerText = `${count} signalement(s) en attente`;
-      dot.style.display = count > 0 ? 'inline-block' : 'none';
-      
-      if (snap.empty) {
-        container.innerHTML = `<div class="empty-text">Aucun signalement pour le moment.</div>`;
-        return;
-      }
-      
-      let html = "";
-      snap.docs.forEach(d => {
-        const r = d.data();
-        const postId = r.postId;
-        
-        html += `
-          <div style="background:var(--card-bg);border:1px solid var(--hl);border-radius:16px;padding:16px 20px;display:flex;flex-direction:column;gap:10px;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
-              <div>
-                <strong style="color:var(--ink);">Signalé par :</strong> 
-                <a href="#${r.reporterId}" style="color:var(--primary);text-decoration:none;font-weight:600;">${r.reporterDisplayName}</a>
-                <span class="caption" style="margin-left:8px;">· ${new Date(r.timestamp).toLocaleString('fr-FR')}</span>
-              </div>
-              <span style="background:var(--danger);color:#fff;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;">${r.reason}</span>
-            </div>
-            ${r.detail ? `<div style="font-size:14px;color:var(--ink-m);padding:8px 12px;background:var(--parchment);border-radius:8px;">"${r.detail}"</div>` : ''}
-            <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
-              <button class="btn-ghost btn-sm" onclick="viewReportedPost('${postId}')">👁️ Voir le post</button>
-              <button class="btn-danger btn-sm" onclick="resolveReport('${d.id}', 'delete')">🗑️ Supprimer le post</button>
-              <button class="btn-utility btn-sm" onclick="resolveReport('${d.id}', 'ignore')">Ignorer le signalement</button>
-            </div>
-          </div>
-        `;
-      });
-      container.innerHTML = html;
-    });
-  }
-
-  window.viewReportedPost = async (postId) => {
-    try {
-      const snap = await getDoc(doc(db, "posts", postId));
-      if (!snap.exists()) {
-        showToast("Ce post a déjà été supprimé.");
-        return;
-      }
-      const p = { id: snap.id, ...snap.data() };
-      const html = window.getPostHTML(p, 'reported');
-      document.getElementById("view-post-content").innerHTML = html;
-      openModal("m-view-post");
-    } catch(e) {
-      showToast("Erreur lors du chargement du post.");
-    }
-  };
-
-  window.resolveReport = async (reportId, action) => {
-    if (!confirm(action === 'delete' ? "Supprimer définitivement ce post ?" : "Ignorer ce signalement ?")) return;
-    
-    try {
-      const reportRef = doc(db, "reports", reportId);
-      const reportSnap = await getDoc(reportRef);
-      if (!reportSnap.exists()) return;
-      
-      const data = reportSnap.data();
-      
-      if (action === 'delete') {
-        await deleteDoc(doc(db, "posts", data.postId));
-        showToast("Post supprimé ✓");
-      } else {
-        showToast("Signalement ignoré ✓");
-      }
-      
-      await updateDoc(reportRef, { status: 'resolved', resolvedAt: Date.now(), resolvedBy: currentUser.username });
-      loadModerations();
-    } catch(e) {
-      showToast("Erreur lors du traitement.");
-    }
-  };
-
-  // --- Admin Stats ---
-  async function updateAdminStats() {
-    if (!currentUser || !(currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')))) return;
-    
-    try {
-      const usersSnap = await getDocs(collection(db, "users"));
-      document.getElementById("admin-stat-users").innerText = usersSnap.size;
-      
-      const postsSnap = await getDocs(collection(db, "posts"));
-      document.getElementById("admin-stat-posts").innerText = postsSnap.size;
-      
-      const quizzesSnap = await getDocs(collection(db, "quizzes"));
-      const aiQuizzesSnap = await getDocs(collection(db, "ai_quizzes"));
-      document.getElementById("admin-stat-quizzes").innerText = quizzesSnap.size + aiQuizzesSnap.size;
-      
-      let totalComments = 0;
-      postsSnap.forEach(d => {
-        const p = d.data();
-        if (p.comments) {
-          totalComments += p.comments.reduce((acc, c) => acc + 1 + (c.replies ? c.replies.length : 0), 0);
-        }
-      });
-      document.getElementById("admin-stat-comments").innerText = totalComments;
-    } catch(e) {
-      console.error("Erreur stats admin:", e);
-    }
-  }
-
-  // --- Admin Tab Switching ---
-  window.switchAdminTab = (tab) => {
-    document.querySelectorAll('#admin-tabs .tk-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector(`#admin-tabs .tk-tab[data-atab="${tab}"]`).classList.add('active');
-    
-    document.querySelectorAll('.admin-panel').forEach(p => p.style.display = 'none');
-    document.getElementById(`admin-panel-${tab}`).style.display = 'block';
-    
-    if (tab === 'moderation') loadModerations();
-  };
-
-  // --- Override getPostHTML to add report button ---
-  const originalGetPostHTML = window.getPostHTML;
-  window.getPostHTML = (p, context) => {
-    const isAdmin = currentUser?.role === "admin" || (currentUser?.subRoles && currentUser.subRoles.includes("admin"));
-    const canReport = currentUser && p.authorId !== currentUser.username;
-    
-    let html = originalGetPostHTML(p, context);
-    if (canReport) {
-      const reportBtn = `<button class="btn-ghost btn-sm" onclick="openReportModal('${p.id}')" style="font-size:11px;padding:2px 8px;">⚠️ Signaler</button>`;
-      const headerEndIndex = html.indexOf('</div>', html.indexOf('post-header'));
-      if (headerEndIndex !== -1) {
-        const insertionPoint = html.lastIndexOf('</div>', headerEndIndex + 20);
-        if (insertionPoint !== -1) {
-          html = html.slice(0, insertionPoint) + reportBtn + html.slice(insertionPoint);
-        }
-      }
-    }
-    return html;
   };
 
   window.getPostHTML = (p, context) => {
@@ -2611,14 +2421,15 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
     let mediaBox = "";
     if (images.length === 1) {
-      const imgUrl = images[0].url;
-      mediaBox = `<div class="post-media-preview" onclick="openImagePreview(['${imgUrl}'], 0, 'post', '${pId}')"><img src="${imgUrl}" alt="Aperçu" style="cursor:pointer;"></div>`;
+      const imgUrl = esc(images[0].url);
+      mediaBox = `<div class="post-media-preview" onclick="openGalleryModal(['${imgUrl}'], 0)"><img src="${imgUrl}" alt="Aperçu"></div>`;
     } else if (images.length > 1) {
-      const imagesJson = esc(JSON.stringify(images.map(i => i.url)));
+      const imagesList = images.map(i => i.url);
+      const imagesJson = esc(JSON.stringify(imagesList));
       mediaBox = `
         <div class="post-carousel" id="carousel-${context}-${pId}" data-index="0" data-images="${imagesJson}" style="position:relative; width:100%; max-height:350px; border-radius:14px; overflow:hidden; background:var(--file-bg); border:1px solid var(--hl); margin-top:4px; display:flex; align-items:center; justify-content:center; user-select:none;">
-          <img id="carousel-img-${context}-${pId}" src="${images[0].url}" alt="Page 1" style="width:100%; height:100%; max-height:350px; object-fit:contain; cursor:pointer;" onclick="openImagePreview(${imagesJson}, 0, 'post', '${pId}')">
-          <div class="carousel-badge" id="carousel-badge-${context}-${pId}" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.65); color:#fff; font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; pointer-events:none; backdrop-filter:blur(4px);">1 / ${images.length}</div>
+          <img id="carousel-img-${context}-${pId}" src="${imagesList[0]}" alt="Page 1" style="width:100%; height:100%; max-height:350px; object-fit:contain; cursor:pointer;" onclick="openGalleryModal(${esc(JSON.stringify(imagesList))}, parseInt(document.getElementById('carousel-${context}-${pId}').getAttribute('data-index')||0, 10))">
+          <div class="carousel-badge" id="carousel-badge-${context}-${pId}" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.65); color:#fff; font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; pointer-events:none; backdrop-filter:blur(4px);">1 / ${imagesList.length}</div>
           <button type="button" class="carousel-btn prev" onclick="event.stopPropagation(); navCarousel('${context}-${pId}', -1)" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.85); color:#1d1d1f; font-size:20px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.25); border:none; cursor:pointer; transition:0.15s;">‹</button>
           <button type="button" class="carousel-btn next" onclick="event.stopPropagation(); navCarousel('${context}-${pId}', 1)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.85); color:#1d1d1f; font-size:20px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.25); border:none; cursor:pointer; transition:0.15s;">›</button>
         </div>`;
@@ -2696,9 +2507,6 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     });
 
     const dateStr = p.timestamp ? new Date(p.timestamp).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Date inconnue";
-    
-    const canReport = currentUser && p.authorId !== currentUser.username;
-    const reportBtn = canReport ? `<button class="btn-ghost btn-sm" onclick="openReportModal('${pId}')" style="font-size:11px;padding:2px 8px;">⚠️ Signaler</button>` : '';
 
     return `
       <div class="post-card">
@@ -2713,9 +2521,9 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
                 <span class="subj-tag">${subjIcon} ${p.matiere}</span>
               </div>
             </div>
-            <div style="display:flex;gap:4px;align-items:center;">
-              ${reportBtn}
+            <div style="display:flex; align-items:center; gap:8px;">
               ${canDel ? `<button class="btn-danger btn-sm" onclick="deletePost('${pId}')">Supprimer</button>` : ""}
+              <button onclick="openReportModal('${pId}', '${esc(p.title || "Document")}', '${p.authorId}')" style="background:transparent; color:var(--ink-m); font-size:20px; font-weight:bold; cursor:pointer; padding:0 6px; border:none; line-height:1;" title="Signaler la publication">…</button>
             </div>
           </div>
           <div>
@@ -4078,13 +3886,11 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     const renderCombined = () => {
       let combined = [...(window._liveQuizzesData || []), ...(window._liveAIQuizzesData || [])];
       
-
       const canSeeHS = currentUser && (currentUser.role === "admin" || currentUser.role === "HS" || (currentUser.subRoles && currentUser.subRoles.includes("admin")));
       if (!canSeeHS) {
         combined = combined.filter(q => q.authorRole !== "HS");
       }
       
-
       if (window._quizFilter.type === 'manuel') combined = combined.filter(q => !q.isAI);
       if (window._quizFilter.type === 'ia') combined = combined.filter(q => q.isAI);
 
@@ -4188,14 +3994,14 @@ Les questions doivent être variées, sans ambiguïté et adaptées au sujet don
 RÈGLE ABSOLUE : Tu dois répondre UNIQUEMENT par un objet JSON valide, sans AUCUN texte avant ou après, et sans markdown.
 Le JSON doit OBLIGATOIREMENT avoir cette structure exacte :
 {
-"questions": [
-{
-  "question": "Pose la question de façon claire et précise ?",
-  "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
-  "correctIndex": 0,
-  "justification": "Explication pédagogique détaillée expliquant pourquoi cette réponse est la bonne et pourquoi les autres sont fausses."
-}
-]
+  "questions": [
+    {
+      "question": "Pose la question de façon claire et précise ?",
+      "options": ["Choix A", "Choix B", "Choix C", "Choix D"],
+      "correctIndex": 0,
+      "justification": "Explication pédagogique détaillée expliquant pourquoi cette réponse est la bonne et pourquoi les autres sont fausses."
+    }
+  ]
 }`;
   
     const userPrompt = `Crée un quiz de ${nbQuestions} questions sur le sujet : "${topic}" en matière "${matiere}". Informations complémentaires : "${desc}".
@@ -4346,10 +4152,7 @@ RENVOIE UNIQUEMENT LE JSON.`;
   };
   
   window.nextQuizQuestion = () => {
-    if (window._currentAudio) { 
-      window._currentAudio.pause(); 
-      window._currentAudio = null; 
-    }
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     if (window._currentQuestionIndex < window._currentQuizData.questions.length - 1) {
       window._currentQuestionIndex++;
       renderCurrentQuestion();
@@ -4358,40 +4161,24 @@ RENVOIE UNIQUEMENT LE JSON.`;
     }
   };
 
-  // --- Web Speech API for TTS ---
   window.readQuestionAloud = () => {
-    if (!window._currentQuizData) return;
-    
-    const qData = window._currentQuizData.questions[window._currentQuestionIndex];
-    const qText = qData.question;
-    const optionsText = qData.options.map((opt, idx) => `${idx + 1}. ${opt}`).join(", ");
-    const textToRead = `${qText}. Les réponses possibles sont : ${optionsText}.`;
-    
-    if (window.speechSynthesis) {
-      if (window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-      }
-      
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      if (!window._currentQuizData) return;
+      const qData = window._currentQuizData.questions[window._currentQuestionIndex];
+      const textToRead = `${qData.question}. Les réponses possibles sont : ${qData.options.join(", ou ")}.`;
       const utterance = new SpeechSynthesisUtterance(textToRead);
-      utterance.lang = 'fr-FR';
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      
-      const voice = speechSynthesis.getVoices().find(v => v.lang.startsWith('fr'));
-      if (voice) utterance.voice = voice;
-      
+      utterance.lang = "fr-FR";
+      utterance.rate = 1.0;
       window.speechSynthesis.speak(utterance);
-      showToast("🔊 Lecture en cours...");
+      showToast("🔊 Lecture de la question (Google)...");
     } else {
-      showToast("La synthèse vocale n'est pas supportée par ton navigateur.");
+      showToast("⚠️ La synthèse vocale n'est pas supportée par ce navigateur.");
     }
   };
-
+  
   window.submitQuiz = async () => {
-    if (window._currentAudio) { 
-      window._currentAudio.pause(); 
-      window._currentAudio = null; 
-    }
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     closeModal('m-take-quiz');
     
     let score = 0;
@@ -4477,18 +4264,12 @@ RENVOIE UNIQUEMENT LE JSON.`;
   };
   
   window.closeTakeQuizModal = async () => {
-    if (window._currentAudio) { 
-      window._currentAudio.pause(); 
-      window._currentAudio = null; 
-    }
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   };
   
   window.abortQuiz = () => {
     if (confirm("Veux-tu vraiment quitter le quiz en cours ?")) {
-      if (window._currentAudio) { 
-        window._currentAudio.pause(); 
-        window._currentAudio = null; 
-      }
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       closeModal('m-take-quiz');
       window._currentQuizData = null;
     }
@@ -4546,40 +4327,142 @@ RENVOIE UNIQUEMENT LE JSON.`;
     }
   };
   
-  function syncAdminUsers() {
-    onSnapshot(collection(db, "users"), snap => {
-      const tb = document.getElementById("admin-users-tb"); 
-      tb.innerHTML = "";
+  function syncAdminDashboardStats() {
+    if (!currentUser || (currentUser.role !== 'admin' && !(currentUser.subRoles && currentUser.subRoles.includes('admin')))) return;
+    
+    const elMem = document.getElementById("stat-admin-members");
+    if (elMem) elMem.innerText = window.usersMap.size;
+
+    onSnapshot(collection(db, "posts"), snap => {
+      const elPosts = document.getElementById("stat-admin-posts");
+      if (elPosts) elPosts.innerText = snap.size;
       
-      const filter = document.getElementById("admin-member-filter").value.trim().toLowerCase();
-      
+      let totalComments = 0;
       snap.forEach(d => {
-        const u = d.data();
-        const display = u.displayName || u.username;
-        const match = !filter || 
-          u.username.includes(filter) || 
-          display.toLowerCase().includes(filter) ||
-          (u.role && u.role.includes(filter)) ||
-          (u.subRoles && u.subRoles.some(r => r.includes(filter)));
-        
-        if (!match) return;
-        
-        tb.innerHTML += `
-        <tr>
-          <td><strong>${u.username}</strong></td>
-          <td>${u.displayName || "—"}</td>
-          <td><span class="rpill">${u.role}</span></td>
-          <td class="caption">${(u.subRoles || []).join(", ") || "—"}</td>
-          <td>
-            <div class="td-acts">
-              <button class="btn-ghost btn-sm" onclick='openUserModal(true,"${d.id}","${esc(u.username)}","${u.role}",${JSON.stringify(u.subRoles || [])})'>Modifier</button>
-              <button class="btn-danger btn-sm" onclick="delUser('${d.id}','${esc(u.username)}')">Suppr.</button>
-            </div>
-          </td>
-        </tr>`;
+        const c = d.data().comments || [];
+        totalComments += c.length;
+        c.forEach(rep => { if (rep.replies) totalComments += rep.replies.length; });
+      });
+      const elComm = document.getElementById("stat-admin-comments");
+      if (elComm) elComm.innerText = totalComments;
+    });
+
+    onSnapshot(collection(db, "quizzes"), snap1 => {
+      onSnapshot(collection(db, "ai_quizzes"), snap2 => {
+        const elQ = document.getElementById("stat-admin-quizzes");
+        if (elQ) elQ.innerText = snap1.size + snap2.size;
       });
     });
+
+    onSnapshot(collection(db, "reports"), snap => {
+      const tb = document.getElementById("admin-mod-tb");
+      const dot = document.getElementById("admin-mod-dot");
+      let pendingCount = 0;
+      
+      if (snap.empty) {
+        if (tb) tb.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--ink-m);">Aucun signalement en attente.</td></tr>`;
+        if (dot) dot.style.display = "none";
+        return;
+      }
+
+      let rowsHtml = "";
+      snap.docs.forEach(d => {
+        const r = { id: d.id, ...d.data() };
+        if (r.status === "pending") {
+          pendingCount++;
+          const dateStr = r.timestamp ? new Date(r.timestamp).toLocaleDateString("fr-FR", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"}) : "—";
+          rowsHtml += `
+            <tr>
+              <td><strong>[${esc(r.postId)}]</strong><br>${esc(r.postTitle || 'Document')} <span class="caption">(@${esc(r.postAuthor || '')})</span></td>
+              <td><strong>@${esc(r.reporterId)}</strong></td>
+              <td style="color:var(--danger); font-weight:500;">${esc(r.reason)}</td>
+              <td class="caption">${dateStr}</td>
+              <td>
+                <div class="td-acts">
+                  <button class="btn-danger btn-sm" onclick="resolveReport('${d.id}', '${r.postId}', 'delete')">Supprimer post</button>
+                  <button class="btn-ghost btn-sm" onclick="resolveReport('${d.id}', '${r.postId}', 'ignore')">Ignorer</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }
+      });
+      if (tb) tb.innerHTML = rowsHtml || `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--ink-m);">Aucun signalement en attente.</td></tr>`;
+      if (dot) dot.style.display = pendingCount > 0 ? "inline-block" : "none";
+    });
   }
+
+  window.resolveReport = async (reportId, postId, action) => {
+    try {
+      await updateDoc(doc(db, "reports", reportId), { status: action === 'delete' ? 'deleted' : 'ignored' });
+      if (action === 'delete' && postId) {
+        try { await deleteDoc(doc(db, "posts", postId)); } catch(e){}
+        showToast("Publication supprimée et signalement résolu ✓");
+      } else {
+        showToast("Signalement ignoré ✓");
+      }
+    } catch(e) {
+      showToast("Erreur lors de l'opération.");
+    }
+  };
+
+  function syncAdminUsers() {
+    onSnapshot(collection(db, "users"), snap => {
+      window._allAdminUsers = [];
+      snap.forEach(d => {
+        window._allAdminUsers.push({ docId: d.id, ...d.data() });
+      });
+      renderAdminUsersTable();
+      const elMem = document.getElementById("stat-admin-members");
+      if (elMem) elMem.innerText = window._allAdminUsers.length;
+    });
+  }
+
+  window.renderAdminUsersTable = () => {
+    const tb = document.getElementById("admin-users-tb");
+    if (!tb) return;
+    
+    const searchVal = (document.getElementById("adm-filter-search")?.value || "").toLowerCase().trim();
+    const roleVal = document.getElementById("adm-filter-role")?.value || "all";
+    
+    const filtered = window._allAdminUsers.filter(u => {
+      const matchRole = roleVal === "all" || u.role === roleVal;
+      const dName = (u.displayName || "").toLowerCase();
+      const uName = (u.username || "").toLowerCase();
+      const matchSearch = !searchVal || dName.includes(searchVal) || uName.includes(searchVal) || u.docId.toLowerCase().includes(searchVal);
+      return matchRole && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+      tb.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--ink-m);">Aucun membre ne correspond aux critères.</td></tr>`;
+      return;
+    }
+
+    tb.innerHTML = filtered.map(u => `
+      <tr>
+        <td><strong>${esc(u.username)}</strong></td>
+        <td>${esc(u.displayName || "—")}</td>
+        <td><span class="rpill">${esc(u.role || "élève")}</span></td>
+        <td class="caption">${esc((u.subRoles || []).join(", ") || "—")}</td>
+        <td>
+          <div class="td-acts">
+            <button class="btn-ghost btn-sm" onclick='openUserModal(true,"${u.docId}","${esc(u.username)}","${esc(u.role)}",${JSON.stringify(u.subRoles || [])})'>Modifier</button>
+            <button class="btn-danger btn-sm" onclick="delUser('${u.docId}','${esc(u.username)}')">Suppr.</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  };
+
+  window.switchAdminTab = (tabName) => {
+    document.querySelectorAll('[data-adm-tab]').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`[data-adm-tab="${tabName}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    document.querySelectorAll('.adm-tab-content').forEach(c => c.style.display = 'none');
+    const activeContent = document.getElementById(`adm-view-${tabName}`);
+    if (activeContent) activeContent.style.display = 'block';
+  };
   
   window._tempFakeFollowers = [];
   window._tempFakeFollowersCount = 0;
