@@ -18,7 +18,7 @@ const app  = initializeApp(FB);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-emailjs.init("2VkygefcXxbSOlhFX");
+window.emailjs.init("2VkygefcXxbSOlhFX");
 
 const GROQ_API_URL = "https://groqrelay.greninja71144.workers.dev";
 const GROQ_MODEL   = "llama-3.3-70b-versatile"; 
