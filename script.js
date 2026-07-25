@@ -2266,42 +2266,25 @@ window.handleSendDM = async (e) => {
 };
 
 async function callGroqAPI(systemPrompt, userPrompt) {
-  const conversationHistory = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt }
-  ];
+  const response = await fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ systemPrompt, userPrompt }),
+  });
 
-  try {
-    const response = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + GROQ_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: conversationHistory,
-        temperature: 0.6,
-        max_tokens: 3000,
-        response_format: { type: "json_object" }
-      }),
-    });
+  if (!response.ok) {
+    throw new Error(`Erreur HTTP ${response.status}: ${await response.text()}`);
+  }
 
-    if (!response.ok) throw new Error("Erreur de l'API GROQ: " + response.status);
-    
-    const data = await response.json();
-    let text = data.choices[0].message.content;
-    
-    const jsonRegex = /\{[\s\S]*\}/;
-    const match = text.match(jsonRegex);
-    if (match) {
-      text = match[0];
-    }
+  const data = await response.json();
 
-    return JSON.parse(text);
-  } catch (e) {
-    console.error("Format IA reçu (non-parsable):", e);
-    throw new Error("L'IA n'a pas respecté le format JSON ou la réponse a été coupée.");
+  const text = data.choices[0].message.content;
+  const jsonRegex = /\{[\s\S]*\}/;
+  const match = text.match(jsonRegex);
+  if (match) {
+    return JSON.parse(match[0]);
+  } else {
+    throw new Error('La réponse de l’IA ne contient pas de JSON valide.');
   }
 }
 
