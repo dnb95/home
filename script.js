@@ -3326,29 +3326,38 @@ snap.forEach(d => {
 
 const originalOpenUserModal = window.openUserModal;
 window.openUserModal = (isEdit, docId = '', username = '', role = 'élève', subRoles = []) => {
-originalOpenUserModal(isEdit, docId, username, role, subRoles);
+  originalOpenUserModal(isEdit, docId, username, role, subRoles);
 
-setTimeout(async () => {
-  await populateEtabSelects('adm-u-etab');
-  
-  if (isEdit && username) {
-    const userData = window.usersMap.get(username);
-    if (userData) {
-      document.getElementById('adm-u-etab').value = userData.etablissementId || '';
-      await populateClasseSelects('adm-u-classe', userData.etablissementId || '', userData.classeId || '');
+  setTimeout(async () => {
+    await populateEtabSelects('adm-u-etab');
+
+    let etabId = '';
+    let classeId = '';
+    if (isEdit && username) {
+      const userData = window.usersMap.get(username);
+      if (userData) {
+        etabId = userData.etablissementId || '';
+        classeId = userData.classeId || '';
+      }
     }
-  }
-  
 
-  const etabSelect = document.getElementById('adm-u-etab');
-  const newEtabSelect = etabSelect.cloneNode(true);
-  etabSelect.parentNode.replaceChild(newEtabSelect, etabSelect);
-  
-  newEtabSelect.addEventListener('change', function() {
-    const etabId = this.value;
-    populateClasseSelects('adm-u-classe', etabId);
-  });
-}, 100);
+    const etabSelect = document.getElementById('adm-u-etab');
+    if (etabSelect) {
+      const newEtabSelect = etabSelect.cloneNode(true);
+      etabSelect.parentNode.replaceChild(newEtabSelect, etabSelect);
+
+      newEtabSelect.value = etabId;
+
+      newEtabSelect.addEventListener('change', function() {
+        const selectedEtab = this.value;
+        populateClasseSelects('adm-u-classe', selectedEtab);
+        const classeSelect = document.getElementById('adm-u-classe');
+        if (classeSelect) classeSelect.value = '';
+      });
+
+      await populateClasseSelects('adm-u-classe', etabId, classeId);
+    }
+  }, 100);
 };
 window.switchTab = (target) => { 
     window.location.hash = `#page-${target}`; 
