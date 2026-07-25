@@ -2271,29 +2271,39 @@ async function callGroqAPI(systemPrompt, userPrompt) {
     { role: "user", content: userPrompt }
   ];
 
+  const payload = {
+    model: GROQ_MODEL,
+    messages: conversationHistory,
+    temperature: 0.6,
+    max_tokens: 3000,
+    response_format: { type: "json_object" }
+  };
+
+  console.log("📤 Envoi à Groq via Worker :", payload);
+
   try {
     const response = await fetch(GROQ_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: conversationHistory,
-        temperature: 0.6,
-        max_tokens: 3000,
-        response_format: { type: "json_object" }
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("❌ Réponse Worker :", response.status, errorText);
       throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
-    const text = data.choices[0].message.content;
+    console.log("✅ Réponse Groq reçue :", data);
 
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error("Réponse Groq invalide : pas de choix");
+    }
+
+    const text = data.choices[0].message.content;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
@@ -2301,7 +2311,8 @@ async function callGroqAPI(systemPrompt, userPrompt) {
       throw new Error("La réponse de l'IA ne contient pas de JSON valide.");
     }
   } catch (e) {
-    console.error("Erreur callGroqAPI :", e);
+    console.error("❌ Erreur callGroqAPI :", e);
+    showToast("Erreur avec l'IA : " + e.message);
     throw e;
   }
 }
