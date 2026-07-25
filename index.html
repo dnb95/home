@@ -128,9 +128,27 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .filter-btn:hover{background:var(--primary-l);color:var(--primary-f)}
 .filter-btn.active{background:var(--primary);color:#fff}
 
-.feed-wrap{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;align-items:start}
-
-.post-card{background:var(--card-bg);border:1px solid var(--hl);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:14px;transition:border-color .2s}
+.feed-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;   
+  gap: 20px;
+  align-items: start;
+  max-width: 100%;
+  overflow: hidden;                 
+}
+.post-card {
+  background: var(--card-bg);
+  border: 1px solid var(--hl);
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color .2s;
+  min-width: 0;                     
+  overflow: hidden;                 
+  word-wrap: break-word;            
+}
 .post-card:hover{border-color:rgba(155,143,228,.3)}
 .post-header{display:flex;align-items:center;gap:12px}
 .post-av{width:38px;height:38px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;border:2px solid var(--primary-l);text-decoration:none}
@@ -141,7 +159,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 .post-carousel {
   position: relative;
   width: 100%;
-  height: 320px;            /* Hauteur fixe */
+  height: 320px;           
   border-radius: 14px;
   overflow: hidden;
   background: var(--file-bg);
@@ -201,21 +219,63 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
 .subj-tag{font-size:11px;font-weight:600;background:var(--file-bg);color:var(--ink);padding:2px 8px;border-radius:4px;border:1px solid var(--hl2)}
 
-.post-title{font-size:18px;font-weight:700;color:var(--ink)}
+.post-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;                    
+  max-width: 100%;
+}
 .post-desc {
   font-size: 15px;
   color: var(--ink-m);
   line-height: 1.5;
-  margin-top: 4px;
-  max-height: 4.5em; 
-  overflow: hidden;
-  transition: max-height 0.3s ease;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  margin: 0;
 }
 
 .post-desc.expanded {
   max-height: none;
 }
+.post-desc-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
+.post-desc {
+  font-size: 15px;
+  color: var(--ink-m);
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.post-desc.expanded {
+  max-height: none;       
+}
+
+.btn-show-more {
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 2px;
+  display: inline-block;
+  width: fit-content;
+  border: none;
+  transition: color 0.2s;
+}
+
+.btn-show-more:hover {
+  color: var(--primary-f);
+  text-decoration: underline;
+}
 .btn-show-more {
   background: transparent;
   color: var(--primary);
@@ -230,8 +290,12 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
 .file-chip{background:var(--file-bg);border:1px solid var(--hl);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .file-chip-info{font-size:15px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:10px;min-width:0;flex:1}
-.file-chip-info span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btn-download{font-size:13px;padding:8px 18px;background:var(--primary);color:#fff;font-weight:600;border-radius:9999px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+.file-chip-info span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}.btn-download{font-size:13px;padding:8px 18px;background:var(--primary);color:#fff;font-weight:600;border-radius:9999px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
 .btn-download:hover{background:var(--primary-f)}
 
 .post-actions{display:flex;gap:8px;border-top:1px solid var(--hl);padding-top:12px;flex-wrap:wrap;align-items:center;}
@@ -1027,7 +1091,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       <div class="depot-wrap">
         <div class="input-group">
           <label>Titre du document *</label>
-          <input type="text" id="post-title" placeholder="Ex : Chapitre 3 — Le contrat de travail">
+          <input type="text" id="post-title" placeholder="Ex : Chapitre 3 — Le contrat de travail" maxlength="50">
+          <div class="caption" style="text-align:right; margin-top:4px;">
+            <span id="title-counter">0</span>/50 caractères
+          </div>
         </div>
         <div class="input-group">
           <label>Catégorie *</label>
@@ -1044,7 +1111,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
         </div>
         <div class="input-group">
           <label>Description (facultatif)</label>
-          <textarea id="post-desc" placeholder="Un mot sur ce document…"></textarea>
+          <textarea id="post-desc" placeholder="Un mot sur ce document…" rows="4" maxlength="300"></textarea>
+          <div class="caption" style="text-align:right; margin-top:4px;">
+            <span id="desc-counter">0</span>/300 caractères
+          </div>
         </div>
         <div class="input-group">
           <label>Fichiers PDF ou images (jusqu'à 5)</label>
@@ -1447,7 +1517,10 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   <button id="gal-prev" onclick="navGallery(-1, event)" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: #fff; border: none; font-size: 30px; width: 54px; height: 54px; border-radius: 50%; cursor: pointer; z-index: 10001; display: flex; align-items: center; justify-content: center;">&#10094;</button>
   <div style="width: 85vw; height: 80vh; display: flex; align-items: center; justify-content: center;" onclick="event.stopPropagation();">
     <img id="gal-img" src="" style="width: 100%; height: 100%; object-fit: contain; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" alt="Aperçu plein écran">  </div>
-  <button id="gal-next" onclick="navGallery(1, event)" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: #fff; border: none; font-size: 30px; width: 54px; height: 54px; border-radius: 50%; cursor: pointer; z-index: 10001; display: flex; align-items: center; justify-content: center;">&#10095;</button>
+    <button id="gal-open-btn" onclick="openImageInNewTab()" style="position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; backdrop-filter: blur(4px); transition: background 0.2s; z-index: 10001;">
+      ↗ Ouvrir dans un nouvel onglet
+    </button>
+    <button id="gal-next" onclick="navGallery(1, event)" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: #fff; border: none; font-size: 30px; width: 54px; height: 54px; border-radius: 50%; cursor: pointer; z-index: 10001; display: flex; align-items: center; justify-content: center;">&#10095;</button>
   <div id="gal-counter" style="position: absolute; bottom: 25px; color: #fff; font-size: 16px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 6px 16px; border-radius: 20px;"></div>
 </div>
 
@@ -2066,6 +2139,8 @@ function showInternalView(target) {
   if (target === 'cours') loadCoursFeed();
   if (target === 'fichesrev') loadFRFeed();
   if (target === 'accueil') { loadPinnedAnnonces(); loadAnnonces(); }
+  if (target === 'depot') {
+  setTimeout(initCharCounters, 100);}
 }
 
 signInAnonymously(auth).then(async () => {
@@ -2473,7 +2548,28 @@ function loadMatieres() {
     selQuizIA.innerHTML += `<option value="autre">Autre (préciser...)</option>`;
   });
 }
+function initCharCounters() {
+  const titleInput = document.getElementById('post-title');
+  const descInput = document.getElementById('post-desc');
+  const titleCounter = document.getElementById('title-counter');
+  const descCounter = document.getElementById('desc-counter');
 
+  if (titleInput && titleCounter) {
+    const updateTitle = () => {
+      titleCounter.textContent = titleInput.value.length;
+    };
+    titleInput.addEventListener('input', updateTitle);
+    updateTitle(); 
+  }
+
+  if (descInput && descCounter) {
+    const updateDesc = () => {
+      descCounter.textContent = descInput.value.length;
+    };
+    descInput.addEventListener('input', updateDesc);
+    updateDesc();
+  }
+}
 window.openSubjectInMatieres = (name) => {
   window._coursFilter.subject = name; 
   switchTab('cours');
@@ -2590,7 +2686,14 @@ function updateGalleryDisplay() {
   if (prevBtn) prevBtn.style.display = window._galleryImages.length > 1 ? "flex" : "none";
   if (nextBtn) nextBtn.style.display = window._galleryImages.length > 1 ? "flex" : "none";
 }
-
+window.openImageInNewTab = function() {
+  const img = document.getElementById('gal-img');
+  if (img && img.src) {
+    window.open(img.src, '_blank');
+  } else {
+    showToast('Aucune image à ouvrir.');
+  }
+};
 window.openReportModal = (id, title, author) => {
   document.getElementById("report-post-id").value = id;
   document.getElementById("report-post-title").value = title;
@@ -2777,9 +2880,10 @@ if (images.length === 1) {
           </div>
         </div>
         <div>
-          <div class="post-title">${p.title}</div>
-          ${p.description ? `<p class="post-desc">${p.description}</p>` : ""}
-        </div>
+          <div>
+  <div class="post-title">${p.title.length > 50 ? p.title.substring(0, 47) + '...' : p.title}</div>
+  ${p.description ? `<p class="post-desc">${p.description}</p>` : ""}
+</div>
         ${mediaBox}
         ${fileChips}
       </div>
@@ -2955,8 +3059,10 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
   postsArray.forEach(p => {
     container.innerHTML += window.getPostHTML(p, context);
   });
+  setTimeout(() => {
+  window.checkDescriptionHeight();
+}, 50);
 }
-
 function loadAnnonces() {
   const isAdmin = currentUser.role === "admin" || (currentUser.subRoles && currentUser.subRoles.includes("admin"));
   const zone = document.getElementById("annonces-zone"); 
