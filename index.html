@@ -20,9 +20,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="https://i.ibb.co/tPpXJLTz/Dn-BChrome.png">
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<link rel="stylesheet" href="./style.css">
-</head>
-<body>
+<link rel="stylesheet" href="./styles.css">
+
 <div id="cookie-banner" class="cookie-banner" style="display: none;">
   <div class="cookie-text">
     <strong>🍪 À propos des cookies :</strong> Ce site utilise Google Analytics pour analyser le trafic (nombre de visiteurs, temps passé sur les révisions, etc.) afin d'améliorer la plateforme pour tout le monde.
@@ -38,7 +37,7 @@
     <div class="login-logo">
       <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png" alt="DnB">
       <h1>DnB Reviz</h1>
-      <p>Avant-première, version 1.02.01 - bêta.</p>
+      <p>Avant-première - bêta.</p>
     </div>
     <div class="input-group">
       <label>Identifiant</label>
@@ -49,7 +48,7 @@
       <input type="password" id="login-pwd" placeholder="••/••/••••" autocomplete="current-password">
     </div>
     <button onclick="handleLogin()" class="btn-pill mt-2" style="width:100%;justify-content:center;padding:13px">Se connecter</button>
-    <p class="caption mt-2" style="text-align:center">Si tu n'as pas de compte, contacte Dan.</p>
+    <p class="caption mt-2" style="text-align:center">Si tu n'as pas de compte, contactez nous.</p>
   </div>
 </div>
 
@@ -455,6 +454,14 @@
             <textarea id="prof-bio-input" placeholder="Parle de tes spécialités, de ce que tu révises... (Les Admins peuvent mentionner des membres avec @pseudo)"></textarea>
           </div>
           <div class="input-group">
+            <label>Établissement</label>
+            <input type="text" id="prof-etab" disabled style="opacity:.7; cursor:not-allowed;" placeholder="Attribué par l'admin">
+          </div>
+          <div class="input-group">
+            <label>Classe</label>
+            <input type="text" id="prof-classe" disabled style="opacity:.7; cursor:not-allowed;" placeholder="Attribuée par l'admin">
+          </div>
+          <div class="input-group">
             <label>Compte Instagram</label>
             <input type="text" id="prof-insta-input" placeholder="ex: @username">
           </div>
@@ -565,7 +572,7 @@
     <section id="page-admin" class="page-view admin-only hidden">
       <h1>Administration</h1>
       <p class="tagline">Gestion globale de la plateforme DnB Reviz</p>
-      
+ 
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-top:24px; margin-bottom:28px;">
         <div style="background:var(--card-bg); border:1px solid var(--hl); border-radius:18px; padding:20px; text-align:center; box-shadow:0 2px 8px var(--shadow);">
           <div style="font-size:13px; font-weight:700; color:var(--ink-m); text-transform:uppercase;">Total Membres</div>
@@ -588,6 +595,7 @@
       <div style="display:flex; gap:10px; border-bottom:2px solid var(--hl); margin-bottom:24px; overflow-x:auto;">
         <button class="tk-tab active" data-adm-tab="membres" onclick="switchAdminTab('membres')" style="padding:12px 20px; font-size:16px;">Membres</button>
         <button class="tk-tab" data-adm-tab="matieres" onclick="switchAdminTab('matieres')" style="padding:12px 20px; font-size:16px;">Matières</button>
+<button class="tk-tab" data-adm-tab="classes" onclick="switchAdminTab('classes')" style="padding:12px 20px; font-size:16px;">🏫 Classes & Établissements</button>
         <button class="tk-tab" data-adm-tab="moderation" onclick="switchAdminTab('moderation')" style="padding:12px 20px; font-size:16px; position:relative;">
           Modération
           <span id="admin-mod-dot" style="display:none; width:10px; height:10px; background:var(--danger); border-radius:50%; position:absolute; top:8px; right:6px;"></span>
@@ -632,6 +640,34 @@
           <tbody id="admin-mod-tb"></tbody>
         </table>
       </div>
+<div id="adm-view-classes" class="adm-tab-content" style="display:none;">
+  
+  <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+
+    <div style="flex: 1; min-width: 280px;">
+      <div class="adm-head" style="margin-top:0; margin-bottom:12px;">
+        <h3>🏛️ Établissements</h3>
+        <button class="btn-pill-van" onclick="openEtablissementModal(false)">+ Ajouter</button>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>Nom</th><th>Ville</th><th>Actions</th></tr></thead>
+        <tbody id="admin-etab-tb"></tbody>
+      </table>
+    </div>
+
+    <div style="flex: 1; min-width: 280px;">
+      <div class="adm-head" style="margin-top:0; margin-bottom:12px;">
+        <h3>🏫 Classes</h3>
+        <button class="btn-pill-van" onclick="openClasseModal(false)">+ Ajouter</button>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>Nom</th><th>Établissement</th><th>Actions</th></tr></thead>
+        <tbody id="admin-classe-tb"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
     </section>
 
     <footer class="site-footer">
@@ -775,7 +811,34 @@
     </div>
   </div>
 </div>
+<div id="m-etablissement" class="moverlay" onclick="closeOnOut(event,'m-etablissement')">
+  <div class="mbox">
+    <h2 id="m-etablissement-title">Nouvel Établissement</h2>
+    <input type="hidden" id="edit-etab-id">
+    <div class="input-group"><label>Nom *</label><input type="text" id="etab-name" placeholder="Ex: Lycée Jean Moulin"></div>
+    <div class="input-group"><label>Ville</label><input type="text" id="etab-ville" placeholder="Ex: Paris"></div>
+    <div class="mact">
+      <button class="btn-ghost" onclick="closeModal('m-etablissement')">Annuler</button>
+      <button class="btn-pill" onclick="saveEtablissement()">Enregistrer</button>
+    </div>
+  </div>
+</div>
 
+<div id="m-classe" class="moverlay" onclick="closeOnOut(event,'m-classe')">
+  <div class="mbox">
+    <h2 id="m-classe-title">Nouvelle Classe</h2>
+    <input type="hidden" id="edit-classe-id">
+    <div class="input-group"><label>Nom *</label><input type="text" id="classe-name" placeholder="Ex: Terminale STMG 1"></div>
+    <div class="input-group">
+      <label>Établissement *</label>
+      <select id="classe-etab" style="margin-bottom:8px;"></select>
+    </div>
+    <div class="mact">
+      <button class="btn-ghost" onclick="closeModal('m-classe')">Annuler</button>
+      <button class="btn-pill" onclick="saveClasse()">Enregistrer</button>
+    </div>
+  </div>
+</div>
 <div id="m-edit-mat" class="moverlay" onclick="closeOnOut(event,'m-edit-mat')">
   <div class="mbox">
     <h2 id="m-edit-mat-title">Matière</h2>
@@ -810,6 +873,21 @@
         <option value="HS">Hors-Série</option>
       </select>
     </div>
+
+    <div class="input-group">
+      <label>Établissement</label>
+      <select id="adm-u-etab">
+        <option value="">Aucun</option>
+      </select>
+    </div>
+    
+    <div class="input-group">
+      <label>Classe</label>
+      <select id="adm-u-classe">
+        <option value="">Aucune</option>
+      </select>
+    </div>
+    
     <div class="input-group">
       <label>Accès &amp; Badges</label>
       <div class="chk-group" style="flex-wrap: wrap;">
@@ -944,6 +1022,7 @@
     </div>
   </div>
 </div>
-<script type="module" src="index.js"></script>
+
+<script type="module" src="script.js"></script>
 </body>
 </html>
