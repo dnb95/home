@@ -26,6 +26,8 @@ const GROQ_MODEL   = "llama-3.3-70b-versatile";
 window.currentUser = null;
 window.usersMap    = new Map();
 window.subjectsMap = new Map();
+window.etabsMap = new Map();
+window.classesMap = new Map();
 window._uploadedFiles = [];
 
 window._coursUnsub   = null;
@@ -42,7 +44,31 @@ window._dmChatsUnsub = null;
 window._dmMsgsUnsub  = null;
 window._currentViewedUser = null;
 
-window._filterContext = 'cours'; 
+window._filterContext = 'cours';
+window.filterVisibleContent = (items, type = 'post') => {
+if (!currentUser) return items;
+const filters = window.getUserVisibilityFilters();
+
+if (filters.isAdminOrHS) return items;
+
+return items.filter(item => {
+  if (item.authorRole === 'HS') return false;
+
+  if (!filters.etablissementId) {
+    return item.authorId === currentUser.username;
+  }
+
+  if (item.authorId === currentUser.username) return true;
+
+  if (!item.etablissementId || item.etablissementId !== filters.etablissementId) return false;
+
+  if (filters.classeId) {
+    if (!item.classeId || item.classeId !== filters.classeId) return false;
+  }
+
+  return true;
+});
+};
 window._coursFilter = { subject: 'all', order: 'recent' };
 window._frFilter    = { subject: 'all', type: 'all', order: 'recent' };
 window._quizFilter  = { subject: 'all', type: 'all', order: 'recent' };
@@ -74,6 +100,69 @@ window._galleryImages = [];
 window._galleryIndex = 0;
 window._allAdminUsers = [];
 
+async function loadMaps() {
+try {
+  const etabsSnap = await getDocs(collection(db, 'etablissements'));
+  etabsSnap.forEach(d => {
+    window.etabsMap.set(d.id, d.data());
+  });
+  
+  const classesSnap = await getDocs(collection(db, 'classes'));
+  classesSnap.forEach(d => {
+    window.classesMap.set(d.id, d.data());
+  });
+  
+  console.log('✅ Maps chargées :', {
+    etablissements: window.etabsMap.size,
+    classes: window.classesMap.size
+  });
+} catch (error) {
+  console.error('Erreur lors du chargement des Maps :', error);
+}
+}
+
+window.getUserVisibilityFilters = () => {
+if (!currentUser) return { classeId: null, etablissementId: null, isAdminOrHS: false };
+
+const isAdminOrHS = currentUser.role === 'admin' || currentUser.role === 'HS' || 
+                   (currentUser.subRoles && currentUser.subRoles.includes('admin'));
+
+return {
+  classeId: currentUser.classeId || null,
+  etablissementId: currentUser.etablissementId || null,
+  isAdminOrHS: isAdminOrHS
+};
+};
+async function migrateOldPosts() {
+try {
+  const postsSnap = await getDocs(collection(db, "posts"));
+  let updated = 0;
+  for (const doc of postsSnap.docs) {
+    const data = doc.data();
+    if (data.type === "annonce") continue;
+    if (!data.etablissementId || !data.classeId) {
+      const author = window.usersMap.get(data.authorId);
+      if (author && author.etablissementId && author.classeId) {
+        await updateDoc(doc.ref, {
+          etablissementId: author.etablissementId,
+          classeId: author.classeId
+        });
+        updated++;
+      }
+    }
+  }
+  if (updated > 0) {
+    localStorage.setItem("dnb_migration_posts_done", "true");
+    showToast(`✅ ${updated} posts anciens ont été mis à jour avec les infos de classe !`);
+    console.log(`Migration terminée : ${updated} posts mis à jour.`);
+  } else {
+    localStorage.setItem("dnb_migration_posts_done", "true");
+    console.log("Aucun post à migrer.");
+  }
+} catch (e) {
+  console.error("Erreur lors de la migration :", e);
+}
+}
 window.formatNumber = (num) => {
   if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (num >= 10000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
@@ -198,6 +287,8 @@ function showInternalView(target) {
     syncAdminDashboardStats();
     syncAdminUsers();
     syncAdminMats();
+    syncAdminEtablissements(); 
+    syncAdminClasses();  
   }
 
   document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
@@ -319,6 +410,12 @@ function hydrateSession(u) {
   document.getElementById("prof-insta-input").value    = u.instagram || "";
   document.getElementById("prof-linkedin-input").value = u.linkedin || "";
   document.getElementById("prof-banner-input").value   = u.banner || "";
+  loadMaps().then(() => {
+  const etabNom = u.etablissementId ? (window.etabsMap.get(u.etablissementId)?.nom || u.etablissementId) : "Non attribué";
+  const classeNom = u.classeId ? (window.classesMap.get(u.classeId)?.nom || u.classeId) : "Non attribuée";
+  
+
+});
   
   const isAdmin  = u.role === "admin" || (u.subRoles && u.subRoles.includes("admin"));
   const groupTiktok = document.getElementById("group-tiktok");
@@ -372,12 +469,19 @@ function hydrateSession(u) {
   loadCoursFeed();
   loadFRFeed();
   loadDMChats(); 
-  
-  if (document.getElementById("page-quiz").classList.contains("active")) {
-    loadQuizFeed();
-  }
+if (document.getElementById("page-quiz").classList.contains("active")) {
+  loadQuizFeed();
 }
 
+if (isAdmin) {
+  const migrationDone = localStorage.getItem("dnb_migration_posts_done");
+  if (!migrationDone) {
+    setTimeout(() => {
+      migrateOldPosts();
+    }, 2000);
+  }
+}
+}
 function setAvatar(data, name) {
   const initials = (name || "?").split(" ").map(p => p[0]).join("").substring(0, 2).toUpperCase();
   
@@ -1025,52 +1129,62 @@ function loadPinnedAnnonces() {
 }
 
 function loadCoursFeed() {
-  if (window._coursUnsub) { window._coursUnsub(); window._coursUnsub = null; }
-  
-  const container = document.getElementById("cours-feed"); 
-  if (!container) return;
-  
-  container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
-  
-  const q = window._coursFilter.subject === "all"
-    ? query(collection(db, "posts"), where("type", "==", "cours"))
-    : query(collection(db, "posts"), where("matiere", "==", window._coursFilter.subject), where("type", "==", "cours"));
-    
-  window._coursUnsub = onSnapshot(q, snap => {
-    let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const canSeeHS = currentUser && (currentUser.role === "admin" || currentUser.role === "HS" || (currentUser.subRoles && currentUser.subRoles.includes("admin")));
-    if (!canSeeHS) {
-      docs = docs.filter(p => p.authorRole !== "HS");
-    }
-    renderFeedFromDocs(docs, container, "Aucun cours disponible pour le moment", window._coursFilter.order, "cours");
-  });
+if (window._coursUnsub) { window._coursUnsub(); window._coursUnsub = null; }
+
+const container = document.getElementById("cours-feed"); 
+if (!container) return;
+
+container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
+
+let q = query(collection(db, "posts"), where("type", "==", "cours"));
+
+if (window._coursFilter.subject !== "all") {
+  q = query(q, where("matiere", "==", window._coursFilter.subject));
 }
 
-function loadFRFeed() {
-  if (window._frUnsub) { window._frUnsub(); window._frUnsub = null; }
-  
-  const container = document.getElementById("fr-feed"); 
-  if (!container) return;
-  
-  container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
-  
-  const types = window._frFilter.type === "all" ? ["fiches", "revisions"] : [window._frFilter.type];
-  let q;
-  
-  if (window._frFilter.subject === "all") {
-    q = types.length > 1 ? query(collection(db, "posts"), where("type", "in", types)) : query(collection(db, "posts"), where("type", "==", types[0]));
+window._coursUnsub = onSnapshot(q, snap => {
+  let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  docs = window.filterVisibleContent(docs, 'post');
+  if (window._coursFilter.order === 'likes') {
+    docs.sort((a,b) => (b.likes || []).length - (a.likes || []).length);
+  } else if (window._coursFilter.order === 'oldest') {
+    docs.sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
   } else {
-    q = types.length > 1 ? query(collection(db, "posts"), where("matiere", "==", window._frFilter.subject), where("type", "in", types)) : query(collection(db, "posts"), where("matiere", "==", window._frFilter.subject), where("type", "==", types[0]));
+    docs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
   }
-  
-  window._frUnsub = onSnapshot(q, snap => {
-    let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const canSeeHS = currentUser && (currentUser.role === "admin" || currentUser.role === "HS" || (currentUser.subRoles && currentUser.subRoles.includes("admin")));
-    if (!canSeeHS) {
-      docs = docs.filter(p => p.authorRole !== "HS");
-    }
-    renderFeedFromDocs(docs, container, "Aucune fiche ni révision pour le moment", window._frFilter.order, "fr");
-  });
+  renderFeedFromDocs(docs, container, "Aucun cours disponible pour le moment", 'recent', 'cours');
+});
+}
+function loadFRFeed() {
+if (window._frUnsub) { window._frUnsub(); window._frUnsub = null; }
+
+const container = document.getElementById("fr-feed"); 
+if (!container) return;
+
+container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
+
+const filters = window.getUserVisibilityFilters();
+const types = window._frFilter.type === "all" ? ["fiches", "revisions"] : [window._frFilter.type];
+let q;
+
+if (window._frFilter.subject === "all") {
+  q = types.length > 1 ? query(collection(db, "posts"), where("type", "in", types)) : query(collection(db, "posts"), where("type", "==", types[0]));
+} else {
+  q = types.length > 1 ? query(collection(db, "posts"), where("matiere", "==", window._frFilter.subject), where("type", "in", types)) : query(collection(db, "posts"), where("matiere", "==", window._frFilter.subject), where("type", "==", types[0]));
+}
+
+window._frUnsub = onSnapshot(q, snap => {
+let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+docs = window.filterVisibleContent(docs, 'post');
+if (window._frFilter.order === 'likes') {
+  docs.sort((a,b) => (b.likes || []).length - (a.likes || []).length);
+} else if (window._frFilter.order === 'oldest') {
+  docs.sort((a,b) => (a.timestamp || 0) - (b.timestamp || 0));
+} else {
+  docs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+}
+renderFeedFromDocs(docs, container, "Aucune fiche ou révision disponible", 'recent', 'fr');
+});
 }
 
 function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent', context = 'main') {
@@ -1270,7 +1384,9 @@ window.handleCreatePost = async () => {
     authorDisplayName: currentUser.displayName || currentUser.username,
     authorAvatar: currentUser.avatar || "",
     authorRole: currentUser.role || "élève",
-    likes: [], comments: [], timestamp: Date.now()
+    etablissementId: currentUser.etablissementId || "",
+    classeId: currentUser.classeId || "",
+    likes: [], comments: [], timestamp: Date.now(),
   };
 
   try {
@@ -1845,57 +1961,78 @@ window.openCurrentDMProfile = () => {
 };
 
 function loadDMChats() {
-  if (!currentUser) return;
-  if (window._dmChatsUnsub) window._dmChatsUnsub();
+if (!currentUser) return;
+if (window._dmChatsUnsub) window._dmChatsUnsub();
+
+const filters = window.getUserVisibilityFilters();
+const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
+
+window._dmChatsUnsub = onSnapshot(q, snap => {
+  const box = document.getElementById("dm-contacts-list");
+  if (snap.empty) { 
+    box.innerHTML = `<div class="empty-text">Aucune discussion</div>`;
+    updateUnreadDots(0); 
+    return; 
+  }
   
-  const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
-  window._dmChatsUnsub = onSnapshot(q, snap => {
-    const box = document.getElementById("dm-contacts-list");
-    if (snap.empty) { 
-      box.innerHTML = `<div class="empty-text">Aucune discussion</div>`;
-      updateUnreadDots(0); 
-      return; 
+  let html = "";
+  let chats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  
+  if (!filters.isAdminOrHS) {
+chats = chats.filter(chat => {
+  const otherUname = chat.participants.find(u => u !== currentUser.username);
+  const otherUser = window.usersMap.get(otherUname);
+  if (!otherUser) return false;
+  const otherIsAdminOrHS = otherUser.role === 'admin' || otherUser.role === 'HS' || (otherUser.subRoles && otherUser.subRoles.includes('admin'));
+  if (otherIsAdminOrHS) return true;
+  return otherUser.etablissementId === currentUser.etablissementId &&
+         otherUser.classeId === currentUser.classeId;
+});
+}
+
+  chats.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
+  
+  let unreadCount = 0;
+
+  chats.forEach(c => {
+    const partnerUname = c.participants.find(u => u !== currentUser.username);
+    const partnerUser = window.usersMap.get(partnerUname) || { username: partnerUname, displayName: partnerUname };
+    const dName = partnerUser.displayName || partnerUser.username;
+    const partnerBadge = getBadge(partnerUser);
+    const init = dName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
+    const avHtml = partnerUser.avatar ? `<img src="${partnerUser.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
+    
+    const isUnreadByMe = c.lastSenderId && c.lastSenderId !== currentUser.username && (!c.readBy || !c.readBy.includes(currentUser.username));
+    if (isUnreadByMe) unreadCount++;
+
+    const amILastSender = c.lastSenderId === currentUser.username;
+    let statusText = "";
+    if (amILastSender) {
+       const isReadByPartner = c.readBy && c.readBy.includes(partnerUname);
+       statusText = isReadByPartner ? `<span class="msg-status">· Vu</span>` : `<span class="msg-status">· Envoyé</span>`;
     }
-    
-    let html = "";
-    let chats = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
-    
-    let unreadCount = 0;
 
-    chats.forEach(c => {
-      const partnerUname = c.participants.find(u => u !== currentUser.username);
-      const partnerUser = window.usersMap.get(partnerUname) || { username: partnerUname, displayName: partnerUname };
-      const dName = partnerUser.displayName || partnerUser.username;
-      const partnerBadge = getBadge(partnerUser);
-      const init = dName.split(" ").map(x => x[0]).join("").substring(0, 2).toUpperCase();
-      const avHtml = partnerUser.avatar ? `<img src="${partnerUser.avatar}" style="display:block;width:100%;height:100%;object-fit:cover;">` : init;
-      
-      const isUnreadByMe = c.lastSenderId && c.lastSenderId !== currentUser.username && (!c.readBy || !c.readBy.includes(currentUser.username));
-      if (isUnreadByMe) unreadCount++;
+    const previewClass = isUnreadByMe ? "msg-unread-preview" : "";
+    const isActive = window._activeChatId === c.id;
 
-      const amILastSender = c.lastSenderId === currentUser.username;
-      let statusText = "";
-      if (amILastSender) {
-         const isReadByPartner = c.readBy && c.readBy.includes(partnerUname);
-         statusText = isReadByPartner ? `<span class="msg-status">· Vu</span>` : `<span class="msg-status">· Envoyé</span>`;
-      }
-
-      const previewClass = isUnreadByMe ? "msg-unread-preview" : "";
-      const isActive = window._activeChatId === c.id;
-
-      html += `
-        <div class="dm-contact-row ${isActive ? 'active' : ''}" onclick="openChat('${c.id}', '${partnerUname}')">
-           <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
-           <div style="flex:1;min-width:0;">
-             <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dName}${partnerBadge}</div>
-             <div style="font-size:13px;color:var(--ink-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="${previewClass}">${c.lastMessage || 'Nouvelle discussion'} ${statusText}</div>
-           </div>
-        </div>
-      `;
-    });
-    box.innerHTML = html;
-    updateUnreadDots(unreadCount);
+    html += `
+      <div class="dm-contact-row ${isActive ? 'active' : ''}" onclick="openChat('${c.id}', '${partnerUname}')">
+         <div class="drawer-av" style="flex-shrink:0">${avHtml}</div>
+         <div style="flex:1;min-width:0;">
+           <div style="font-weight:600;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dName}${partnerBadge}</div>
+           <div style="font-size:13px;color:var(--ink-m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" class="${previewClass}">${c.lastMessage || 'Nouvelle discussion'} ${statusText}</div>
+         </div>
+      </div>
+    `;
   });
+  
+  if (chats.length === 0 && !snap.empty) {
+    box.innerHTML = `<div class="empty-text">Aucune discussion disponible dans votre classe.</div>`;
+  } else {
+    box.innerHTML = html;
+  }
+  updateUnreadDots(unreadCount);
+});
 }
 
 window.renderContactSearch = () => {
@@ -1927,7 +2064,27 @@ window.renderContactSearch = () => {
 };
 
 window.startNewChat = async (targetUname) => {
-  if (!currentUser) return;
+if (!currentUser) return;
+
+const targetUser = window.usersMap.get(targetUname);
+if (!targetUser) { showToast("Utilisateur introuvable."); return; }
+
+const filters = window.getUserVisibilityFilters();
+const targetFilters = window.getUserVisibilityFilters(); 
+
+
+if (!filters.isAdminOrHS && !targetFilters.isAdminOrHS) {
+  if (currentUser.etablissementId !== targetUser.etablissementId || 
+      currentUser.classeId !== targetUser.classeId) {
+    showToast("Vous ne pouvez discuter qu'avec les membres de votre classe et établissement.");
+    return;
+  }
+}
+
+if (!filters.isAdminOrHS && (!targetUser.etablissementId || !targetUser.classeId)) {
+  showToast("Ce membre n'est pas encore rattaché à une classe.");
+  return;
+}
   closeModal('m-new-chat');
   
   const q = query(collection(db, "dm_chats"), where("participants", "array-contains", currentUser.username));
@@ -2116,11 +2273,12 @@ async function callGroqAPI(systemPrompt, userPrompt) {
 
   try {
     const response = await fetch(GROQ_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + GROQ_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
         model: GROQ_MODEL,
         messages: conversationHistory,
         temperature: 0.6,
@@ -2251,6 +2409,8 @@ window.handleCreateManualQuiz = async () => {
     authorDisplayName: currentUser.displayName || currentUser.username,
     authorAvatar: currentUser.avatar || "", 
     authorRole: currentUser.role || "élève",
+    etablissementId: currentUser.etablissementId || "",
+    classeId: currentUser.classeId || "",
     timestamp: Date.now()
   };
 
@@ -2270,47 +2430,42 @@ window.handleCreateManualQuiz = async () => {
 };
 
 function loadQuizFeed() {
-  if (window._quizUnsub) { window._quizUnsub(); window._quizUnsub = null; }
-  if (window._aiQuizUnsub) { window._aiQuizUnsub(); window._aiQuizUnsub = null; }
-  
-  const container = document.getElementById("quiz-feed"); 
-  if (!container) return;
-  
-  container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
-  
-  const renderCombined = () => {
-    let combined = [...(window._liveQuizzesData || []), ...(window._liveAIQuizzesData || [])];
-    
-    const canSeeHS = currentUser && (currentUser.role === "admin" || currentUser.role === "HS" || (currentUser.subRoles && currentUser.subRoles.includes("admin")));
-    if (!canSeeHS) {
-      combined = combined.filter(q => q.authorRole !== "HS");
-    }
-    
-    if (window._quizFilter.type === 'manuel') combined = combined.filter(q => !q.isAI);
-    if (window._quizFilter.type === 'ia') combined = combined.filter(q => q.isAI);
+if (window._quizUnsub) { window._quizUnsub(); window._quizUnsub = null; }
+if (window._aiQuizUnsub) { window._aiQuizUnsub(); window._aiQuizUnsub = null; }
 
-    renderQuizFeedToContainer(combined, container, "Aucun quiz disponible", window._quizFilter.order);
-  };
+const container = document.getElementById("quiz-feed"); 
+if (!container) return;
 
-  const qQuizzes = window._quizFilter.subject === "all"
-    ? query(collection(db, "quizzes"))
-    : query(collection(db, "quizzes"), where("matiere", "==", window._quizFilter.subject));
-    
-  window._quizUnsub = onSnapshot(qQuizzes, snap => {
-    window._liveQuizzesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderCombined();
-  });
+container.innerHTML = `<div style="display:flex;justify-content:center;grid-column:1/-1;padding:40px"><div class="spinner"></div></div>`;
 
-  const qAI = window._quizFilter.subject === "all"
-    ? query(collection(db, "ai_quizzes"))
-    : query(collection(db, "ai_quizzes"), where("matiere", "==", window._quizFilter.subject));
+const filters = window.getUserVisibilityFilters();
+
+const renderCombined = () => {
+let combined = [...(window._liveQuizzesData || []), ...(window._liveAIQuizzesData || [])];
+combined = window.filterVisibleContent(combined, 'quiz');
+if (window._quizFilter.type === 'manuel') combined = combined.filter(q => !q.isAI);
+if (window._quizFilter.type === 'ia') combined = combined.filter(q => q.isAI);
+renderQuizFeedToContainer(combined, container, "Aucun quiz disponible", window._quizFilter.order);
+};
+
+const qQuizzes = window._quizFilter.subject === "all"
+  ? query(collection(db, "quizzes"))
+  : query(collection(db, "quizzes"), where("matiere", "==", window._quizFilter.subject));
   
-  window._aiQuizUnsub = onSnapshot(qAI, snap => {
-    window._liveAIQuizzesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderCombined();
-  });
+window._quizUnsub = onSnapshot(qQuizzes, snap => {
+  window._liveQuizzesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderCombined();
+});
+
+const qAI = window._quizFilter.subject === "all"
+  ? query(collection(db, "ai_quizzes"))
+  : query(collection(db, "ai_quizzes"), where("matiere", "==", window._quizFilter.subject));
+  
+window._aiQuizUnsub = onSnapshot(qAI, snap => {
+  window._liveAIQuizzesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderCombined();
+});
 }
-
 function renderQuizFeedToContainer(quizzesArray, container, emptyMsg, sortOrder = 'recent') {
   container.innerHTML = "";
   if (quizzesArray.length === 0) {
@@ -2421,6 +2576,8 @@ RENVOIE UNIQUEMENT LE JSON.`;
       authorDisplayName: currentUser.displayName || currentUser.username,
       authorAvatar: currentUser.avatar || "",
       authorRole: currentUser.role || "élève",
+      etablissementId: currentUser.etablissementId || "",
+      classeId: currentUser.classeId || "",
       timestamp: Date.now()
     };
 
@@ -2932,7 +3089,8 @@ window.saveUserConfig = async () => {
   const username = document.getElementById("adm-u-id").value.trim().toLowerCase();
   const role = document.getElementById("adm-u-role").value;
   const isVerified = document.getElementById("adm-u-verified").checked;
-
+  const etablissementId = document.getElementById("adm-u-etab").value || "";
+  const classeId = document.getElementById("adm-u-classe").value || "";
   if (!username) return;
 
   const subs = [];
@@ -2942,6 +3100,8 @@ window.saveUserConfig = async () => {
   const updates = { 
     role, 
     subRoles: subs, 
+    etablissementId: etablissementId,
+    classeId: classeId,
     isVerified, 
     fakeFollowers: window._tempFakeFollowers,
     fakeFollowersCount: window._tempFakeFollowersCount || 0
@@ -3003,6 +3163,193 @@ function syncAdminMats() {
   });
 }
 
+window.openEtablissementModal = (isEdit, id = '', nom = '', ville = '') => {
+document.getElementById('m-etablissement-title').innerText = isEdit ? 'Modifier Établissement' : 'Nouvel Établissement';
+document.getElementById('edit-etab-id').value = id;
+document.getElementById('etab-name').value = nom;
+document.getElementById('etab-ville').value = ville;
+openModal('m-etablissement');
+};
+
+window.saveEtablissement = async () => {
+const id = document.getElementById('edit-etab-id').value;
+const nom = document.getElementById('etab-name').value.trim();
+const ville = document.getElementById('etab-ville').value.trim();
+
+if (!nom) { showToast('Le nom est requis.'); return; }
+
+const data = { nom, ville: ville || '' };
+if (id) {
+  await updateDoc(doc(db, 'etablissements', id), data);
+  showToast('Établissement mis à jour ✓');
+} else {
+  await addDoc(collection(db, 'etablissements'), data);
+  showToast('Établissement ajouté ✓');
+}
+closeModal('m-etablissement');
+syncAdminEtablissements();  
+populateEtabSelects(); 
+};
+
+window.delEtablissement = async (id, nom) => {
+if (!confirm(`Supprimer l'établissement "${nom}" ? Cela ne supprimera pas les utilisateurs qui y sont rattachés.`)) return;
+await deleteDoc(doc(db, 'etablissements', id));
+showToast('Établissement supprimé.');
+syncAdminEtablissements();
+populateEtabSelects();
+};
+
+
+window.openClasseModal = (isEdit, id = '', nom = '', etablissementId = '') => {
+document.getElementById('m-classe-title').innerText = isEdit ? 'Modifier Classe' : 'Nouvelle Classe';
+document.getElementById('edit-classe-id').value = id;
+document.getElementById('classe-name').value = nom;
+populateEtabSelects('classe-etab', etablissementId);
+openModal('m-classe');
+};
+
+window.saveClasse = async () => {
+const id = document.getElementById('edit-classe-id').value;
+const nom = document.getElementById('classe-name').value.trim();
+const etablissementId = document.getElementById('classe-etab').value;
+
+if (!nom) { showToast('Le nom est requis.'); return; }
+if (!etablissementId) { showToast('Veuillez sélectionner un établissement.'); return; }
+
+const data = { nom, etablissementId };
+if (id) {
+  await updateDoc(doc(db, 'classes', id), data);
+  showToast('Classe mise à jour ✓');
+} else {
+  await addDoc(collection(db, 'classes'), data);
+  showToast('Classe ajoutée ✓');
+}
+closeModal('m-classe');
+syncAdminClasses();
+populateClasseSelects();
+};
+
+window.delClasse = async (id, nom) => {
+if (!confirm(`Supprimer la classe "${nom}" ? Cela ne supprimera pas les utilisateurs qui y sont rattachés.`)) return;
+await deleteDoc(doc(db, 'classes', id));
+showToast('Classe supprimée.');
+syncAdminClasses();
+populateClasseSelects();
+};
+
+
+function syncAdminEtablissements() {
+onSnapshot(collection(db, 'etablissements'), (snap) => {
+  const tb = document.getElementById('admin-etab-tb');
+  tb.innerHTML = '';
+  snap.forEach(d => {
+    const e = d.data();
+    tb.innerHTML += `
+    <tr>
+      <td><strong>${e.nom}</strong></td>
+      <td>${e.ville || '—'}</td>
+      <td>
+        <div class="td-acts">
+          <button class="btn-ghost btn-sm" onclick="openEtablissementModal(true, '${d.id}', '${esc(e.nom)}', '${esc(e.ville || '')}')">Modifier</button>
+          <button class="btn-danger btn-sm" onclick="delEtablissement('${d.id}', '${esc(e.nom)}')">Suppr.</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  if (snap.empty) tb.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--ink-m);">Aucun établissement.</td></tr>';
+});
+}
+
+function syncAdminClasses() {
+onSnapshot(collection(db, 'classes'), async (snap) => {
+  const tb = document.getElementById('admin-classe-tb');
+  tb.innerHTML = '';
+  
+  const etabsMap = new Map();
+  const etabsSnap = await getDocs(collection(db, 'etablissements'));
+  etabsSnap.forEach(d => etabsMap.set(d.id, d.data().nom));
+
+  snap.forEach(d => {
+    const c = d.data();
+    const etabNom = etabsMap.get(c.etablissementId) || 'Inconnu';
+    tb.innerHTML += `
+    <tr>
+      <td><strong>${c.nom}</strong></td>
+      <td>${etabNom}</td>
+      <td>
+        <div class="td-acts">
+          <button class="btn-ghost btn-sm" onclick="openClasseModal(true, '${d.id}', '${esc(c.nom)}', '${c.etablissementId || ''}')">Modifier</button>
+          <button class="btn-danger btn-sm" onclick="delClasse('${d.id}', '${esc(c.nom)}')">Suppr.</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  if (snap.empty) tb.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--ink-m);">Aucune classe.</td></tr>';
+});
+}
+
+
+async function populateEtabSelects(selectId = 'classe-etab', selectedId = '') {
+const snap = await getDocs(collection(db, 'etablissements'));
+const select = document.getElementById(selectId);
+if (!select) return;
+select.innerHTML = '<option value="">Sélectionner un établissement</option>';
+snap.forEach(d => {
+  const e = d.data();
+  const opt = document.createElement('option');
+  opt.value = d.id;
+  opt.textContent = e.nom;
+  if (d.id === selectedId) opt.selected = true;
+  select.appendChild(opt);
+});
+}
+
+async function populateClasseSelects(selectId = 'adm-u-classe', etabId = '', selectedClasseId = '') {
+const select = document.getElementById(selectId);
+if (!select) return;
+select.innerHTML = '<option value="">Aucune</option>';
+
+let q = collection(db, 'classes');
+if (etabId) {
+  q = query(collection(db, 'classes'), where('etablissementId', '==', etabId));
+}
+const snap = await getDocs(q);
+snap.forEach(d => {
+  const c = d.data();
+  const opt = document.createElement('option');
+  opt.value = d.id;
+  opt.textContent = c.nom;
+  if (d.id === selectedClasseId) opt.selected = true;
+  select.appendChild(opt);
+});
+}
+
+const originalOpenUserModal = window.openUserModal;
+window.openUserModal = (isEdit, docId = '', username = '', role = 'élève', subRoles = []) => {
+originalOpenUserModal(isEdit, docId, username, role, subRoles);
+
+setTimeout(async () => {
+  await populateEtabSelects('adm-u-etab');
+  
+  if (isEdit && username) {
+    const userData = window.usersMap.get(username);
+    if (userData) {
+      document.getElementById('adm-u-etab').value = userData.etablissementId || '';
+      await populateClasseSelects('adm-u-classe', userData.etablissementId || '', userData.classeId || '');
+    }
+  }
+  
+
+  const etabSelect = document.getElementById('adm-u-etab');
+  const newEtabSelect = etabSelect.cloneNode(true);
+  etabSelect.parentNode.replaceChild(newEtabSelect, etabSelect);
+  
+  newEtabSelect.addEventListener('change', function() {
+    const etabId = this.value;
+    populateClasseSelects('adm-u-classe', etabId);
+  });
+}, 100);
+};
 window.switchTab = (target) => { 
     window.location.hash = `#page-${target}`; 
 };
