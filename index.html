@@ -448,6 +448,15 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 
 .login-screen{position:fixed;inset:0;background:var(--parchment);display:flex;align-items:center;justify-content:center;z-index:2000;padding:16px;transition:background .3s}
 .login-box{background:var(--canvas);border:1px solid var(--hl);border-radius:28px;padding:48px 40px;max-width:420px;width:100%;box-shadow:0 20px 60px var(--shadow-m)}
+
+.maintenance-screen{position:fixed;inset:0;background:var(--parchment);display:none;align-items:center;justify-content:center;z-index:99999;padding:16px;transition:background .3s}
+.maintenance-screen.active{display:flex}
+.maintenance-box{background:var(--canvas);border:1px solid var(--hl);border-radius:28px;padding:48px 40px;max-width:460px;width:100%;box-shadow:0 20px 60px var(--shadow-m);text-align:center}
+.maintenance-icon{font-size:54px;margin-bottom:16px}
+.maintenance-box h1{font-size:26px;margin-bottom:12px}
+.maintenance-box p{color:var(--ink-m);font-size:15px;line-height:1.55;margin-bottom:26px;white-space:pre-wrap}
+.maintenance-admin-banner{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--danger);color:#fff;font-size:13px;font-weight:600;padding:8px 18px;border-radius:9999px;z-index:250;box-shadow:0 6px 20px var(--shadow-m);display:none;align-items:center;gap:8px;white-space:nowrap}
+.maintenance-admin-banner.show{display:flex}
 .login-logo{text-align:center;margin-bottom:36px}
 .login-logo img{height:44px;margin-bottom:12px}
 .login-logo h1{font-size:32px}
@@ -510,6 +519,8 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
   .prof-left{border-right:0;border-bottom:1px solid var(--hl);padding-right:0;padding-bottom:24px}
   .depot-wrap{padding:20px;margin-top:16px}
   .login-box{padding:28px 20px;border-radius:20px}
+  .maintenance-box{padding:28px 20px;border-radius:20px}
+  .maintenance-admin-banner{top:58px;font-size:12px;padding:7px 14px}
   .toast{bottom:30px;left:16px;right:16px;text-align:center}
   .mbox{border-radius:18px;padding:24px 20px}
   .ph-row{flex-direction:column;align-items:flex-start;gap:12px}
@@ -820,6 +831,16 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
     <button class="btn-pill btn-sm" onclick="handleCookies(true)">Accepter</button>
   </div>
 </div>
+
+<div id="view-maintenance" class="maintenance-screen">
+  <div class="maintenance-box">
+    <div class="maintenance-icon">🛠️</div>
+    <h1>Site en maintenance</h1>
+    <p id="maintenance-message">DnB Reviz est actuellement en maintenance. Nous serons de retour très bientôt, merci de ta patience !</p>
+    <button class="btn-pill" style="width:100%;justify-content:center;padding:13px" onclick="handleLogout()">Se déconnecter</button>
+  </div>
+</div>
+<div id="maintenance-admin-banner" class="maintenance-admin-banner">🛠️ Mode maintenance activé — seuls les admins ont accès au site</div>
 
 <div id="view-login" class="login-screen">
   <div class="login-box">
@@ -1395,6 +1416,7 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
           Modération
           <span id="admin-mod-dot" style="display:none; width:10px; height:10px; background:var(--danger); border-radius:50%; position:absolute; top:8px; right:6px;"></span>
         </button>
+        <button class="tk-tab" data-adm-tab="maintenance" onclick="switchAdminTab('maintenance')" style="padding:12px 20px; font-size:16px;">🛠️ Maintenance</button>
       </div>
 
       <div id="adm-view-membres" class="adm-tab-content">
@@ -1461,6 +1483,27 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
       </table>
     </div>
 
+  </div>
+</div>
+<div id="adm-view-maintenance" class="adm-tab-content" style="display:none;">
+  <div class="settings-sec" style="max-width:560px;">
+    <h3>🛠️ Mode maintenance</h3>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Activer la maintenance</div>
+        <div class="setting-desc">Bloque l'accès au site pour tous les membres (les administrateurs gardent l'accès) et affiche un écran d'information.</div>
+      </div>
+      <label class="tog">
+        <input type="checkbox" id="adm-maintenance-toggle" onchange="saveMaintenanceSettings(this.checked)">
+        <div class="tog-track"></div>
+        <div class="tog-thumb"></div>
+      </label>
+    </div>
+    <div class="input-group mt-2">
+      <label>Message affiché aux membres</label>
+      <textarea id="adm-maintenance-message" rows="3" placeholder="DnB Reviz est actuellement en maintenance. Nous serons de retour très bientôt, merci de ta patience !" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--hl); font-family:inherit; outline:none; background:var(--input-bg); color:var(--ink); resize:vertical;"></textarea>
+    </div>
+    <button class="btn-pill mt-2" onclick="saveMaintenanceSettings(document.getElementById('adm-maintenance-toggle').checked)">Enregistrer le message</button>
   </div>
 </div>
     </section>
@@ -1956,6 +1999,83 @@ return {
   isAdminOrHS: isAdminOrHS
 };
 };
+
+window.canContactUser = (targetUser) => {
+  if (!currentUser || !targetUser) return false;
+  if (targetUser.username === currentUser.username) return false;
+
+  const myIsAdminOrHS = currentUser.role === 'admin' || currentUser.role === 'HS' ||
+                       (currentUser.subRoles && currentUser.subRoles.includes('admin'));
+  if (myIsAdminOrHS) return true;
+
+  const targetIsAdmin = targetUser.role === 'admin' || (targetUser.subRoles && targetUser.subRoles.includes('admin'));
+  if (targetIsAdmin) return true;
+
+  if (!currentUser.etablissementId || !currentUser.classeId) return false;
+  if (!targetUser.etablissementId || !targetUser.classeId) return false;
+
+  return targetUser.etablissementId === currentUser.etablissementId &&
+         targetUser.classeId === currentUser.classeId;
+};
+
+window._maintenanceActive = false;
+window._maintenanceMessage = "";
+
+window.applyMaintenanceUI = () => {
+  const overlay = document.getElementById("view-maintenance");
+  const banner = document.getElementById("maintenance-admin-banner");
+  if (!overlay) return;
+
+  if (!currentUser) {
+    overlay.classList.remove("active");
+    if (banner) banner.classList.remove("show");
+    return;
+  }
+
+  const isAdmin = currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin'));
+
+  if (window._maintenanceActive && !isAdmin) {
+    const msgEl = document.getElementById("maintenance-message");
+    if (msgEl) msgEl.innerText = window._maintenanceMessage || "DnB Reviz est actuellement en maintenance. Nous serons de retour très bientôt, merci de ta patience !";
+    overlay.classList.add("active");
+    if (banner) banner.classList.remove("show");
+  } else {
+    overlay.classList.remove("active");
+    if (banner) banner.classList.toggle("show", !!(window._maintenanceActive && isAdmin));
+  }
+};
+
+onSnapshot(doc(db, "settings", "site"), snap => {
+  const data = snap.exists() ? snap.data() : {};
+  window._maintenanceActive = !!data.maintenanceMode;
+  window._maintenanceMessage = data.maintenanceMessage || "";
+  window.applyMaintenanceUI();
+
+  const tog = document.getElementById("adm-maintenance-toggle");
+  if (tog) tog.checked = window._maintenanceActive;
+  const msgInput = document.getElementById("adm-maintenance-message");
+  if (msgInput && document.activeElement !== msgInput) msgInput.value = window._maintenanceMessage;
+}, err => console.error("Erreur d'écoute du mode maintenance :", err));
+
+window.saveMaintenanceSettings = async (activate) => {
+  const isAdmin = currentUser && (currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')));
+  if (!isAdmin) { showToast("Accès non autorisé."); return; }
+
+  const msg = document.getElementById("adm-maintenance-message")?.value.trim() || "";
+  try {
+    await setDoc(doc(db, "settings", "site"), {
+      maintenanceMode: !!activate,
+      maintenanceMessage: msg,
+      updatedBy: currentUser.username,
+      updatedAt: Date.now()
+    }, { merge: true });
+    showToast(activate ? "Mode maintenance activé ✓" : "Mode maintenance désactivé ✓");
+  } catch (e) {
+    console.error(e);
+    showToast("Erreur lors de la mise à jour du mode maintenance.");
+  }
+};
+
 async function migrateOldPosts() {
 try {
   const postsSnap = await getDocs(collection(db, "posts"));
@@ -2219,6 +2339,7 @@ function hydrateSession(u) {
 
   document.getElementById("view-login").style.display = "none";
   document.getElementById("view-app").style.display = "block";
+  window.applyMaintenanceUI();
   loadTheme();
 
   setAvatar(u.avatar, u.displayName || u.username);
@@ -3611,7 +3732,7 @@ window.renderPublicProfile = (uname) => {
     if (window._pubTabActive === 'cours') {
       const qFeed = query(collection(db, "posts"), where("authorId", "==", targetUser.username));
       window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
-        const rawDocs = snapFeed.docs.map(d => ({ id: d.id, ...d.data() }));
+        const rawDocs = window.filterVisibleContent(snapFeed.docs.map(d => ({ id: d.id, ...d.data() })), 'post');
         document.getElementById("pub-cnt-contribs-top").innerText = rawDocs.length;
 
         const userMats = [...new Set(rawDocs.map(p => p.matiere))].sort();
@@ -3629,7 +3750,7 @@ window.renderPublicProfile = (uname) => {
     } else if (window._pubTabActive === 'quiz') {
       const qFeed = query(collection(db, "quizzes"), where("authorId", "==", targetUser.username));
       window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
-        const rawDocs = snapFeed.docs.map(d => ({ id: d.id, ...d.data() }));
+        const rawDocs = window.filterVisibleContent(snapFeed.docs.map(d => ({ id: d.id, ...d.data() })), 'quiz');
         
         const userMats = [...new Set(rawDocs.map(p => p.matiere))].sort();
         let filterBarHtml = `<button class="filter-btn ${window._pubSubjFilter === 'all' ? 'active' : ''}" onclick="setPubSubjFilter('all',this)">Tout (${rawDocs.length})</button>`;
@@ -3646,7 +3767,7 @@ window.renderPublicProfile = (uname) => {
     } else if (window._pubTabActive === 'quiz-ia') {
       const qFeed = query(collection(db, "ai_quizzes"), where("authorId", "==", targetUser.username));
       window._pubFeedUnsub = onSnapshot(qFeed, snapFeed => {
-        const rawDocs = snapFeed.docs.map(d => ({ id: d.id, ...d.data() }));
+        const rawDocs = window.filterVisibleContent(snapFeed.docs.map(d => ({ id: d.id, ...d.data() })), 'quiz');
         renderQuizFeedToContainer(rawDocs, document.getElementById("pub-quiz-ia-feed"), "Aucun quiz IA généré pour l'instant.");
       });
     } else if (window._pubTabActive === 'likes') {
@@ -3699,11 +3820,11 @@ window.loadPubLikes = () => {
 window.renderPubLikes = () => {
   const sortOrder = document.getElementById("pub-likes-sort").value;
   
-  const rawDocs = [
+  const rawDocs = window.filterVisibleContent([
     ...window._pubLikesData.posts,
     ...window._pubLikesData.quizzes,
     ...window._pubLikesData.ai_quizzes
-  ];
+  ]);
 
   const container = document.getElementById("pub-likes-feed");
   container.innerHTML = "";
@@ -3900,6 +4021,7 @@ window.renderContactSearch = () => {
   for (const [uname, u] of window.usersMap.entries()) {
     if (uname === currentUser.username) continue;
     if (u.allowMessages === false) continue;
+    if (!window.canContactUser(u)) continue;
     
     const dName = u.displayName || uname;
     if (!v || dName.toLowerCase().includes(v) || uname.includes(v)) {
@@ -3925,20 +4047,8 @@ if (!currentUser) return;
 const targetUser = window.usersMap.get(targetUname);
 if (!targetUser) { showToast("Utilisateur introuvable."); return; }
 
-const filters = window.getUserVisibilityFilters();
-const targetFilters = window.getUserVisibilityFilters(); 
-
-
-if (!filters.isAdminOrHS && !targetFilters.isAdminOrHS) {
-  if (currentUser.etablissementId !== targetUser.etablissementId || 
-      currentUser.classeId !== targetUser.classeId) {
-    showToast("Vous ne pouvez discuter qu'avec les membres de votre classe et établissement.");
-    return;
-  }
-}
-
-if (!filters.isAdminOrHS && (!targetUser.etablissementId || !targetUser.classeId)) {
-  showToast("Ce membre n'est pas encore rattaché à une classe.");
+if (!window.canContactUser(targetUser)) {
+  showToast("Vous ne pouvez contacter que vos professeurs, les élèves de votre classe et les administrateurs.");
   return;
 }
   closeModal('m-new-chat');
