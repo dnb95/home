@@ -1631,10 +1631,15 @@ main{max-width:1200px;margin:44px auto;padding:0 28px 140px}
 <div id="m-force-pwd" class="moverlay">
   <div class="mbox">
     <h2>Ton mot de passe est provisoire</h2>
-    <p class="caption mt-1" style="margin-bottom:20px">Choisis un mot de passe personnel pour sécuriser ton accès.</p>
+    <p class="caption mt-1" style="margin-bottom:20px">Choisis un mot de passe pour sécuriser ton accès.</p>
     <div class="input-group">
       <label>Nouveau mot de passe</label>
       <input type="password" id="force-pwd" placeholder="Min. 4 caractères">
+    </div>
+    <div class="input-group">
+      <label>Adresse e-mail (facultatif)</label>
+      <input type="email" id="force-email" placeholder="ton.email@exemple.com">
+      <p class="caption mt-1">Elle te permettra d'activer les notifications par mail, dans les paramètres.</p>
     </div>
     <button class="btn-pill" style="width:100%;justify-content:center" onclick="handleForcePwd()">Valider et continuer</button>
   </div>
@@ -2477,13 +2482,19 @@ window.handleForcePwd = async () => {
     showToast("Min. 4 caractères.");
     return;
   }
-  
-  await updateDoc(doc(db, "users", currentUser.id), { password: p, isTempPassword: false });
+  const emailInput = document.getElementById("force-email");
+  const e = emailInput ? emailInput.value.trim() : "";
+
+  const updates = { password: p, isTempPassword: false };
+  if (e) updates.email = e;
+
+  await updateDoc(doc(db, "users", currentUser.id), updates);
   currentUser.password = p; 
   currentUser.isTempPassword = false;
+  if (e) currentUser.email = e;
   localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
   closeModal("m-force-pwd"); 
-  showToast("Mot de passe mis à jour ✓");
+  showToast(e ? "Mot de passe mis à jour ✓ Pense à activer les notifications dans les paramètres." : "Mot de passe mis à jour ✓");
 };
 
 async function uploadToCloudinary(file) {
