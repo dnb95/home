@@ -1,0 +1,39 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ "main" ]  
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Préparer les fichiers pour le déploiement
+        run: |
+          mkdir -p _site
+          cp -r ./* _site/ 2>/dev/null || true
+          rm -rf _site/.git _site/.github _site/.gitignore
+
+      - name: Uploader l'artefact (les fichiers)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site  
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Déployer sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
