@@ -907,6 +907,7 @@ window.togglePushNotifs = async (enabled) => {
     }
 
     const registration = await navigator.serviceWorker.register("script2.js");
+    await navigator.serviceWorker.ready;
     const messaging = getMessaging(app);
     const token = await getToken(messaging, {
       vapidKey: VAPID_PUBLIC_KEY,
