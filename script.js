@@ -24,9 +24,7 @@ window.emailjs.init("2VkygefcXxbSOlhFX");
 const GROQ_API_URL = "https://groqrelay.greninja71144.workers.dev";
 const GROQ_MODEL   = "llama-3.3-70b-versatile"; 
 
-// --- Notifications Push Web (Firebase Cloud Messaging) ---
 const VAPID_PUBLIC_KEY = "BMRu810FOacjo65y0_29s6alglQuotpVdChHfprJ4rQpQUcMn-BjThHWiKVBnWg0CwfRLThZhJ4wGMhHdZv1sXc";
-// Remplace cette URL par celle affichée dans ton terminal après "firebase deploy --only functions"
 const ADMIN_PUSH_ENDPOINT = "https://us-central1-tstmg-1.cloudfunctions.net/sendPushNotification";
 
 window.currentUser = null;
