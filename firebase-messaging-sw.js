@@ -20,6 +20,7 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, options);
 });
 
+
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
   const url = event.notification.data?.click_action || '#page-accueil';
