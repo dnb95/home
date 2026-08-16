@@ -906,7 +906,7 @@ window.togglePushNotifs = async (enabled) => {
       return;
     }
 
-    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    const registration = await navigator.serviceWorker.register("sw.js");
     const messaging = getMessaging(app);
     const token = await getToken(messaging, {
       vapidKey: VAPID_PUBLIC_KEY,
