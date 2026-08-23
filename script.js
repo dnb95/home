@@ -104,6 +104,136 @@ window._galleryImages = [];
 window._galleryIndex = 0;
 window._allAdminUsers = [];
 
+function isAdminOrHSUser(user = currentUser) {
+  return !!user && (
+    user.role === "admin" ||
+    user.role === "HS" ||
+    (Array.isArray(user.subRoles) && user.subRoles.includes("admin"))
+  );
+}
+
+function getStreakRankingUsers() {
+  if (!currentUser) return [];
+
+  const allUsers = Array.from(window.usersMap.values());
+  const me = window.usersMap.get(currentUser.username) || currentUser;
+  if (!allUsers.some(u => u.id === me.id)) allUsers.push(me);
+
+  if (isAdminOrHSUser()) {
+    return allUsers;
+  }
+
+  const myClasseId = currentUser.classeId || me.classeId || null;
+  const myEtabId = currentUser.etablissementId || me.etablissementId || null;
+
+  // Une classe inconnue ne doit jamais exposer les autres utilisateurs.
+  if (!myClasseId) {
+    return allUsers.filter(u => u.id === me.id);
+  }
+
+  return allUsers.filter(u => {
+    if (!u || u.classeId !== myClasseId) return false;
+    if (myEtabId && u.etablissementId && u.etablissementId !== myEtabId) return false;
+    return true;
+  });
+}
+
+function getStreakRankingRank(users, username) {
+  const idx = users.findIndex(u => u && u.username === username);
+  return idx === -1 ? null : idx + 1;
+}
+
+function renderStreakRankingRow(user, rank) {
+  const name = user.displayName || user.username || "Utilisateur";
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
+  const streak = Math.max(0, Number(user.streak) || 0);
+  const isMe = user.id === currentUser?.id || user.username === currentUser?.username;
+  const avatar = user.avatar
+    ? `<img class="streak-ranking-avatar-image" src="${user.avatar}" alt="" loading="lazy">`
+    : `<span class="streak-ranking-avatar-initials">${initials}</span>`;
+  const badge = typeof getBadge === "function" ? getBadge(user) : "";
+
+  return `
+    <div class="streak-ranking-row${isMe ? " is-me" : ""}">
+      <div class="streak-ranking-place">#${rank}</div>
+      <div class="streak-ranking-avatar">${avatar}</div>
+      <div class="streak-ranking-user">
+        <div class="streak-ranking-name">${name}${badge}</div>
+        <div class="streak-ranking-username">@${user.username || "—"}${isMe ? " · Toi" : ""}</div>
+      </div>
+      <div class="streak-ranking-score">
+        <span class="streak-mini-flame" aria-hidden="true"></span>
+        <strong>${streak} ${streak === 1 ? "jour" : "jours"}</strong>
+      </div>
+    </div>`;
+}
+
+window.renderStreakRanking = function renderStreakRanking() {
+  const list = document.getElementById("streak-ranking-list");
+  const scope = document.getElementById("streak-ranking-scope");
+  if (!list) return;
+
+  const users = getStreakRankingUsers()
+    .filter(Boolean)
+    .sort((a, b) => {
+      const streakDiff = (Number(b.streak) || 0) - (Number(a.streak) || 0);
+      if (streakDiff !== 0) return streakDiff;
+      return String(a.displayName || a.username || "").localeCompare(String(b.displayName || b.username || ""), "fr", { sensitivity: "base" });
+    });
+
+  const globalScope = isAdminOrHSUser();
+  if (scope) {
+    if (globalScope) {
+      scope.textContent = "Tous les utilisateurs";
+    } else {
+      const classe = currentUser?.classeId ? window.classesMap.get(currentUser.classeId) : null;
+      const classeName = classe?.nom || classe?.name || currentUser?.classeId || "ta classe";
+      scope.textContent = `Classe : ${classeName}`;
+    }
+  }
+
+  if (!users.length) {
+    list.innerHTML = `<div class="streak-ranking-empty">Aucun membre à afficher pour le moment.</div>`;
+    return;
+  }
+
+  list.innerHTML = users.map((user, index) => renderStreakRankingRow(user, index + 1)).join("");
+
+  const meRank = getStreakRankingRank(users, currentUser?.username);
+  const rankEl = document.getElementById("home-streak-rank");
+  if (rankEl) rankEl.textContent = meRank ? `#${meRank} au classement` : "Non classé";
+};
+
+window.updateStreakRankingUI = function updateStreakRankingUI() {
+  if (!currentUser) return;
+  const users = getStreakRankingUsers()
+    .filter(Boolean)
+    .sort((a, b) => {
+      const diff = (Number(b.streak) || 0) - (Number(a.streak) || 0);
+      if (diff !== 0) return diff;
+      return String(a.username || "").localeCompare(String(b.username || ""));
+    });
+  const rank = getStreakRankingRank(users, currentUser.username);
+  const rankEl = document.getElementById("home-streak-rank");
+  if (rankEl) rankEl.textContent = rank ? `#${rank} au classement` : "Non classé";
+  if (document.getElementById("page-classement")?.classList.contains("active")) {
+    renderStreakRanking();
+  }
+};
+
+window.openStreakRanking = function openStreakRanking() {
+  if (!currentUser) return;
+  closeDrawer();
+  closeDropdown();
+  window.location.hash = "#page-classement";
+};
+
 async function loadMaps() {
 try {
   const etabsSnap = await getDocs(collection(db, 'etablissements'));
@@ -245,9 +375,9 @@ window.sendAdminPushNotification = async () => {
     document.getElementById("adm-push-title").value = "";
     document.getElementById("adm-push-body").value = "";
   } catch (e) {
-    console.error(e);
+    console.error("Erreur notification push :", e);
     showToast("Erreur lors de l'envoi de la notification.");
-    if (statusEl) statusEl.innerText = "Une erreur est survenue lors de l'envoi.";
+    if (statusEl) statusEl.innerText = e?.message ? `Erreur : ${e.message}` : "Une erreur est survenue lors de l'envoi.";
   } finally {
     if (btn) { btn.disabled = false; btn.innerText = "Envoyer la notification"; }
   }
@@ -342,6 +472,10 @@ onSnapshot(collection(db, "users"), snap => {
     }
   });
   
+  if (currentUser) {
+    updateStreakRankingUI();
+  }
+
   if (document.getElementById("page-cours").classList.contains("active")) loadCoursFeed();
   if (document.getElementById("page-fichesrev").classList.contains("active")) loadFRFeed();
   if (document.getElementById("page-quiz").classList.contains("active")) loadQuizFeed();
@@ -435,7 +569,15 @@ function showInternalView(target) {
   if (target === 'setting') { loadAIQuizHistory(); loadAnimationsSetting(); }
   if (target === 'cours') loadCoursFeed();
   if (target === 'fichesrev') loadFRFeed();
-  if (target === 'accueil') { loadPinnedAnnonces(); loadAnnonces(); }
+  if (target === 'accueil') {
+    loadPinnedAnnonces();
+    loadAnnonces();
+    updateStreakRankingUI();
+  }
+  if (target === 'classement') {
+    updateStreakRankingUI();
+    renderStreakRanking();
+  }
   if (target === 'depot') {
   setTimeout(initCharCounters, 100);}
 }
@@ -511,6 +653,16 @@ function displayNameFromId(id) {
 }
 
 // --- Système de Série de Révision (Streak) ---
+const STREAK_CONFIRM_MS = 60 * 1000;
+const STREAK_GRACE_START_MS = 24 * 60 * 60 * 1000;
+const STREAK_GRACE_END_MS = 48 * 60 * 60 * 1000;
+
+window._streakTimer = null;
+window._streakPersistTimer = null;
+window._streakExpiryTimer = null;
+window._streakState = null;
+window._streakLastTickAt = 0;
+
 function getTodayStr() {
   const d = new Date();
   const y = d.getFullYear();
@@ -531,98 +683,351 @@ function renderStreakBadge(streak, id) {
 </span>`;
 }
 
-function updateStreakBadgeUI(streak) {
-  const drop = document.getElementById("streak-badge-drop");
-  const drawer = document.getElementById("streak-badge-drawer");
-  if (drop) drop.textContent = `🔥 Série : ${streak} jours`;
-  if (drawer) drawer.textContent = `🔥 Série : ${streak} jours`;
+function getStreakStorageKey(username) {
+  return `dnb_streak_watch_${username || "guest"}`;
 }
 
-function showStreakLostModal(lostStreak) {
-  const msgEl = document.getElementById("streak-lost-message");
-  if (msgEl) msgEl.textContent = `Oh non ! Ta série de ${lostStreak} jours vient de s'éteindre...`;
-  if (document.getElementById("m-streak-lost")) {
-    openModal("m-streak-lost");
-  } else {
-    showToast(`Oh non ! Ta série de ${lostStreak} jours vient de s'éteindre...`);
+function getStoredStreakWatch(username, windowKey) {
+  try {
+    const raw = localStorage.getItem(getStreakStorageKey(username));
+    if (!raw) return { windowKey, accumulatedMs: 0 };
+    const data = JSON.parse(raw);
+    if (data.windowKey !== windowKey) {
+      return { windowKey, accumulatedMs: 0 };
+    }
+    return {
+      windowKey,
+      accumulatedMs: Math.max(0, Number(data.accumulatedMs) || 0)
+    };
+  } catch (_) {
+    return { windowKey, accumulatedMs: 0 };
   }
+}
+
+function saveStreakWatch(state) {
+  if (!currentUser || !state || state.confirmed) return;
+  localStorage.setItem(getStreakStorageKey(currentUser.username), JSON.stringify({
+    windowKey: state.windowKey || "default",
+    accumulatedMs: Math.max(0, Math.floor(state.accumulatedMs || 0))
+  }));
+}
+
+function clearStreakWatch() {
+  if (!currentUser) return;
+  localStorage.removeItem(getStreakStorageKey(currentUser.username));
+}
+
+function parseStreakConfirmedAt(u) {
+  const value = u?.lastStreakConfirmedAt;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (value?.toMillis) return value.toMillis();
+  if (value?.seconds) return value.seconds * 1000;
+  return null;
+}
+
+function updateStreakStatus(text) {
+  const el = document.getElementById("home-streak-status");
+  if (el) el.textContent = text || "";
+}
+
+function updateStreakBadgeUI(streak, options = {}) {
+  if (!currentUser) return;
+
+  const displayStreak = Number(options.displayStreak ?? streak) || 0;
+  const isPending = !!options.pending;
+  const homeStreak = document.getElementById("home-streak-count");
+
+  currentUser.streak = Number(streak) || 0;
+  if (homeStreak) {
+    homeStreak.textContent = `${displayStreak} ${displayStreak > 1 ? "jours" : "jour"}`;
+  }
+
+  const card = document.getElementById("home-streak-card");
+  if (card) card.classList.toggle("streak-pending", isPending);
+
+  if (options.status) updateStreakStatus(options.status);
+  updateStreakRankingUI();
+}
+
+function stopStreakTimer() {
+  if (window._streakTimer) {
+    clearInterval(window._streakTimer);
+    window._streakTimer = null;
+  }
+  if (window._streakPersistTimer) {
+    clearInterval(window._streakPersistTimer);
+    window._streakPersistTimer = null;
+  }
+}
+
+function stopStreakExpiryTimer() {
+  if (window._streakExpiryTimer) {
+    clearTimeout(window._streakExpiryTimer);
+    window._streakExpiryTimer = null;
+  }
+}
+
+function getPendingDisplayStreak() {
+  const base = Number(currentUser?.streak) || 0;
+  return window._streakState?.pending ? Math.max(1, base + 1) : base;
+}
+
+function startStreakMinuteTimer() {
+  stopStreakTimer();
+  if (!currentUser || !window._streakState?.pending) return;
+
+  const state = window._streakState;
+  const startedAt = Date.now();
+  window._streakLastTickAt = startedAt;
+
+  const tick = () => {
+    if (!currentUser || !window._streakState?.pending) return;
+
+    const now = Date.now();
+    const delta = Math.max(0, now - (window._streakLastTickAt || now));
+    window._streakLastTickAt = now;
+
+    if (document.visibilityState === "visible") {
+      state.accumulatedMs += delta;
+    }
+
+    const remainingMs = Math.max(0, STREAK_CONFIRM_MS - state.accumulatedMs);
+    const remainingSeconds = Math.ceil(remainingMs / 1000);
+    updateStreakStatus(`Encore ${remainingSeconds}s sur le site pour confirmer la flamme`);
+
+    if (state.accumulatedMs >= STREAK_CONFIRM_MS) {
+      stopStreakTimer();
+      confirmPendingStreak().catch(error => {
+        console.error("Erreur de confirmation de série :", error);
+        updateStreakStatus("Impossible de confirmer la flamme pour le moment");
+        saveStreakWatch(state);
+      });
+    }
+  };
+
+  window._streakTimer = setInterval(tick, 1000);
+  window._streakPersistTimer = setInterval(() => saveStreakWatch(state), 5000);
+  tick();
+}
+
+async function confirmPendingStreak() {
+  const state = window._streakState;
+  if (!currentUser || !state?.pending || state.confirming) return;
+
+  state.confirming = true;
+  const today = getTodayStr();
+  const oldStreak = Number(currentUser.streak) || 0;
+  const newStreak = Math.max(1, oldStreak + 1);
+  const newMax = Math.max(Number(currentUser.maxStreak) || 0, newStreak);
+  const confirmedAt = Date.now();
+
+  await updateDoc(doc(db, "users", currentUser.id), {
+    streak: newStreak,
+    maxStreak: newMax,
+    lastActiveDate: today,
+    lastStreakConfirmedAt: confirmedAt
+  });
+
+  currentUser.streak = newStreak;
+  currentUser.maxStreak = newMax;
+  currentUser.lastActiveDate = today;
+  currentUser.lastStreakConfirmedAt = confirmedAt;
+  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+
+  clearStreakWatch();
+  window._streakState = {
+    pending: false,
+    confirmed: true,
+    confirmedAt,
+    accumulatedMs: 0
+  };
+  updateStreakBadgeUI(newStreak, {
+    displayStreak: newStreak,
+    pending: false,
+    status: "Flamme confirmée ✓"
+  });
+
+  scheduleStreakExpiry(confirmedAt);
+}
+
+function scheduleStreakExpiry(confirmedAt) {
+  stopStreakExpiryTimer();
+  if (!confirmedAt) return;
+
+  const untilExpiry = Math.max(1000, STREAK_GRACE_END_MS - (Date.now() - confirmedAt));
+  window._streakExpiryTimer = setTimeout(() => {
+    expireStreakIfNeeded().catch(error => console.error("Erreur d'expiration de série :", error));
+  }, untilExpiry);
+}
+
+function animateStreakExtinguish(lostStreak) {
+  const card = document.getElementById("home-streak-card");
+  if (!card) return;
+
+  const flame = card.querySelector(".duo-flame");
+  card.classList.remove("streak-extinguishing");
+  void card.offsetWidth;
+  card.classList.add("streak-extinguishing");
+
+  const message = card.querySelector(".streak-extinguish-message");
+  if (message) {
+    message.textContent = `Ta série de ${lostStreak} jours s'est éteinte`;
+  }
+
+  setTimeout(() => {
+    card.classList.remove("streak-extinguishing");
+    if (flame) flame.style.removeProperty("opacity");
+  }, 2600);
+}
+
+async function expireStreakIfNeeded() {
+  if (!currentUser) return;
+
+  const confirmedAt = parseStreakConfirmedAt(currentUser);
+  if (!confirmedAt) return;
+
+  const elapsed = Date.now() - confirmedAt;
+  if (elapsed < STREAK_GRACE_END_MS) {
+    scheduleStreakExpiry(confirmedAt);
+    return;
+  }
+
+  const lostStreak = Number(currentUser.streak) || 0;
+  if (lostStreak <= 0) return;
+
+  await updateDoc(doc(db, "users", currentUser.id), {
+    streak: 0,
+    lastActiveDate: getTodayStr(),
+    lastStreakConfirmedAt: null
+  });
+
+  currentUser.streak = 0;
+  currentUser.lastActiveDate = getTodayStr();
+  currentUser.lastStreakConfirmedAt = null;
+  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+
+  const restartWindowKey = `first:${currentUser.username}`;
+  const restartWatch = getStoredStreakWatch(currentUser.username, restartWindowKey);
+  window._streakState = {
+    pending: true,
+    confirmed: false,
+    windowKey: restartWindowKey,
+    accumulatedMs: restartWatch.accumulatedMs,
+    lostStreak
+  };
+
+  updateStreakBadgeUI(0, {
+    displayStreak: 1,
+    pending: true,
+    status: "La flamme s'est éteinte… encore 60s pour repartir"
+  });
+  animateStreakExtinguish(lostStreak);
+  startStreakMinuteTimer();
 }
 
 async function checkStreak(u) {
-  const today = getTodayStr();
+  if (!u || !currentUser || currentUser.id !== u.id) return;
 
-  // Premier passage pour cet utilisateur : on amorce la série sans pénalité
-  if (!u.lastActiveDate) {
-    const initStreak = 1;
-    await updateDoc(doc(db, "users", u.id), {
-      streak: initStreak,
-      maxStreak: Math.max(u.maxStreak || 0, initStreak),
-      lastActiveDate: today
+  stopStreakTimer();
+  stopStreakExpiryTimer();
+
+  const confirmedAt = parseStreakConfirmedAt(u);
+
+  // Première série : elle démarre visuellement dès l'arrivée, puis devient officielle après 60 secondes.
+  if (!confirmedAt && !(Number(u.streak) > 0)) {
+    const windowKey = `first:${u.username}`;
+    const storedWatch = getStoredStreakWatch(u.username, windowKey);
+    window._streakState = {
+      pending: true,
+      confirmed: false,
+      windowKey,
+      accumulatedMs: storedWatch.accumulatedMs
+    };
+    updateStreakBadgeUI(0, {
+      displayStreak: 1,
+      pending: true,
+      status: `Encore ${Math.max(1, Math.ceil((STREAK_CONFIRM_MS - storedWatch.accumulatedMs) / 1000))}s sur le site pour confirmer la flamme`
     });
-    u.streak = initStreak;
-    u.maxStreak = Math.max(u.maxStreak || 0, initStreak);
-    u.lastActiveDate = today;
-    if (currentUser && currentUser.id === u.id) {
-      currentUser.streak = u.streak; currentUser.maxStreak = u.maxStreak; currentUser.lastActiveDate = u.lastActiveDate;
-      localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
-    }
-    updateStreakBadgeUI(u.streak);
+    startStreakMinuteTimer();
     return;
   }
 
-  const diff = daysBetweenStr(u.lastActiveDate, today);
-
-  // Même jour : ne rien faire (pas de triche en rafraîchissant la page)
-  if (diff === 0) return;
-
-  // Jour suivant consécutif : on incrémente la série
-  if (diff === 1) {
-    const newStreak = (u.streak || 0) + 1;
-    const newMax = Math.max(u.maxStreak || 0, newStreak);
-    await updateDoc(doc(db, "users", u.id), { streak: newStreak, maxStreak: newMax, lastActiveDate: today });
-    u.streak = newStreak; u.maxStreak = newMax; u.lastActiveDate = today;
-    if (currentUser && currentUser.id === u.id) {
-      currentUser.streak = newStreak; currentUser.maxStreak = newMax; currentUser.lastActiveDate = today;
-      localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  // Compatibilité avec les anciennes données : lastActiveDate permet de reconstituer grossièrement une date de confirmation.
+  let effectiveConfirmedAt = confirmedAt;
+  if (!effectiveConfirmedAt && u.lastActiveDate) {
+    const legacyDate = new Date(`${u.lastActiveDate}T12:00:00`).getTime();
+    if (Number.isFinite(legacyDate)) {
+      effectiveConfirmedAt = legacyDate;
+      await updateDoc(doc(db, "users", u.id), { lastStreakConfirmedAt: effectiveConfirmedAt });
+      u.lastStreakConfirmedAt = effectiveConfirmedAt;
+      if (currentUser.id === u.id) currentUser.lastStreakConfirmedAt = effectiveConfirmedAt;
     }
-    updateStreakBadgeUI(newStreak);
+  }
+
+  if (!effectiveConfirmedAt) return;
+
+  const elapsed = Date.now() - effectiveConfirmedAt;
+
+  // Entre 24h et 48h : la prochaine flamme peut être confirmée avec 1 minute de présence.
+  if (elapsed >= STREAK_GRACE_START_MS && elapsed < STREAK_GRACE_END_MS) {
+    const windowKey = `next:${effectiveConfirmedAt}`;
+    const storedWatch = getStoredStreakWatch(u.username, windowKey);
+    window._streakState = {
+      pending: true,
+      confirmed: false,
+      windowKey,
+      accumulatedMs: storedWatch.accumulatedMs
+    };
+    updateStreakBadgeUI(u.streak, {
+      displayStreak: Math.max(1, Number(u.streak) + 1),
+      pending: true,
+      status: `Encore ${Math.max(1, Math.ceil((STREAK_CONFIRM_MS - storedWatch.accumulatedMs) / 1000))}s sur le site pour confirmer la prochaine flamme`
+    });
+    startStreakMinuteTimer();
     return;
   }
 
-  // Plus d'un jour d'écart : la série est rompue
-  if (diff > 1) {
-    const lostStreak = u.streak || 0;
-    await updateDoc(doc(db, "users", u.id), { streak: 0, lastActiveDate: today });
-    u.streak = 0; u.lastActiveDate = today;
-    if (currentUser && currentUser.id === u.id) {
-      currentUser.streak = 0; currentUser.lastActiveDate = today;
-      localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
-    }
-    updateStreakBadgeUI(0);
-    if (lostStreak > 0) showStreakLostModal(lostStreak);
+  // Plus de 48h sans confirmation : la série expire automatiquement.
+  if (elapsed >= STREAK_GRACE_END_MS) {
+    await expireStreakIfNeeded();
     return;
   }
 
-  // diff < 0 : horloge locale incohérente (changement d'heure/fuseau) -> on ne touche à rien par sécurité
+  // Moins de 24h : la série actuelle est confirmée et sa prochaine fenêtre n'est pas encore ouverte.
+  clearStreakWatch();
+  window._streakState = {
+    pending: false,
+    confirmed: true,
+    confirmedAt: effectiveConfirmedAt,
+    accumulatedMs: 0
+  };
+  updateStreakBadgeUI(u.streak, {
+    displayStreak: Number(u.streak) || 0,
+    pending: false,
+    status: "Flamme confirmée ✓"
+  });
+
+  const msUntilWindow = Math.max(1000, STREAK_GRACE_START_MS - elapsed);
+  window._streakExpiryTimer = setTimeout(() => {
+    checkStreak(currentUser).catch(error => console.error("Erreur lors du passage de fenêtre de série :", error));
+  }, msUntilWindow);
 }
 
 function hydrateSession(u) {
   window.currentUser = u;
   localStorage.setItem("dnb_reviz_session", JSON.stringify(u));
-  checkStreak(u);
 
   document.getElementById("view-login").style.display = "none";
   document.getElementById("view-app").style.display = "block";
+  checkStreak(u).catch(error => console.error("Erreur du système de série :", error));
   window.applyMaintenanceUI();
   loadTheme();
 
   setAvatar(u.avatar, u.displayName || u.username);
   
   const myBadge = getBadge(u);
-  const myStreakBadge = renderStreakBadge(u.streak || 0, "streak-badge-drop");
-  const myStreakBadgeDrawer = renderStreakBadge(u.streak || 0, "streak-badge-drawer");
-  document.getElementById("drop-name").innerHTML  = (u.displayName || u.username) + myBadge + myStreakBadge;
-  document.getElementById("drawer-name").innerHTML  = (u.displayName || u.username) + myBadge + myStreakBadgeDrawer;
+  document.getElementById("drop-name").innerHTML  = (u.displayName || u.username) + myBadge;
+  document.getElementById("drawer-name").innerHTML  = (u.displayName || u.username) + myBadge;
   
   document.getElementById("drop-role").innerText  = u.role;
   document.getElementById("prof-id").value        = u.username;
@@ -680,6 +1085,9 @@ function hydrateSession(u) {
 
   if (u.isTempPassword) openModal("m-force-pwd");
 
+  loadMaps().then(() => {
+    updateStreakRankingUI();
+  });
   loadMatieres();
   syncContrib();
   

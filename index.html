@@ -172,6 +172,30 @@
       </div>
       
       <div id="pinned-annonces-zone"></div>
+
+      <div class="home-streak-card" id="home-streak-card">
+        <div class="home-streak-visual" aria-hidden="true">
+          <div class="duo-flame duo-flame-main">
+            <span class="duo-flame-layer duo-flame-outer"></span>
+            <span class="duo-flame-layer duo-flame-middle"></span>
+            <span class="duo-flame-layer duo-flame-inner"></span>
+          </div>
+        </div>
+        <div class="home-streak-copy">
+          <div class="home-streak-kicker">Ta série</div>
+          <div class="home-streak-title">
+            <span id="home-streak-count">0 jour</span>
+          </div>
+          <button type="button" class="home-streak-ranking-link" id="home-streak-rank" onclick="openStreakRanking()">
+            #— au classement
+          </button>
+          <div class="home-streak-status" id="home-streak-status" aria-live="polite">Ta flamme se prépare…</div>
+          <div class="streak-extinguish-message" aria-live="assertive"></div>
+        </div>
+        <button type="button" class="home-streak-open" onclick="openStreakRanking()" aria-label="Ouvrir le classement">
+          →
+        </button>
+      </div>
       
       <div class="quick-nav-grid">
         <div class="quick-nav-card" onclick="switchTab('cours')">
@@ -197,6 +221,29 @@
       </div>
 
       <div id="annonces-zone" class="mt-4"></div>
+    </section>
+
+    <section id="page-classement" class="page-view">
+      <div class="ph-row streak-ranking-header">
+        <div>
+          <h1>Classement des flammes</h1>
+          <p class="tagline" id="streak-ranking-scope">Ta classe</p>
+        </div>
+        <button class="btn-ghost" type="button" onclick="switchTab('accueil')">← Accueil</button>
+      </div>
+
+      <div class="streak-ranking-card">
+        <div class="streak-ranking-card-head">
+          <div>
+            <div class="caption">Série actuelle</div>
+            <h3>Qui garde la flamme ?</h3>
+          </div>
+          <div class="streak-ranking-header-flame" aria-hidden="true">
+            <span class="streak-mini-flame streak-mini-flame-large"></span>
+          </div>
+        </div>
+        <div id="streak-ranking-list" class="streak-ranking-list"></div>
+      </div>
     </section>
 
     <section id="page-cours" class="page-view">
@@ -766,16 +813,6 @@
   </div>
 </div>
 
-<div id="m-streak-lost" class="moverlay" onclick="closeOnOut(event,'m-streak-lost')">
-  <div class="mbox" style="max-width: 420px; text-align:center;">
-    <div style="font-size:48px;">🔥💔</div>
-    <h2>Série interrompue</h2>
-    <p id="streak-lost-message" style="margin-top:12px; color:var(--ink-m);"></p>
-    <div class="mact mt-3">
-      <button class="btn-pill" style="width:100%; justify-content:center;" onclick="closeModal('m-streak-lost')">Recommencer une série</button>
-    </div>
-  </div>
-</div>
 
 <div id="m-share" class="moverlay" onclick="closeOnOut(event,'m-share')">
   <div class="mbox" style="max-width: 420px;">
