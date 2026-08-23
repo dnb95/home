@@ -4,7 +4,6 @@ import {
   getFirestore, collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
   doc, query, where, onSnapshot, orderBy, setDoc, limit
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-import { getMessaging, getToken, deleteToken } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging.js";
 
 const FB = {
   apiKey: "AIzaSyAP5gV1yUVEKnd_x3RkqyxYwF7vpnROgR0",
@@ -24,8 +23,75 @@ window.emailjs.init("2VkygefcXxbSOlhFX");
 const GROQ_API_URL = "https://groqrelay.greninja71144.workers.dev";
 const GROQ_MODEL   = "llama-3.3-70b-versatile"; 
 
-const VAPID_PUBLIC_KEY = "BMRu810FOacjo65y0_29s6alglQuotpVdChHfprJ4rQpQUcMn-BjThHWiKVBnWg0CwfRLThZhJ4wGMhHdZv1sXc";
-const ADMIN_PUSH_ENDPOINT = "https://us-central1-tstmg-1.cloudfunctions.net/sendPushNotification";
+const ADMIN_PUSH_ENDPOINT = "https://groqrelay.greninja71144.workers.dev/onesignal";
+
+function withOneSignal(callback) {
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  return new Promise((resolve, reject) => {
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      try {
+        resolve(await callback(OneSignal));
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+}
+
+let oneSignalPushListenerRegistered = false;
+
+function registerOneSignalPushListener() {
+  if (oneSignalPushListenerRegistered) return;
+  oneSignalPushListenerRegistered = true;
+
+  withOneSignal(async (OneSignal) => {
+    OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
+      if (!currentUser) return;
+
+      const optedIn = !!event?.current?.optedIn;
+      const subscriptionId = event?.current?.id || null;
+      const updates = {
+        pushEnabled: optedIn
+      };
+
+      if (subscriptionId) {
+        updates.oneSignalSubscriptionId = subscriptionId;
+      }
+
+      try {
+        await updateDoc(doc(db, "users", currentUser.id), updates);
+        currentUser.pushEnabled = optedIn;
+        if (subscriptionId) currentUser.oneSignalSubscriptionId = subscriptionId;
+        localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+
+        const checkbox = document.getElementById("tog-push-notif");
+        if (checkbox) checkbox.checked = optedIn;
+      } catch (error) {
+        console.error("Erreur de synchronisation OneSignal :", error);
+      }
+    });
+  }).catch(error => {
+    oneSignalPushListenerRegistered = false;
+    console.error("Erreur d'initialisation du listener OneSignal :", error);
+  });
+}
+
+async function syncOneSignalUser(u) {
+  if (!u?.id) return;
+
+  try {
+    await withOneSignal(async (OneSignal) => {
+      await OneSignal.login(String(u.id));
+      registerOneSignalPushListener();
+
+      if (u.pushEnabled === false) {
+        await OneSignal.User.PushSubscription.optOut();
+      }
+    });
+  } catch (error) {
+    console.error("Erreur de synchronisation du compte OneSignal :", error);
+  }
+}
 
 window.currentUser = null;
 window.usersMap    = new Map();
@@ -365,13 +431,24 @@ window.sendAdminPushNotification = async () => {
     const res = await fetch(ADMIN_PUSH_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ adminId: currentUser.id, title, body })
+      body: JSON.stringify({
+        app_id: "d0900059-082b-458f-9bb1-8798546b8010",
+        title,
+        body,
+        url: "https://dnb95.github.io/home/"
+      })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Erreur serveur");
 
-    showToast(`Notification envoyée à ${data.sent} abonné(s) ✓`);
-    if (statusEl) statusEl.innerText = `${data.sent} notification(s) envoyée(s), ${data.failed || 0} échec(s).`;
+    if (data.sent > 0) {
+      showToast(`Notification envoyée à ${data.sent} abonné(s) ✓`);
+      if (statusEl) statusEl.innerText = `${data.sent} notification(s) envoyée(s) ✓`;
+    } else {
+      showToast("Aucun utilisateur n'a activé les notifications push.");
+      if (statusEl) statusEl.innerText = "Aucun utilisateur n'est actuellement abonné aux notifications push.";
+    }
+
     document.getElementById("adm-push-title").value = "";
     document.getElementById("adm-push-body").value = "";
   } catch (e) {
@@ -626,7 +703,15 @@ window.handleLogin = async () => {
 document.getElementById("login-pwd").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
 document.getElementById("login-id").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
 
-window.handleLogout = () => {
+window.handleLogout = async () => {
+  try {
+    await withOneSignal(async (OneSignal) => {
+      await OneSignal.logout();
+    });
+  } catch (e) {
+    console.error("Erreur lors de la déconnexion OneSignal :", e);
+  }
+
   localStorage.removeItem("dnb_reviz_session");
   window.location.hash = "";
   window.location.reload();
@@ -1016,6 +1101,8 @@ async function checkStreak(u) {
 function hydrateSession(u) {
   window.currentUser = u;
   localStorage.setItem("dnb_reviz_session", JSON.stringify(u));
+  registerOneSignalPushListener();
+  syncOneSignalUser(u);
 
   document.getElementById("view-login").style.display = "none";
   document.getElementById("view-app").style.display = "block";
@@ -1285,56 +1372,65 @@ window.toggleEmailNotifs = async (val) => {
 window.togglePushNotifs = async (enabled) => {
   const checkbox = document.getElementById("tog-push-notif");
 
-  if (!enabled) {
-    try {
-      const messaging = getMessaging(app);
-      await deleteToken(messaging);
-    } catch (e) { console.error(e); }
-    await updateDoc(doc(db, "users", currentUser.id), { pushEnabled: false, fcmToken: null });
-    currentUser.pushEnabled = false;
-    currentUser.fcmToken = null;
-    localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
-    showToast("Notifications push désactivées");
+  if (!currentUser) {
+    if (checkbox) checkbox.checked = false;
     return;
   }
 
-  if (!("Notification" in window) || !("serviceWorker" in navigator)) {
-    showToast("Ton navigateur ne supporte pas les notifications push.");
-    if (checkbox) checkbox.checked = false;
+  if (!enabled) {
+    try {
+      await withOneSignal(async (OneSignal) => {
+        await OneSignal.User.PushSubscription.optOut();
+      });
+
+      await updateDoc(doc(db, "users", currentUser.id), { pushEnabled: false });
+      currentUser.pushEnabled = false;
+      localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+      showToast("Notifications push désactivées");
+    } catch (e) {
+      console.error(e);
+      if (checkbox) checkbox.checked = true;
+      showToast("Erreur lors de la désactivation des notifications push.");
+    }
     return;
   }
 
   try {
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      showToast("Autorisation refusée. Active les notifications dans les réglages de ton navigateur.");
-      if (checkbox) checkbox.checked = false;
-      return;
-    }
+    await withOneSignal(async (OneSignal) => {
+      if (!OneSignal.Notifications.isPushSupported()) {
+        throw new Error("PUSH_NOT_SUPPORTED");
+      }
 
-    const registration = await navigator.serviceWorker.register("script2.js");
-    await navigator.serviceWorker.ready;
-    const messaging = getMessaging(app);
-    const token = await getToken(messaging, {
-      vapidKey: VAPID_PUBLIC_KEY,
-      serviceWorkerRegistration: registration
+      await OneSignal.login(String(currentUser.id));
+      await OneSignal.User.PushSubscription.optIn();
+
+      if (!OneSignal.User.PushSubscription.optedIn) {
+        throw new Error("PUSH_NOT_GRANTED");
+      }
+
+      const subscriptionId = OneSignal.User.PushSubscription.id || null;
+      const updates = { pushEnabled: true };
+      if (subscriptionId) updates.oneSignalSubscriptionId = subscriptionId;
+
+      await updateDoc(doc(db, "users", currentUser.id), updates);
+      currentUser.pushEnabled = true;
+      if (subscriptionId) currentUser.oneSignalSubscriptionId = subscriptionId;
+      localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
     });
 
-    if (!token) {
-      showToast("Impossible de générer le token de notification.");
-      if (checkbox) checkbox.checked = false;
-      return;
-    }
-
-    await updateDoc(doc(db, "users", currentUser.id), { pushEnabled: true, fcmToken: token });
-    currentUser.pushEnabled = true;
-    currentUser.fcmToken = token;
-    localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+    if (checkbox) checkbox.checked = true;
     showToast("Notifications push activées ✓");
   } catch (e) {
     console.error(e);
-    showToast("Erreur lors de l'activation des notifications push.");
     if (checkbox) checkbox.checked = false;
+
+    if (e?.message === "PUSH_NOT_SUPPORTED") {
+      showToast("Ton navigateur ne supporte pas les notifications push.");
+    } else if (e?.message === "PUSH_NOT_GRANTED") {
+      showToast("Autorisation refusée. Active les notifications dans les réglages de ton navigateur.");
+    } else {
+      showToast("Erreur lors de l'activation des notifications push.");
+    }
   }
 };
 
