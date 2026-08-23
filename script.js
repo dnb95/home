@@ -10,7 +10,6 @@ const FB = {
   authDomain: "tstmg-1.firebaseapp.com",
   projectId: "tstmg-1",
   storageBucket: "tstmg-1.firebasestorage.app",
-  messagingSenderId: "626888970289",
   appId: "1:626888970289:web:23880053888f3dd1a88510"
 };
 
@@ -40,40 +39,70 @@ function withOneSignal(callback) {
 
 let oneSignalPushListenerRegistered = false;
 
+function setPushToggleState(enabled) {
+  const checkbox = document.getElementById("tog-push-notif");
+  if (checkbox) checkbox.checked = !!enabled;
+}
+
+function setLocalPushState(enabled, subscriptionId = null) {
+  if (!currentUser) return;
+
+  currentUser.pushEnabled = !!enabled;
+  currentUser.oneSignalSubscriptionId = subscriptionId || null;
+
+  try {
+    localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  } catch (error) {
+    console.warn("Impossible de mettre à jour la session locale :", error);
+  }
+
+  setPushToggleState(enabled);
+}
+
 function registerOneSignalPushListener() {
   if (oneSignalPushListenerRegistered) return;
   oneSignalPushListenerRegistered = true;
 
   withOneSignal(async (OneSignal) => {
-    OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
-      if (!currentUser) return;
+    OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+      const subscription = event?.current || OneSignal.User.PushSubscription;
+      const optedIn = !!subscription?.optedIn;
+      const subscriptionId = subscription?.id || null;
 
-      const optedIn = !!event?.current?.optedIn;
-      const subscriptionId = event?.current?.id || null;
-      const updates = {
-        pushEnabled: optedIn
-      };
-
-      if (subscriptionId) {
-        updates.oneSignalSubscriptionId = subscriptionId;
-      }
-
-      try {
-        await updateDoc(doc(db, "users", currentUser.id), updates);
-        currentUser.pushEnabled = optedIn;
-        if (subscriptionId) currentUser.oneSignalSubscriptionId = subscriptionId;
-        localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
-
-        const checkbox = document.getElementById("tog-push-notif");
-        if (checkbox) checkbox.checked = optedIn;
-      } catch (error) {
-        console.error("Erreur de synchronisation OneSignal :", error);
-      }
+      setLocalPushState(optedIn, subscriptionId);
     });
   }).catch(error => {
     oneSignalPushListenerRegistered = false;
     console.error("Erreur d'initialisation du listener OneSignal :", error);
   });
+}
+
+async function getOneSignalPushState() {
+  return withOneSignal(async (OneSignal) => {
+    const subscription = OneSignal.User.PushSubscription;
+    return {
+      supported: OneSignal.Notifications.isPushSupported(),
+      optedIn: !!subscription?.optedIn,
+      subscriptionId: subscription?.id || null,
+      permission: OneSignal.Notifications.permission || null
+    };
+  });
+}
+
+async function waitForOneSignalSubscription(timeoutMs = 5000) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const state = await getOneSignalPushState();
+
+    if (state.optedIn && state.subscriptionId) {
+      return state;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+
+  return getOneSignalPushState();
 }
 
 async function syncOneSignalUser(u) {
@@ -84,9 +113,16 @@ async function syncOneSignalUser(u) {
       await OneSignal.login(String(u.id));
       registerOneSignalPushListener();
 
-      if (u.pushEnabled === false) {
-        await OneSignal.User.PushSubscription.optOut();
+      const supported = OneSignal.Notifications.isPushSupported();
+      if (!supported) {
+        setLocalPushState(false, null);
+        return;
       }
+
+      // OneSignal est la seule source de vérité pour l'état Push.
+      // On ne force plus optOut/optIn à partir d'un champ Firebase.
+      const subscription = OneSignal.User.PushSubscription;
+      setLocalPushState(!!subscription?.optedIn, subscription?.id || null);
     });
   } catch (error) {
     console.error("Erreur de synchronisation du compte OneSignal :", error);
@@ -1102,7 +1138,6 @@ function hydrateSession(u) {
   window.currentUser = u;
   localStorage.setItem("dnb_reviz_session", JSON.stringify(u));
   registerOneSignalPushListener();
-  syncOneSignalUser(u);
 
   document.getElementById("view-login").style.display = "none";
   document.getElementById("view-app").style.display = "block";
@@ -1145,7 +1180,8 @@ function hydrateSession(u) {
     document.getElementById("tog-email-notif").checked = !!u.emailNotifs;
   }
   if (document.getElementById("tog-push-notif")) {
-    document.getElementById("tog-push-notif").checked = !!u.pushEnabled;
+    setPushToggleState(false);
+    syncOneSignalUser(u).catch(error => console.error("Erreur de synchronisation Push :", error));
   }
   if (document.getElementById("setting-email")) {
     document.getElementById("setting-email").value = u.email || "";
@@ -1373,25 +1409,7 @@ window.togglePushNotifs = async (enabled) => {
   const checkbox = document.getElementById("tog-push-notif");
 
   if (!currentUser) {
-    if (checkbox) checkbox.checked = false;
-    return;
-  }
-
-  if (!enabled) {
-    try {
-      await withOneSignal(async (OneSignal) => {
-        await OneSignal.User.PushSubscription.optOut();
-      });
-
-      await updateDoc(doc(db, "users", currentUser.id), { pushEnabled: false });
-      currentUser.pushEnabled = false;
-      localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
-      showToast("Notifications push désactivées");
-    } catch (e) {
-      console.error(e);
-      if (checkbox) checkbox.checked = true;
-      showToast("Erreur lors de la désactivation des notifications push.");
-    }
+    setPushToggleState(false);
     return;
   }
 
@@ -1402,34 +1420,69 @@ window.togglePushNotifs = async (enabled) => {
       }
 
       await OneSignal.login(String(currentUser.id));
+      registerOneSignalPushListener();
+
+      if (!enabled) {
+        await OneSignal.User.PushSubscription.optOut();
+
+        const subscription = OneSignal.User.PushSubscription;
+        const optedIn = !!subscription?.optedIn;
+        const subscriptionId = subscription?.id || null;
+
+        if (optedIn) {
+          throw new Error("PUSH_OPTOUT_FAILED");
+        }
+
+        setLocalPushState(false, subscriptionId);
+        return;
+      }
+
       await OneSignal.User.PushSubscription.optIn();
 
-      if (!OneSignal.User.PushSubscription.optedIn) {
+      // Attend que OneSignal ait réellement créé le Push Subscription ID.
+      const state = await waitForOneSignalSubscription(5000);
+      const optedIn = !!state.optedIn;
+      const subscriptionId = state.subscriptionId || null;
+
+      if (!optedIn || !subscriptionId) {
         throw new Error("PUSH_NOT_GRANTED");
       }
 
-      const subscriptionId = OneSignal.User.PushSubscription.id || null;
-      const updates = { pushEnabled: true };
-      if (subscriptionId) updates.oneSignalSubscriptionId = subscriptionId;
-
-      await updateDoc(doc(db, "users", currentUser.id), updates);
-      currentUser.pushEnabled = true;
-      if (subscriptionId) currentUser.oneSignalSubscriptionId = subscriptionId;
-      localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+      setLocalPushState(true, subscriptionId);
     });
 
-    if (checkbox) checkbox.checked = true;
-    showToast("Notifications push activées ✓");
+    const state = await getOneSignalPushState();
+    setLocalPushState(state.optedIn, state.subscriptionId);
+
+    if (!enabled && state.optedIn) {
+      throw new Error("PUSH_OPTOUT_FAILED");
+    }
+
+    if (enabled && (!state.optedIn || !state.subscriptionId)) {
+      throw new Error("PUSH_NOT_GRANTED");
+    }
+
+    showToast(
+      enabled
+        ? "Notifications push activées ✓"
+        : "Notifications push désactivées"
+    );
   } catch (e) {
-    console.error(e);
-    if (checkbox) checkbox.checked = false;
+    console.error("Erreur Push OneSignal :", e);
+
+    if (checkbox) {
+      const state = await getOneSignalPushState().catch(() => ({ optedIn: false }));
+      checkbox.checked = !!state.optedIn;
+    }
 
     if (e?.message === "PUSH_NOT_SUPPORTED") {
       showToast("Ton navigateur ne supporte pas les notifications push.");
     } else if (e?.message === "PUSH_NOT_GRANTED") {
-      showToast("Autorisation refusée. Active les notifications dans les réglages de ton navigateur.");
+      showToast("L'abonnement Push n'a pas été confirmé. Vérifie l'autorisation des notifications dans ton navigateur.");
+    } else if (e?.message === "PUSH_OPTOUT_FAILED") {
+      showToast("Impossible de désactiver les notifications Push.");
     } else {
-      showToast("Erreur lors de l'activation des notifications push.");
+      showToast("Erreur lors de la configuration des notifications push.");
     }
   }
 };
