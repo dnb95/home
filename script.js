@@ -24,13 +24,29 @@ const GROQ_MODEL   = "llama-3.3-70b-versatile";
 
 const ADMIN_PUSH_ENDPOINT = "https://groqrelay.greninja71144.workers.dev/onesignal";
 
-function withOneSignal(callback) {
+function withOneSignal(callback, timeoutMs = 5000) {
   window.OneSignalDeferred = window.OneSignalDeferred || [];
+
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("ONESIGNAL_TIMEOUT"));
+    }, timeoutMs);
+
     window.OneSignalDeferred.push(async function(OneSignal) {
+      if (settled) return;
       try {
-        resolve(await callback(OneSignal));
+        const result = await callback(OneSignal);
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(result);
       } catch (error) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
         reject(error);
       }
     });
@@ -740,15 +756,56 @@ document.getElementById("login-pwd").addEventListener("keydown", e => { if (e.ke
 document.getElementById("login-id").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
 
 window.handleLogout = async () => {
+  // La déconnexion de l'application ne doit JAMAIS être bloquée par OneSignal.
+  // On nettoie immédiatement la session locale, puis on tente un nettoyage
+  // OneSignal en arrière-plan avec un délai court et sans bloquer l'interface.
+  const previousUser = currentUser;
+  currentUser = null;
+  window.currentUser = null;
+
   try {
-    await withOneSignal(async (OneSignal) => {
-      await OneSignal.logout();
-    });
-  } catch (e) {
-    console.error("Erreur lors de la déconnexion OneSignal :", e);
+    localStorage.removeItem("dnb_reviz_session");
+  } catch (error) {
+    console.warn("Impossible de supprimer la session locale :", error);
   }
 
-  localStorage.removeItem("dnb_reviz_session");
+  try {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    const cleanup = withOneSignal(async (OneSignal) => {
+      // On retire d'abord l'abonnement Push de cet appareil si possible,
+      // puis on détache l'identité OneSignal du compte déconnecté.
+      try {
+        if (OneSignal.User?.PushSubscription?.optOut) {
+          await OneSignal.User.PushSubscription.optOut();
+        }
+      } catch (error) {
+        console.warn("Impossible de désactiver temporairement le Push à la déconnexion :", error);
+      }
+
+      try {
+        if (OneSignal.logout) {
+          await OneSignal.logout();
+        }
+      } catch (error) {
+        console.warn("Impossible de déconnecter l'identité OneSignal :", error);
+      }
+    }, 1200);
+
+    // Ne jamais retenir l'utilisateur sur l'écran de déconnexion.
+    cleanup.catch(error => console.warn("Nettoyage OneSignal ignoré :", error));
+  } catch (error) {
+    console.warn("Nettoyage OneSignal indisponible :", error);
+  }
+
+  // Nettoyage visuel immédiat avant le rechargement.
+  try {
+    closeDropdown?.();
+    closeDrawer?.();
+  } catch (_) {}
+
+  // Évite un éventuel avertissement de linter pour l'utilisateur précédent.
+  void previousUser;
+
   window.location.hash = "";
   window.location.reload();
 };
@@ -1288,6 +1345,7 @@ function hydrateSession(u) {
     document.getElementById("tog-email-notif").checked = !!u.emailNotifs;
   }
   if (document.getElementById("tog-push-notif")) {
+    // L'état affiché vient de OneSignal : aucune activation automatique ici.
     setPushToggleState(false);
     syncOneSignalUser(u).catch(error => console.error("Erreur de synchronisation Push :", error));
   }
@@ -1521,6 +1579,33 @@ window.togglePushNotifs = async (enabled) => {
     return;
   }
 
+  // L'utilisateur doit pouvoir annuler sans que le toggle reste visuellement activé.
+  if (!enabled) {
+    try {
+      await withOneSignal(async (OneSignal) => {
+        if (!OneSignal.Notifications.isPushSupported()) {
+          throw new Error("PUSH_NOT_SUPPORTED");
+        }
+
+        await OneSignal.login(String(currentUser.id));
+        registerOneSignalPushListener();
+
+        if (OneSignal.User?.PushSubscription?.optOut) {
+          await OneSignal.User.PushSubscription.optOut();
+        }
+      });
+
+      const state = await getOneSignalPushState();
+      setLocalPushState(false, state.subscriptionId || null);
+      showToast("Notifications push désactivées");
+    } catch (e) {
+      console.error("Erreur de désactivation Push OneSignal :", e);
+      setPushToggleState(true);
+      showToast("Impossible de désactiver les notifications push.");
+    }
+    return;
+  }
+
   try {
     await withOneSignal(async (OneSignal) => {
       if (!OneSignal.Notifications.isPushSupported()) {
@@ -1530,65 +1615,44 @@ window.togglePushNotifs = async (enabled) => {
       await OneSignal.login(String(currentUser.id));
       registerOneSignalPushListener();
 
-      if (!enabled) {
-        await OneSignal.User.PushSubscription.optOut();
-
-        const subscription = OneSignal.User.PushSubscription;
-        const optedIn = !!subscription?.optedIn;
-        const subscriptionId = subscription?.id || null;
-
-        if (optedIn) {
-          throw new Error("PUSH_OPTOUT_FAILED");
-        }
-
-        setLocalPushState(false, subscriptionId);
-        return;
+      // Si le navigateur a déjà accordé l'autorisation, on évite tout prompt.
+      if (!OneSignal.Notifications.permission) {
+        // Demande native du navigateur uniquement, déclenchée par le clic
+        // utilisateur sur le toggle des paramètres. Aucun Slidedown OneSignal.
+        await OneSignal.Notifications.requestPermission();
       }
 
-      await OneSignal.User.PushSubscription.optIn();
-
-      // Attend que OneSignal ait réellement créé le Push Subscription ID.
-      const state = await waitForOneSignalSubscription(5000);
-      const optedIn = !!state.optedIn;
-      const subscriptionId = state.subscriptionId || null;
-
-      if (!optedIn || !subscriptionId) {
+      if (!OneSignal.Notifications.permission) {
         throw new Error("PUSH_NOT_GRANTED");
       }
 
-      setLocalPushState(true, subscriptionId);
+      // Transforme l'autorisation navigateur en abonnement OneSignal.
+      if (OneSignal.User?.PushSubscription?.optIn) {
+        await OneSignal.User.PushSubscription.optIn();
+      }
     });
 
-    const state = await getOneSignalPushState();
-    setLocalPushState(state.optedIn, state.subscriptionId);
+    const state = await waitForOneSignalSubscription(5000);
+    const optedIn = !!state.optedIn;
+    const subscriptionId = state.subscriptionId || null;
 
-    if (!enabled && state.optedIn) {
-      throw new Error("PUSH_OPTOUT_FAILED");
-    }
-
-    if (enabled && (!state.optedIn || !state.subscriptionId)) {
+    if (!optedIn || !subscriptionId) {
       throw new Error("PUSH_NOT_GRANTED");
     }
 
-    showToast(
-      enabled
-        ? "Notifications push activées ✓"
-        : "Notifications push désactivées"
-    );
+    setLocalPushState(true, subscriptionId);
+    showToast("Notifications push activées ✓");
   } catch (e) {
     console.error("Erreur Push OneSignal :", e);
 
-    if (checkbox) {
-      const state = await getOneSignalPushState().catch(() => ({ optedIn: false }));
-      checkbox.checked = !!state.optedIn;
-    }
+    if (checkbox) checkbox.checked = false;
 
     if (e?.message === "PUSH_NOT_SUPPORTED") {
       showToast("Ton navigateur ne supporte pas les notifications push.");
     } else if (e?.message === "PUSH_NOT_GRANTED") {
-      showToast("L'abonnement Push n'a pas été confirmé. Vérifie l'autorisation des notifications dans ton navigateur.");
-    } else if (e?.message === "PUSH_OPTOUT_FAILED") {
-      showToast("Impossible de désactiver les notifications Push.");
+      showToast("Notifications non activées. Autorise les notifications pour ce site dans les paramètres du navigateur.");
+    } else if (e?.message === "ONESIGNAL_TIMEOUT") {
+      showToast("Le service de notifications n'est pas disponible pour le moment.");
     } else {
       showToast("Erreur lors de la configuration des notifications push.");
     }

@@ -25,7 +25,23 @@
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
-      appId: "d0900059-082b-458f-9bb1-8798546b8010"
+      appId: "d0900059-082b-458f-9bb1-8798546b8010",
+      // Aucun prompt OneSignal automatique : l'abonnement est déclenché
+      // uniquement depuis le toggle « Notifications Push » des paramètres.
+      promptOptions: {
+        slidedown: {
+          prompts: [
+            {
+              type: "push",
+              autoPrompt: false
+            }
+          ]
+        }
+      },
+      // Évite la notification de bienvenue OneSignal après abonnement.
+      welcomeNotification: {
+        disable: true
+      }
     });
   });
 </script>
