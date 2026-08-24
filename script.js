@@ -774,13 +774,14 @@ function displayNameFromId(id) {
 }
 
 // --- Système de Série de Révision (Streak) ---
+// Règle : une flamme est validée au maximum une fois par jour civil local,
+// après au moins 60 secondes de présence visible sur le site pendant cette journée.
+// Si une journée complète est sautée, la série est cassée et repart à 1 après 60 s.
 const STREAK_CONFIRM_MS = 60 * 1000;
-const STREAK_GRACE_START_MS = 24 * 60 * 60 * 1000;
-const STREAK_GRACE_END_MS = 48 * 60 * 60 * 1000;
 
 window._streakTimer = null;
 window._streakPersistTimer = null;
-window._streakExpiryTimer = null;
+window._streakDayTimer = null;
 window._streakState = null;
 window._streakLastTickAt = 0;
 
@@ -793,9 +794,20 @@ function getTodayStr() {
 }
 
 function daysBetweenStr(dateStrA, dateStrB) {
-  const a = new Date(dateStrA + "T00:00:00");
-  const b = new Date(dateStrB + "T00:00:00");
+  const a = new Date(`${dateStrA}T00:00:00`);
+  const b = new Date(`${dateStrB}T00:00:00`);
   return Math.round((b - a) / 86400000);
+}
+
+function getDateFromTimestamp(timestamp) {
+  if (!Number.isFinite(timestamp)) return null;
+  const d = new Date(timestamp);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function renderStreakBadge(streak, id) {
@@ -808,27 +820,30 @@ function getStreakStorageKey(username) {
   return `dnb_streak_watch_${username || "guest"}`;
 }
 
-function getStoredStreakWatch(username, windowKey) {
+function getStoredStreakWatch(username, dayKey) {
   try {
     const raw = localStorage.getItem(getStreakStorageKey(username));
-    if (!raw) return { windowKey, accumulatedMs: 0 };
+    if (!raw) return { dayKey, accumulatedMs: 0 };
+
     const data = JSON.parse(raw);
-    if (data.windowKey !== windowKey) {
-      return { windowKey, accumulatedMs: 0 };
+    if (data.dayKey !== dayKey) {
+      return { dayKey, accumulatedMs: 0 };
     }
+
     return {
-      windowKey,
+      dayKey,
       accumulatedMs: Math.max(0, Number(data.accumulatedMs) || 0)
     };
   } catch (_) {
-    return { windowKey, accumulatedMs: 0 };
+    return { dayKey, accumulatedMs: 0 };
   }
 }
 
 function saveStreakWatch(state) {
-  if (!currentUser || !state || state.confirmed) return;
+  if (!currentUser || !state || state.confirmed || !state.dayKey) return;
+
   localStorage.setItem(getStreakStorageKey(currentUser.username), JSON.stringify({
-    windowKey: state.windowKey || "default",
+    dayKey: state.dayKey,
     accumulatedMs: Math.max(0, Math.floor(state.accumulatedMs || 0))
   }));
 }
@@ -846,6 +861,14 @@ function parseStreakConfirmedAt(u) {
   return null;
 }
 
+function getUserLastStreakDay(u) {
+  if (typeof u?.lastActiveDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(u.lastActiveDate)) {
+    return u.lastActiveDate;
+  }
+
+  return getDateFromTimestamp(parseStreakConfirmedAt(u));
+}
+
 function updateStreakStatus(text) {
   const el = document.getElementById("home-streak-status");
   if (el) el.textContent = text || "";
@@ -859,6 +882,7 @@ function updateStreakBadgeUI(streak, options = {}) {
   const homeStreak = document.getElementById("home-streak-count");
 
   currentUser.streak = Number(streak) || 0;
+
   if (homeStreak) {
     homeStreak.textContent = `${displayStreak} ${displayStreak > 1 ? "jours" : "jour"}`;
   }
@@ -875,26 +899,58 @@ function stopStreakTimer() {
     clearInterval(window._streakTimer);
     window._streakTimer = null;
   }
+
   if (window._streakPersistTimer) {
     clearInterval(window._streakPersistTimer);
     window._streakPersistTimer = null;
   }
 }
 
-function stopStreakExpiryTimer() {
-  if (window._streakExpiryTimer) {
-    clearTimeout(window._streakExpiryTimer);
-    window._streakExpiryTimer = null;
+function stopStreakDayTimer() {
+  if (window._streakDayTimer) {
+    clearTimeout(window._streakDayTimer);
+    window._streakDayTimer = null;
   }
 }
 
 function getPendingDisplayStreak() {
-  const base = Number(currentUser?.streak) || 0;
-  return window._streakState?.pending ? Math.max(1, base + 1) : base;
+  // Tant que les 60 secondes du jour ne sont pas terminées,
+  // on affiche uniquement le streak déjà validé. La prochaine flamme
+  // n'est ajoutée qu'après validation des 60 secondes.
+  return Math.max(0, Number(currentUser?.streak) || 0);
+}
+
+function getNextLocalMidnightMs() {
+  const now = new Date();
+  const next = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+    0,
+    0,
+    0,
+    0
+  );
+  return next.getTime();
+}
+
+function scheduleNextStreakDay() {
+  stopStreakDayTimer();
+
+  if (!currentUser) return;
+
+  const delay = Math.max(1000, getNextLocalMidnightMs() - Date.now());
+
+  window._streakDayTimer = setTimeout(() => {
+    checkStreak(currentUser).catch(error => {
+      console.error("Erreur lors du changement de journée de série :", error);
+    });
+  }, delay);
 }
 
 function startStreakMinuteTimer() {
   stopStreakTimer();
+
   if (!currentUser || !window._streakState?.pending) return;
 
   const state = window._streakState;
@@ -904,20 +960,37 @@ function startStreakMinuteTimer() {
   const tick = () => {
     if (!currentUser || !window._streakState?.pending) return;
 
+    const today = getTodayStr();
+
+    // Ne jamais valider une minute de l'ancien jour après minuit.
+    if (state.dayKey !== today) {
+      saveStreakWatch(state);
+      stopStreakTimer();
+      checkStreak(currentUser).catch(error => {
+        console.error("Erreur de recalcul de série après minuit :", error);
+      });
+      return;
+    }
+
     const now = Date.now();
     const delta = Math.max(0, now - (window._streakLastTickAt || now));
     window._streakLastTickAt = now;
 
+    // Seul le temps passé sur une page visible compte.
     if (document.visibilityState === "visible") {
       state.accumulatedMs += delta;
     }
 
     const remainingMs = Math.max(0, STREAK_CONFIRM_MS - state.accumulatedMs);
     const remainingSeconds = Math.ceil(remainingMs / 1000);
-    updateStreakStatus(`Encore ${remainingSeconds}s sur le site pour confirmer la flamme`);
+
+    updateStreakStatus(
+      `Encore ${remainingSeconds}s de présence aujourd'hui pour confirmer la flamme`
+    );
 
     if (state.accumulatedMs >= STREAK_CONFIRM_MS) {
       stopStreakTimer();
+
       confirmPendingStreak().catch(error => {
         console.error("Erreur de confirmation de série :", error);
         updateStreakStatus("Impossible de confirmer la flamme pour le moment");
@@ -928,17 +1001,51 @@ function startStreakMinuteTimer() {
 
   window._streakTimer = setInterval(tick, 1000);
   window._streakPersistTimer = setInterval(() => saveStreakWatch(state), 5000);
+
   tick();
 }
 
 async function confirmPendingStreak() {
   const state = window._streakState;
+
   if (!currentUser || !state?.pending || state.confirming) return;
 
-  state.confirming = true;
   const today = getTodayStr();
-  const oldStreak = Number(currentUser.streak) || 0;
-  const newStreak = Math.max(1, oldStreak + 1);
+
+  // Sécurité : cette fonction ne doit jamais valider deux jours à partir
+  // d'une ancienne fenêtre de suivi.
+  if (state.dayKey !== today) {
+    await checkStreak(currentUser);
+    return;
+  }
+
+  state.confirming = true;
+
+  // Si la journée a déjà été validée ailleurs (autre onglet/appareil),
+  // on refuse de l'incrémenter une deuxième fois.
+  const latestLastActiveDate = getUserLastStreakDay(currentUser);
+  if (latestLastActiveDate === today) {
+    state.pending = false;
+    state.confirmed = true;
+    clearStreakWatch();
+
+    updateStreakBadgeUI(currentUser.streak, {
+      displayStreak: Number(currentUser.streak) || 0,
+      pending: false,
+      status: "Flamme du jour déjà confirmée ✓"
+    });
+
+    scheduleNextStreakDay();
+    return;
+  }
+
+  const lastStreakDay = getUserLastStreakDay(currentUser);
+  const streakBeforeToday = Number(currentUser.streak) || 0;
+  const continuesStreak = lastStreakDay && daysBetweenStr(lastStreakDay, today) === 1;
+  const newStreak = continuesStreak
+    ? Math.max(1, streakBeforeToday + 1)
+    : 1;
+
   const newMax = Math.max(Number(currentUser.maxStreak) || 0, newStreak);
   const confirmedAt = Date.now();
 
@@ -953,32 +1060,25 @@ async function confirmPendingStreak() {
   currentUser.maxStreak = newMax;
   currentUser.lastActiveDate = today;
   currentUser.lastStreakConfirmedAt = confirmedAt;
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
 
+  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
   clearStreakWatch();
+
   window._streakState = {
     pending: false,
     confirmed: true,
+    dayKey: today,
     confirmedAt,
     accumulatedMs: 0
   };
+
   updateStreakBadgeUI(newStreak, {
     displayStreak: newStreak,
     pending: false,
-    status: "Flamme confirmée ✓"
+    status: "Flamme du jour confirmée ✓"
   });
 
-  scheduleStreakExpiry(confirmedAt);
-}
-
-function scheduleStreakExpiry(confirmedAt) {
-  stopStreakExpiryTimer();
-  if (!confirmedAt) return;
-
-  const untilExpiry = Math.max(1000, STREAK_GRACE_END_MS - (Date.now() - confirmedAt));
-  window._streakExpiryTimer = setTimeout(() => {
-    expireStreakIfNeeded().catch(error => console.error("Erreur d'expiration de série :", error));
-  }, untilExpiry);
+  scheduleNextStreakDay();
 }
 
 function animateStreakExtinguish(lostStreak) {
@@ -1001,137 +1101,145 @@ function animateStreakExtinguish(lostStreak) {
   }, 2600);
 }
 
-async function expireStreakIfNeeded() {
-  if (!currentUser) return;
+async function breakStreakForMissedDay(u) {
+  const lostStreak = Number(u.streak) || 0;
 
-  const confirmedAt = parseStreakConfirmedAt(currentUser);
-  if (!confirmedAt) return;
-
-  const elapsed = Date.now() - confirmedAt;
-  if (elapsed < STREAK_GRACE_END_MS) {
-    scheduleStreakExpiry(confirmedAt);
+  if (lostStreak <= 0) {
+    currentUser.streak = 0;
     return;
   }
 
-  const lostStreak = Number(currentUser.streak) || 0;
-  if (lostStreak <= 0) return;
-
-  await updateDoc(doc(db, "users", currentUser.id), {
+  await updateDoc(doc(db, "users", u.id), {
     streak: 0,
-    lastActiveDate: getTodayStr(),
+    lastActiveDate: null,
     lastStreakConfirmedAt: null
   });
 
   currentUser.streak = 0;
-  currentUser.lastActiveDate = getTodayStr();
+  currentUser.lastActiveDate = null;
   currentUser.lastStreakConfirmedAt = null;
+
   localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
 
-  const restartWindowKey = `first:${currentUser.username}`;
-  const restartWatch = getStoredStreakWatch(currentUser.username, restartWindowKey);
-  window._streakState = {
-    pending: true,
-    confirmed: false,
-    windowKey: restartWindowKey,
-    accumulatedMs: restartWatch.accumulatedMs,
-    lostStreak
-  };
+  if (lostStreak > 0) {
+    animateStreakExtinguish(lostStreak);
+  }
 
-  updateStreakBadgeUI(0, {
-    displayStreak: 1,
-    pending: true,
-    status: "La flamme s'est éteinte… encore 60s pour repartir"
-  });
-  animateStreakExtinguish(lostStreak);
-  startStreakMinuteTimer();
+  return lostStreak;
 }
 
 async function checkStreak(u) {
   if (!u || !currentUser || currentUser.id !== u.id) return;
 
   stopStreakTimer();
-  stopStreakExpiryTimer();
+  stopStreakDayTimer();
 
-  const confirmedAt = parseStreakConfirmedAt(u);
+  const today = getTodayStr();
+  let lastStreakDay = getUserLastStreakDay(u);
 
-  // Première série : elle démarre visuellement dès l'arrivée, puis devient officielle après 60 secondes.
-  if (!confirmedAt && !(Number(u.streak) > 0)) {
-    const windowKey = `first:${u.username}`;
+  // Compatibilité avec les anciennes données :
+  // si seule lastStreakConfirmedAt existe, on en déduit le jour local.
+  if (!u.lastActiveDate && lastStreakDay) {
+    u.lastActiveDate = lastStreakDay;
+    currentUser.lastActiveDate = lastStreakDay;
+  }
+
+  const currentStreak = Math.max(0, Number(u.streak) || 0);
+
+  // Aucun historique : première flamme à gagner aujourd'hui après 60 s.
+  if (!lastStreakDay || currentStreak <= 0) {
+    const windowKey = `day:${today}`;
     const storedWatch = getStoredStreakWatch(u.username, windowKey);
+
     window._streakState = {
       pending: true,
       confirmed: false,
+      dayKey: today,
       windowKey,
       accumulatedMs: storedWatch.accumulatedMs
     };
+
     updateStreakBadgeUI(0, {
       displayStreak: 1,
       pending: true,
-      status: `Encore ${Math.max(1, Math.ceil((STREAK_CONFIRM_MS - storedWatch.accumulatedMs) / 1000))}s sur le site pour confirmer la flamme`
+      status: `Encore ${Math.max(1, Math.ceil((STREAK_CONFIRM_MS - storedWatch.accumulatedMs) / 1000))}s aujourd'hui pour obtenir la première flamme`
     });
+
     startStreakMinuteTimer();
+    scheduleNextStreakDay();
     return;
   }
 
-  // Compatibilité avec les anciennes données : lastActiveDate permet de reconstituer grossièrement une date de confirmation.
-  let effectiveConfirmedAt = confirmedAt;
-  if (!effectiveConfirmedAt && u.lastActiveDate) {
-    const legacyDate = new Date(`${u.lastActiveDate}T12:00:00`).getTime();
-    if (Number.isFinite(legacyDate)) {
-      effectiveConfirmedAt = legacyDate;
-      await updateDoc(doc(db, "users", u.id), { lastStreakConfirmedAt: effectiveConfirmedAt });
-      u.lastStreakConfirmedAt = effectiveConfirmedAt;
-      if (currentUser.id === u.id) currentUser.lastStreakConfirmedAt = effectiveConfirmedAt;
-    }
+  const dayGap = daysBetweenStr(lastStreakDay, today);
+
+  // Aujourd'hui est déjà validé : la flamme du jour ne peut être ajoutée qu'une fois.
+  if (dayGap === 0) {
+    clearStreakWatch();
+
+    window._streakState = {
+      pending: false,
+      confirmed: true,
+      dayKey: today,
+      confirmedAt: parseStreakConfirmedAt(u),
+      accumulatedMs: 0
+    };
+
+    updateStreakBadgeUI(currentStreak, {
+      displayStreak: currentStreak,
+      pending: false,
+      status: "Flamme du jour confirmée ✓"
+    });
+
+    scheduleNextStreakDay();
+    return;
   }
 
-  if (!effectiveConfirmedAt) return;
-
-  const elapsed = Date.now() - effectiveConfirmedAt;
-
-  // Entre 24h et 48h : la prochaine flamme peut être confirmée avec 1 minute de présence.
-  if (elapsed >= STREAK_GRACE_START_MS && elapsed < STREAK_GRACE_END_MS) {
-    const windowKey = `next:${effectiveConfirmedAt}`;
+  // Aujourd'hui n'est pas encore validé : il faut refaire les 60 s du jour.
+  if (dayGap === 1) {
+    const windowKey = `day:${today}`;
     const storedWatch = getStoredStreakWatch(u.username, windowKey);
+
     window._streakState = {
       pending: true,
       confirmed: false,
+      dayKey: today,
       windowKey,
       accumulatedMs: storedWatch.accumulatedMs
     };
-    updateStreakBadgeUI(u.streak, {
-      displayStreak: Math.max(1, Number(u.streak) + 1),
+
+    updateStreakBadgeUI(currentStreak, {
+      displayStreak: currentStreak,
       pending: true,
-      status: `Encore ${Math.max(1, Math.ceil((STREAK_CONFIRM_MS - storedWatch.accumulatedMs) / 1000))}s sur le site pour confirmer la prochaine flamme`
+      status: `Encore ${Math.max(1, Math.ceil((STREAK_CONFIRM_MS - storedWatch.accumulatedMs) / 1000))}s aujourd'hui pour gagner la flamme du jour`
     });
+
     startStreakMinuteTimer();
+    scheduleNextStreakDay();
     return;
   }
 
-  // Plus de 48h sans confirmation : la série expire automatiquement.
-  if (elapsed >= STREAK_GRACE_END_MS) {
-    await expireStreakIfNeeded();
-    return;
-  }
+  // Au moins une journée complète a été sautée : la série est cassée.
+  const lostStreak = await breakStreakForMissedDay(u);
+  const windowKey = `day:${today}`;
+  const storedWatch = getStoredStreakWatch(u.username, windowKey);
 
-  // Moins de 24h : la série actuelle est confirmée et sa prochaine fenêtre n'est pas encore ouverte.
-  clearStreakWatch();
   window._streakState = {
-    pending: false,
-    confirmed: true,
-    confirmedAt: effectiveConfirmedAt,
-    accumulatedMs: 0
+    pending: true,
+    confirmed: false,
+    dayKey: today,
+    windowKey,
+    accumulatedMs: storedWatch.accumulatedMs,
+    lostStreak: lostStreak || 0
   };
-  updateStreakBadgeUI(u.streak, {
-    displayStreak: Number(u.streak) || 0,
-    pending: false,
-    status: "Flamme confirmée ✓"
+
+  updateStreakBadgeUI(0, {
+    displayStreak: 1,
+    pending: true,
+    status: `Nouvelle série : encore ${Math.max(1, Math.ceil((STREAK_CONFIRM_MS - storedWatch.accumulatedMs) / 1000))}s aujourd'hui`
   });
 
-  const msUntilWindow = Math.max(1000, STREAK_GRACE_START_MS - elapsed);
-  window._streakExpiryTimer = setTimeout(() => {
-    checkStreak(currentUser).catch(error => console.error("Erreur lors du passage de fenêtre de série :", error));
-  }, msUntilWindow);
+  startStreakMinuteTimer();
+  scheduleNextStreakDay();
 }
 
 function hydrateSession(u) {
