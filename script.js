@@ -3639,7 +3639,7 @@ window.generateAIQuiz = async () => {
   document.getElementById("quiz-ia-loading").style.display = "block";
 
   const systemPrompt = `Tu es un professeur expert dans la matière enseignée.
-Ta mission est de créer un quiz éducatif de très haute qualité pour tester les connaissances des élèves.
+Ta mission est de créer un quiz éducatif de très haute qualité pour tester les connaissances des élèves (principalement en terminale si aucune précision n'a été faites).
 Les questions doivent être variées, sans ambiguïté et adaptées au sujet donné. Les mauvaises réponses (distracteurs) doivent être plausibles.
 
 RÈGLE ABSOLUE : Tu dois répondre UNIQUEMENT par un objet JSON valide, sans AUCUN texte avant ou après, et sans markdown.
