@@ -20,7 +20,7 @@ const db   = getFirestore(app);
 window.emailjs.init("2VkygefcXxbSOlhFX");
 
 const GROQ_API_URL = "https://groqrelay.greninja71144.workers.dev";
-const GROQ_MODEL   = "llama-3.3-70b-versatile"; 
+const GROQ_MODEL   = "openai/gpt-oss-120b"; 
 
 const ADMIN_PUSH_ENDPOINT = "https://groqrelay.greninja71144.workers.dev/onesignal";
 
