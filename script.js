@@ -3699,7 +3699,18 @@ window.reformulateQuizWithAI = async () => {
   }
 };
 
+window.shuffleQuizData = (quizData) => {
+  quizData.questions.sort(() => Math.random() - 0.5);
+  quizData.questions.forEach(q => {
+    const optionsWithIndex = q.options.map((option, index) => ({ option, index }));
+    optionsWithIndex.sort(() => Math.random() - 0.5);
+    q.options = optionsWithIndex.map(item => item.option);
+    q.correctIndex = optionsWithIndex.findIndex(item => item.index === q.correctIndex);
+  });
+};
+
 window.startQuiz = (alreadyOpen = false) => {
+  window.shuffleQuizData(window._currentQuizData);
   window._currentQuestionIndex = 0;
   window._quizUserAnswers = [];
   window._hasViewedAnswers = false;
