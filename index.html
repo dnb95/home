@@ -26,8 +26,6 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "d0900059-082b-458f-9bb1-8798546b8010",
-      // Aucun prompt OneSignal automatique : l'abonnement est déclenché
-      // uniquement depuis le toggle « Notifications Push » des paramètres.
       promptOptions: {
         slidedown: {
           prompts: [
@@ -38,7 +36,6 @@
           ]
         }
       },
-      // Évite la notification de bienvenue OneSignal après abonnement.
       welcomeNotification: {
         disable: true
       }
@@ -93,7 +90,7 @@
     <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
-    <a href="#page-accueil" class="header-left">
+    <a href="#accueil" class="header-left">
       <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png" alt="DnB">
       <span class="brand">DnB <span>Reviz</span></span>
     </a>
@@ -196,8 +193,6 @@
         <button class="btn-pill-van admin-only hidden" onclick="openModal('m-add-mat')">+ Ajouter une matière</button>
       </div>
       
-      <div id="pinned-annonces-zone"></div>
-
       <div class="home-streak-card" id="home-streak-card">
         <div class="home-streak-visual" aria-hidden="true">
           <div class="duo-flame duo-flame-main">
@@ -221,6 +216,8 @@
           →
         </button>
       </div>
+
+      <div id="pinned-annonces-zone"></div>
       
       <div class="quick-nav-grid">
         <div class="quick-nav-card" onclick="switchTab('cours')">
@@ -826,10 +823,11 @@
     <h2>Mentions Légales</h2>
     <div style="font-size: 14px; color: var(--ink); line-height: 1.6; margin-top: 16px;">
       <p><strong>Éditeur et Créateur :</strong> Dan Bouillet</p>
-      <p><strong>Hébergement :</strong> GitHub Pages (GitHub Inc.)</p>
-      <p><strong>Base de données :</strong> Firebase (Google LLC)</p>
       <p><strong>Merci à :</strong> Jayden H. , Algzali T. , Tom B. , Yoan R. </p>
+      <p><strong>Hébergement :</strong> GitHub Pages (GitHub Inc.) | 88 Colin P. Kelly Jr. Street San Francisco, CA 94107, États-Unis</p>
+      <p><strong>Base de données :</strong> Firebase (Google LLC) | 1600 Amphitheatre Parkway, Mountain View, CA 94043, États-Unis</p>
       <p><strong>Données Personnelles :</strong> Seuls les noms et prénoms des élèves sont stockés dans la base de données. Les mots de passe et adresses e-mail ne sont <strong>pas</strong> conservés par soucis de confidentialité, même à titre de tests.</p>
+      <p><strong>Contact concernant les données personnelles :</strong>Pour toute demande relative à tes données personnelles, tu peux contacter l'éditeur à l'adresse : dan.bouillet14@gmail.com.</p>
       <p><strong>Propriété intellectuelle :</strong> © 2026 DnB Reviz. Tous droits réservés.</p>
     </div>
     <div class="mact mt-3">

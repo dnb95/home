@@ -244,7 +244,6 @@ function getStreakRankingUsers() {
   const myClasseId = currentUser.classeId || me.classeId || null;
   const myEtabId = currentUser.etablissementId || me.etablissementId || null;
 
-  // Une classe inconnue ne doit jamais exposer les autres utilisateurs.
   if (!myClasseId) {
     return allUsers.filter(u => u.id === me.id);
   }
@@ -254,6 +253,15 @@ function getStreakRankingUsers() {
     if (myEtabId && u.etablissementId && u.etablissementId !== myEtabId) return false;
     return true;
   });
+}
+
+function getEffectiveStreak(user) {
+  if (!user) return 0;
+  const streak = Math.max(0, Number(user.streak) || 0);
+  if (streak <= 0) return 0;
+  const lastStreakDay = getUserLastStreakDay(user);
+  if (!lastStreakDay) return streak;
+  return daysBetweenStr(lastStreakDay, getTodayStr()) >= 2 ? 0 : streak;
 }
 
 function getStreakRankingRank(users, username) {
@@ -270,7 +278,7 @@ function renderStreakRankingRow(user, rank) {
     .join("")
     .slice(0, 2)
     .toUpperCase() || "?";
-  const streak = Math.max(0, Number(user.streak) || 0);
+  const streak = getEffectiveStreak(user);
   const isMe = user.id === currentUser?.id || user.username === currentUser?.username;
   const avatar = user.avatar
     ? `<img class="streak-ranking-avatar-image" src="${user.avatar}" alt="" loading="lazy">`
@@ -300,7 +308,7 @@ window.renderStreakRanking = function renderStreakRanking() {
   const users = getStreakRankingUsers()
     .filter(Boolean)
     .sort((a, b) => {
-      const streakDiff = (Number(b.streak) || 0) - (Number(a.streak) || 0);
+      const streakDiff = getEffectiveStreak(b) - getEffectiveStreak(a);
       if (streakDiff !== 0) return streakDiff;
       return String(a.displayName || a.username || "").localeCompare(String(b.displayName || b.username || ""), "fr", { sensitivity: "base" });
     });
@@ -333,7 +341,7 @@ window.updateStreakRankingUI = function updateStreakRankingUI() {
   const users = getStreakRankingUsers()
     .filter(Boolean)
     .sort((a, b) => {
-      const diff = (Number(b.streak) || 0) - (Number(a.streak) || 0);
+      const diff = getEffectiveStreak(b) - getEffectiveStreak(a);
       if (diff !== 0) return diff;
       return String(a.username || "").localeCompare(String(b.username || ""));
     });
@@ -349,7 +357,7 @@ window.openStreakRanking = function openStreakRanking() {
   if (!currentUser) return;
   closeDrawer();
   closeDropdown();
-  window.location.hash = "#page-classement";
+  window.location.hash = "#classement";
 };
 
 async function loadMaps() {
@@ -389,6 +397,7 @@ return {
 window.canContactUser = (targetUser) => {
   if (!currentUser || !targetUser) return false;
   if (targetUser.username === currentUser.username) return false;
+  if (targetUser.role === 'HS') return false;
 
   const myIsAdminOrHS = currentUser.role === 'admin' || currentUser.role === 'HS' ||
                        (currentUser.subRoles && currentUser.subRoles.includes('admin'));
@@ -640,22 +649,31 @@ window.handleCookies = (accept) => {
 
 function handleHashChange() {
   let hash = window.location.hash.trim();
-  if (!hash || hash === "#" || hash === "#page-matieres") {
-    showInternalView('accueil'); 
+  if (!hash || hash === "#") {
+    showInternalView('accueil');
     return;
   }
-  if (hash.startsWith("#page-")) {
-    let target = hash.replace("#page-", "");
-    if (target === 'matieres') target = 'accueil';
-    showInternalView(target); 
+
+  if (hash.startsWith("#page-")) hash = "#" + hash.slice(6);
+
+  const target = decodeURIComponent(hash.substring(1)).toLowerCase().trim();
+  const internalTargets = new Set([
+    'accueil', 'classement', 'cours', 'fichesrev', 'quiz', 'creerquiz',
+    'messages', 'depot', 'pub-profil', 'profil', 'setting', 'admin'
+  ]);
+
+  if (target === 'matieres') {
+    showInternalView('accueil');
     return;
   }
-  const uname = decodeURIComponent(hash.substring(1)).toLowerCase().trim();
-  if (uname) {
-      renderPublicProfile(uname);
-  } else {
-      showInternalView('accueil');
+
+  if (internalTargets.has(target)) {
+    showInternalView(target);
+    return;
   }
+
+  if (target) renderPublicProfile(target);
+  else showInternalView('accueil');
 }
 
 function showInternalView(target) {
@@ -664,7 +682,7 @@ function showInternalView(target) {
     const isAdmin = currentUser && (currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')));
     if (!isAdmin) { 
       showToast("Accès non autorisé."); 
-      window.location.hash = "#page-accueil"; 
+      window.location.hash = "#accueil"; 
       return; 
     }
     syncAdminDashboardStats();
@@ -756,9 +774,6 @@ document.getElementById("login-pwd").addEventListener("keydown", e => { if (e.ke
 document.getElementById("login-id").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
 
 window.handleLogout = async () => {
-  // La déconnexion de l'application ne doit JAMAIS être bloquée par OneSignal.
-  // On nettoie immédiatement la session locale, puis on tente un nettoyage
-  // OneSignal en arrière-plan avec un délai court et sans bloquer l'interface.
   const previousUser = currentUser;
   currentUser = null;
   window.currentUser = null;
@@ -772,8 +787,6 @@ window.handleLogout = async () => {
   try {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     const cleanup = withOneSignal(async (OneSignal) => {
-      // On retire d'abord l'abonnement Push de cet appareil si possible,
-      // puis on détache l'identité OneSignal du compte déconnecté.
       try {
         if (OneSignal.User?.PushSubscription?.optOut) {
           await OneSignal.User.PushSubscription.optOut();
@@ -791,19 +804,16 @@ window.handleLogout = async () => {
       }
     }, 1200);
 
-    // Ne jamais retenir l'utilisateur sur l'écran de déconnexion.
     cleanup.catch(error => console.warn("Nettoyage OneSignal ignoré :", error));
   } catch (error) {
     console.warn("Nettoyage OneSignal indisponible :", error);
   }
 
-  // Nettoyage visuel immédiat avant le rechargement.
   try {
     closeDropdown?.();
     closeDrawer?.();
   } catch (_) {}
 
-  // Évite un éventuel avertissement de linter pour l'utilisateur précédent.
   void previousUser;
 
   window.location.hash = "";
@@ -830,10 +840,6 @@ function displayNameFromId(id) {
   return id.split(/[\.\-_]/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
 }
 
-// --- Système de Série de Révision (Streak) ---
-// Règle : une flamme est validée au maximum une fois par jour civil local,
-// après au moins 60 secondes de présence visible sur le site pendant cette journée.
-// Si une journée complète est sautée, la série est cassée et repart à 1 après 60 s.
 const STREAK_CONFIRM_MS = 60 * 1000;
 
 window._streakTimer = null;
@@ -971,9 +977,7 @@ function stopStreakDayTimer() {
 }
 
 function getPendingDisplayStreak() {
-  // Tant que les 60 secondes du jour ne sont pas terminées,
-  // on affiche uniquement le streak déjà validé. La prochaine flamme
-  // n'est ajoutée qu'après validation des 60 secondes.
+
   return Math.max(0, Number(currentUser?.streak) || 0);
 }
 
@@ -1019,7 +1023,6 @@ function startStreakMinuteTimer() {
 
     const today = getTodayStr();
 
-    // Ne jamais valider une minute de l'ancien jour après minuit.
     if (state.dayKey !== today) {
       saveStreakWatch(state);
       stopStreakTimer();
@@ -1033,7 +1036,6 @@ function startStreakMinuteTimer() {
     const delta = Math.max(0, now - (window._streakLastTickAt || now));
     window._streakLastTickAt = now;
 
-    // Seul le temps passé sur une page visible compte.
     if (document.visibilityState === "visible") {
       state.accumulatedMs += delta;
     }
@@ -1069,8 +1071,7 @@ async function confirmPendingStreak() {
 
   const today = getTodayStr();
 
-  // Sécurité : cette fonction ne doit jamais valider deux jours à partir
-  // d'une ancienne fenêtre de suivi.
+
   if (state.dayKey !== today) {
     await checkStreak(currentUser);
     return;
@@ -1078,8 +1079,6 @@ async function confirmPendingStreak() {
 
   state.confirming = true;
 
-  // Si la journée a déjà été validée ailleurs (autre onglet/appareil),
-  // on refuse de l'incrémenter une deuxième fois.
   const latestLastActiveDate = getUserLastStreakDay(currentUser);
   if (latestLastActiveDate === today) {
     state.pending = false;
@@ -1194,8 +1193,6 @@ async function checkStreak(u) {
   const today = getTodayStr();
   let lastStreakDay = getUserLastStreakDay(u);
 
-  // Compatibilité avec les anciennes données :
-  // si seule lastStreakConfirmedAt existe, on en déduit le jour local.
   if (!u.lastActiveDate && lastStreakDay) {
     u.lastActiveDate = lastStreakDay;
     currentUser.lastActiveDate = lastStreakDay;
@@ -1203,7 +1200,6 @@ async function checkStreak(u) {
 
   const currentStreak = Math.max(0, Number(u.streak) || 0);
 
-  // Aucun historique : première flamme à gagner aujourd'hui après 60 s.
   if (!lastStreakDay || currentStreak <= 0) {
     const windowKey = `day:${today}`;
     const storedWatch = getStoredStreakWatch(u.username, windowKey);
@@ -1229,7 +1225,6 @@ async function checkStreak(u) {
 
   const dayGap = daysBetweenStr(lastStreakDay, today);
 
-  // Aujourd'hui est déjà validé : la flamme du jour ne peut être ajoutée qu'une fois.
   if (dayGap === 0) {
     clearStreakWatch();
 
@@ -1251,7 +1246,6 @@ async function checkStreak(u) {
     return;
   }
 
-  // Aujourd'hui n'est pas encore validé : il faut refaire les 60 s du jour.
   if (dayGap === 1) {
     const windowKey = `day:${today}`;
     const storedWatch = getStoredStreakWatch(u.username, windowKey);
@@ -1275,7 +1269,6 @@ async function checkStreak(u) {
     return;
   }
 
-  // Au moins une journée complète a été sautée : la série est cassée.
   const lostStreak = await breakStreakForMissedDay(u);
   const windowKey = `day:${today}`;
   const storedWatch = getStoredStreakWatch(u.username, windowKey);
@@ -1345,7 +1338,6 @@ function hydrateSession(u) {
     document.getElementById("tog-email-notif").checked = !!u.emailNotifs;
   }
   if (document.getElementById("tog-push-notif")) {
-    // L'état affiché vient de OneSignal : aucune activation automatique ici.
     setPushToggleState(false);
     syncOneSignalUser(u).catch(error => console.error("Erreur de synchronisation Push :", error));
   }
@@ -1579,7 +1571,6 @@ window.togglePushNotifs = async (enabled) => {
     return;
   }
 
-  // L'utilisateur doit pouvoir annuler sans que le toggle reste visuellement activé.
   if (!enabled) {
     try {
       await withOneSignal(async (OneSignal) => {
@@ -1615,10 +1606,7 @@ window.togglePushNotifs = async (enabled) => {
       await OneSignal.login(String(currentUser.id));
       registerOneSignalPushListener();
 
-      // Si le navigateur a déjà accordé l'autorisation, on évite tout prompt.
       if (!OneSignal.Notifications.permission) {
-        // Demande native du navigateur uniquement, déclenchée par le clic
-        // utilisateur sur le toggle des paramètres. Aucun Slidedown OneSignal.
         await OneSignal.Notifications.requestPermission();
       }
 
@@ -1626,7 +1614,6 @@ window.togglePushNotifs = async (enabled) => {
         throw new Error("PUSH_NOT_GRANTED");
       }
 
-      // Transforme l'autorisation navigateur en abonnement OneSignal.
       if (OneSignal.User?.PushSubscription?.optIn) {
         await OneSignal.User.PushSubscription.optIn();
       }
@@ -2721,7 +2708,7 @@ window.renderPublicProfile = (uname) => {
     if (!targetUser) { 
       loading.style.display = "none"; 
       showToast("Membre introuvable"); 
-      window.location.hash = "#page-accueil"; 
+      window.location.hash = "#accueil"; 
       return; 
     }
 
@@ -3025,17 +3012,17 @@ window._dmChatsUnsub = onSnapshot(q, snap => {
   let html = "";
   let chats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   
-  if (!filters.isAdminOrHS) {
-chats = chats.filter(chat => {
-  const otherUname = chat.participants.find(u => u !== currentUser.username);
-  const otherUser = window.usersMap.get(otherUname);
-  if (!otherUser) return false;
-  const otherIsAdminOrHS = otherUser.role === 'admin' || otherUser.role === 'HS' || (otherUser.subRoles && otherUser.subRoles.includes('admin'));
-  if (otherIsAdminOrHS) return true;
-  return otherUser.etablissementId === currentUser.etablissementId &&
-         otherUser.classeId === currentUser.classeId;
-});
-}
+  chats = chats.filter(chat => {
+    const otherUname = chat.participants.find(u => u !== currentUser.username);
+    const otherUser = window.usersMap.get(otherUname);
+    if (!otherUser) return false;
+    if (otherUser.role === 'HS') return false;
+    if (filters.isAdminOrHS) return true;
+    const otherIsAdmin = otherUser.role === 'admin' || (otherUser.subRoles && otherUser.subRoles.includes('admin'));
+    if (otherIsAdmin) return true;
+    return otherUser.etablissementId === currentUser.etablissementId &&
+           otherUser.classeId === currentUser.classeId;
+  });
 
   chats.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
   
@@ -3117,8 +3104,8 @@ if (!currentUser) return;
 const targetUser = window.usersMap.get(targetUname);
 if (!targetUser) { showToast("Utilisateur introuvable."); return; }
 
-if (!window.canContactUser(targetUser)) {
-  showToast("Vous ne pouvez contacter que vos professeurs, les élèves de votre classe et les administrateurs.");
+if (!window.canContactUser(targetUser) || targetUser.role === 'HS') {
+  showToast("Vous ne pouvez pas ouvrir de conversation avec un compte HS.");
   return;
 }
   closeModal('m-new-chat');
@@ -4408,7 +4395,7 @@ window.openUserModal = (isEdit, docId = '', username = '', role = 'élève', sub
   }, 100);
 };
 window.switchTab = (target) => { 
-    window.location.hash = `#page-${target}`; 
+    window.location.hash = `#${target}`; 
 };
 
 window.toggleDrawer = () => {

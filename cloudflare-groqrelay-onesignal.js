@@ -1,4 +1,3 @@
-// Votre domaine autorisé uniquement
 const ALLOWED_ORIGIN = "https://dnb95.github.io";
 
 const ONE_SIGNAL_APP_ID = "d0900059-082b-458f-9bb1-8798546b8010";
@@ -28,7 +27,6 @@ export default {
     const origin = request.headers.get("Origin");
     const url = new URL(request.url);
 
-    // CORS preflight
     if (request.method === "OPTIONS") {
       if (origin && origin !== ALLOWED_ORIGIN) {
         return jsonResponse({ success: false, error: "Origine non autorisée." }, 403);
@@ -40,9 +38,7 @@ export default {
       });
     }
 
-    // Route OneSignal
     if (url.pathname === "/onesignal") {
-      // Le navigateur doit venir uniquement de ton site.
       if (origin !== ALLOWED_ORIGIN) {
         return jsonResponse(
           { success: false, error: "Origine non autorisée." },
@@ -91,8 +87,7 @@ export default {
           );
         }
 
-        // OneSignal gère directement la liste des abonnés actifs.
-        // Aucun appel Firebase n'est nécessaire pour envoyer la notification.
+
         const oneSignalPayload = {
           app_id: ONE_SIGNAL_APP_ID,
           included_segments: ["Subscribed Users"],
@@ -156,7 +151,6 @@ export default {
       }
     }
 
-    // Route Groq existante — inchangée
     if (origin !== ALLOWED_ORIGIN) {
       return new Response(
         JSON.stringify({ error: "Accès refusé : Origine non autorisée." }),
