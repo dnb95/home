@@ -1822,19 +1822,27 @@ window.applyFilters = () => {
 window.navCarousel = (id, dir) => {
   const el = document.getElementById(`carousel-${id}`);
   if (!el) return;
-  const imagesStr = el.getAttribute("data-images") || "[]";
-  let images = [];
-  try { images = JSON.parse(imagesStr); } catch(e) { return; }
-  if (images.length <= 1) return;
-  
+  const mediaStr = el.getAttribute("data-media") || "[]";
+  let media = [];
+  try { media = JSON.parse(mediaStr); } catch(e) { return; }
+  if (media.length <= 1) return;
+
   let idx = parseInt(el.getAttribute("data-index") || "0", 10);
-  idx = (idx + dir + images.length) % images.length;
+  idx = (idx + dir + media.length) % media.length;
   el.setAttribute("data-index", idx);
-  
-  const imgEl = document.getElementById(`carousel-img-${id}`);
+
+  const stage = document.getElementById(`carousel-stage-${id}`);
   const badgeEl = document.getElementById(`carousel-badge-${id}`);
-  if (imgEl) imgEl.src = images[idx];
-  if (badgeEl) badgeEl.innerText = `${idx + 1} / ${images.length}`;
+  if (!stage) return;
+  const item = media[idx];
+  if (item.kind === "image") {
+    stage.innerHTML = `<img class="carousel-media-content" src="${esc(item.url)}" alt="Aperçu" onclick="event.stopPropagation(); openGalleryModal([${media.filter(m => m.kind === 'image').map(m => `'${esc(m.url)}'`).join(',')}], ${media.filter((m, i) => m.kind === 'image' && i < idx).length})">`;
+  } else if (item.kind === "video") {
+    stage.innerHTML = `<video class="carousel-media-content carousel-video" src="${esc(item.url)}" controls playsinline preload="metadata"></video>`;
+  } else if (item.kind === "youtube") {
+    stage.innerHTML = `<iframe class="carousel-media-content carousel-youtube" src="${esc(item.embedUrl)}" title="Vidéo YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+  }
+  if (badgeEl) badgeEl.innerText = `${idx + 1} / ${media.length}`;
 };
 
 window.openGalleryModal = (images, index = 0) => {
@@ -1936,36 +1944,73 @@ window.getPostHTML = (p, context) => {
   }
 
   const images = [];
+  const videos = [];
   const docs = [];
+  let youtube = null;
 
-  filesList.forEach(f => {
-    const u = (f.url || "").toLowerCase();
+  const getYouTubeEmbed = (url) => {
+    try {
+      const u = new URL(url);
+      let id = "";
+      if (u.hostname.includes("youtu.be")) id = u.pathname.slice(1).split("/")[0];
+      else if (u.hostname.includes("youtube.com")) {
+        if (u.pathname === "/watch") id = u.searchParams.get("v") || "";
+        else if (u.pathname.startsWith("/shorts/")) id = u.pathname.split("/")[2] || "";
+        else if (u.pathname.startsWith("/embed/")) id = u.pathname.split("/")[2] || "";
+        else if (u.pathname.startsWith("/live/")) id = u.pathname.split("/")[2] || "";
+      }
+      return id && /^[A-Za-z0-9_-]{6,}$/.test(id) ? `https://www.youtube.com/embed/${id}` : null;
+    } catch(e) { return null; }
+  };
+
+  filesList.forEach((f, index) => {
+    const u = (f.url || "");
+    const lowerU = u.toLowerCase();
     const t = (f.type || "").toLowerCase();
-    const isPDF = t === "application/pdf" || u.endsWith(".pdf");
-    const isImg = !isPDF && (t.startsWith("image/") || u.match(/\.(jpeg|jpg|gif|png|webp)$/i) || u.includes("res.cloudinary.com/"));
-    if (isImg) {
-      images.push(f);
-    } else if (f.url) {
-      docs.push(f);
-    }
+    const yt = getYouTubeEmbed(u);
+    const isPDF = t === "application/pdf" || lowerU.endsWith(".pdf");
+    const isVideo = !isPDF && (t === "video/mp4" || lowerU.endsWith(".mp4"));
+    const isImg = !isPDF && !isVideo && (t.startsWith("image/") || lowerU.match(/\.(jpeg|jpg|gif|png|webp)$/i) || lowerU.includes("res.cloudinary.com"));
+    if (yt) youtube = { url: u, embedUrl: yt, name: f.name || "YouTube", type: "video/youtube" };
+    else if (isImg) images.push({ ...f, kind: "image", _order: index });
+    else if (isVideo) videos.push({ ...f, kind: "video", _order: index });
+    else if (f.url) docs.push(f);
+  });
+
+  const mediaItems = [];
+  if (youtube) mediaItems.push({ ...youtube, kind: "youtube" });
+  filesList.forEach((f, index) => {
+    const found = [...videos, ...images].find(m => m._order === index);
+    if (found) mediaItems.push(found);
   });
 
   let mediaBox = "";
-if (images.length === 1) {
-  const imgUrl = esc(images[0].url);
-  mediaBox = `<div class="post-media-preview" onclick="openGalleryModal(['${imgUrl}'], 0)"><img src="${imgUrl}" alt="Aperçu"></div>`;
-} else if (images.length > 1) {
-  const imagesList = images.map(i => i.url);
-  const imagesJson = esc(JSON.stringify(imagesList));
-  mediaBox = `
-    <div class="post-carousel" id="carousel-${context}-${pId}" data-index="0" data-images="${imagesJson}">
-      <img id="carousel-img-${context}-${pId}" src="${imagesList[0]}" alt="Page 1" onclick="openGalleryModal(${esc(JSON.stringify(imagesList))}, parseInt(document.getElementById('carousel-${context}-${pId}').getAttribute('data-index')||0, 10))">
-      <div class="carousel-badge" id="carousel-badge-${context}-${pId}" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.65); color:#fff; font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; pointer-events:none; backdrop-filter:blur(4px);">1 / ${imagesList.length}</div>
-      <button type="button" class="carousel-btn prev" onclick="event.stopPropagation(); navCarousel('${context}-${pId}', -1)" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.85); color:#1d1d1f; font-size:20px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.25); border:none; cursor:pointer; transition:0.15s;">‹</button>
-      <button type="button" class="carousel-btn next" onclick="event.stopPropagation(); navCarousel('${context}-${pId}', 1)" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.85); color:#1d1d1f; font-size:20px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.25); border:none; cursor:pointer; transition:0.15s;">›</button>
-    </div>`;
-}
-
+  if (mediaItems.length === 1) {
+    const item = mediaItems[0];
+    let singleContent = "";
+    if (item.kind === "image") {
+      singleContent = `<img class="carousel-media-content" src="${esc(item.url)}" alt="Aperçu" onclick="openGalleryModal(['${esc(item.url)}'], 0)">`;
+    } else if (item.kind === "video") {
+      singleContent = `<video class="carousel-media-content carousel-video" src="${esc(item.url)}" controls playsinline preload="metadata"></video>`;
+    } else {
+      singleContent = `<iframe class="carousel-media-content carousel-youtube" src="${esc(item.embedUrl)}" title="Vidéo YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    }
+    mediaBox = `<div class="post-carousel post-carousel-single">${singleContent}</div>`;
+  } else if (mediaItems.length > 1) {
+    const mediaJson = esc(JSON.stringify(mediaItems.map(m => ({ kind: m.kind, url: m.url, embedUrl: m.embedUrl || "" }))));
+    const first = mediaItems[0];
+    let firstContent = "";
+    if (first.kind === "image") firstContent = `<img class="carousel-media-content" src="${esc(first.url)}" alt="Aperçu" onclick="openGalleryModal(['${esc(first.url)}'], 0)">`;
+    else if (first.kind === "video") firstContent = `<video class="carousel-media-content carousel-video" src="${esc(first.url)}" controls playsinline preload="metadata"></video>`;
+    else firstContent = `<iframe class="carousel-media-content carousel-youtube" src="${esc(first.embedUrl)}" title="Vidéo YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    mediaBox = `
+      <div class="post-carousel" id="carousel-${context}-${pId}" data-index="0" data-media="${mediaJson}">
+        <div id="carousel-stage-${context}-${pId}" class="post-carousel-stage">${firstContent}</div>
+        <div class="carousel-badge" id="carousel-badge-${context}-${pId}">1 / ${mediaItems.length}</div>
+        <button type="button" class="carousel-btn prev" onclick="event.stopPropagation(); navCarousel('${context}-${pId}', -1)">‹</button>
+        <button type="button" class="carousel-btn next" onclick="event.stopPropagation(); navCarousel('${context}-${pId}', 1)">›</button>
+      </div>`;
+  }
   let fileChips = "";
   if (docs.length > 0) {
     fileChips = docs.map(d => {
@@ -2062,8 +2107,8 @@ if (images.length === 1) {
   <div class="post-title">${p.title.length > 50 ? p.title.substring(0, 47) + '...' : p.title}</div>
   ${p.description ? `<p class="post-desc">${p.description}</p>` : ""}
 </div>
-        ${mediaBox}
         ${fileChips}
+        ${mediaBox}
       </div>
       <div>
         <div class="post-date">Publié le ${dateStr}</div>
@@ -2337,7 +2382,6 @@ window.handleFileSelect = (e) => {
   if (listDiv) {
     listDiv.innerHTML = files.map(f => `<div>• ${f.name} (${(f.size/1024/1024).toFixed(2)} Mo)</div>`).join("");
   }
-  document.getElementById("post-url").value = "";
 };
 
 window.clearFile = () => {
@@ -2354,6 +2398,21 @@ window.handlePostTypeChange = () => {
   } else {
     matiereGroup.style.display = "flex";
   }
+};
+
+const getYouTubeEmbedUrl = (url) => {
+  try {
+    const u = new URL(url);
+    let id = "";
+    if (u.hostname.includes("youtu.be")) id = u.pathname.slice(1).split("/")[0];
+    else if (u.hostname.includes("youtube.com")) {
+      if (u.pathname === "/watch") id = u.searchParams.get("v") || "";
+      else if (u.pathname.startsWith("/shorts/")) id = u.pathname.split("/")[2] || "";
+      else if (u.pathname.startsWith("/embed/")) id = u.pathname.split("/")[2] || "";
+      else if (u.pathname.startsWith("/live/")) id = u.pathname.split("/")[2] || "";
+    }
+    return id && /^[A-Za-z0-9_-]{6,}$/.test(id) ? `https://www.youtube.com/embed/${id}` : null;
+  } catch(e) { return null; }
 };
 
 window.handleCreatePost = async () => {
@@ -2378,18 +2437,25 @@ window.handleCreatePost = async () => {
   }
 
   let filesArray = [];
-  if (window._uploadedFiles && window._uploadedFiles.length > 0) {
+  if ((window._uploadedFiles && window._uploadedFiles.length > 0) || urlInput) {
     const btn = document.querySelector('[onclick="handleCreatePost()"]'); 
     if (btn) { btn.disabled = true; btn.innerText = "Upload des fichiers en cours…"; }
     
     try {
-      for (const file of window._uploadedFiles) {
+      const ytUrl = urlInput ? (getYouTubeEmbedUrl(urlInput) ? urlInput : null) : null;
+      if (ytUrl) {
+        filesArray.push({ url: ytUrl, name: "YouTube", type: "video/youtube" });
+      }
+      for (const file of (window._uploadedFiles || [])) {
         const fileUrl = await uploadToCloudinary(file);
         filesArray.push({
           url: fileUrl,
           name: file.name,
           type: file.type
         });
+      }
+      if (urlInput && !ytUrl) {
+        filesArray.push({ url: urlInput, name: "Lien externe", type: "link" });
       }
     } catch (err) {
       showToast("Erreur lors de l'upload Cloudinary."); 

@@ -407,12 +407,12 @@
           </div>
         </div>
         <div class="input-group">
-          <label>Fichiers PDF ou images (jusqu'à 5)</label>
+          <label>Fichiers PDF, images ou vidéos (jusqu'à 5)</label>
           <div class="drop-zone" id="drop-zone">
-            <input type="file" id="post-file" accept=".pdf,image/*" multiple onchange="handleFileSelect(event)">
+            <input type="file" id="post-file" accept=".pdf,image/*,video/mp4,.mp4" multiple onchange="handleFileSelect(event)">
             <div style="font-size:30px;margin-bottom:8px">📎</div>
             <div style="font-size:14px;font-weight:500;color:var(--ink-m)">Glisse ici ou <span style="color:var(--primary);font-weight:600">parcourir</span></div>
-            <p class="caption mt-1">PDF, PNG, JPG — max 5 fichiers (25 Mo au total)</p>
+            <p class="caption mt-1">PDF, PNG, JPG, MP4 — max 5 fichiers (25 Mo au total)</p>
           </div>
           <div class="file-prev" id="file-prev" style="flex-direction:column; align-items:stretch; gap:6px;">
             <div style="display:flex; align-items:center; justify-content:space-between;">
@@ -425,7 +425,7 @@
         <div class="or-div">ou</div>
         <div class="input-group">
           <label>Lien externe (Drive, PDF en ligne…)</label>
-          <input type="url" id="post-url" placeholder="https://drive.google.com/…">
+          <input type="url" id="post-url" placeholder="YouTube, Drive, PDF en ligne…">
         </div>
         <button class="btn-pill mt-2" onclick="handleCreatePost()" style="width:100%;justify-content:center;padding:13px">
           Partager avec la classe
@@ -700,8 +700,8 @@
           Modération
           <span id="admin-mod-dot" style="display:none; width:10px; height:10px; background:var(--danger); border-radius:50%; position:absolute; top:8px; right:6px;"></span>
         </button>
-        <button class="tk-tab" data-adm-tab="maintenance" onclick="switchAdminTab('maintenance')" style="padding:12px 20px; font-size:16px;">🛠️ Maintenance</button>
-        <button class="tk-tab" data-adm-tab="notifications" onclick="switchAdminTab('notifications')" style="padding:12px 20px; font-size:16px;">🔔 Notifications</button>
+        <button class="tk-tab" data-adm-tab="maintenance" onclick="switchAdminTab('maintenance')" style="padding:12px 20px; font-size:16px;">Maintenance</button>
+        <button class="tk-tab" data-adm-tab="notifications" onclick="switchAdminTab('notifications')" style="padding:12px 20px; font-size:16px;">Notifications</button>
       </div>
 
       <div id="adm-view-membres" class="adm-tab-content">
