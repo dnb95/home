@@ -320,6 +320,15 @@
           <label>Description (facultatif)</label>
           <textarea id="quiz-create-desc" placeholder="Ce qu'il faut savoir avant de commencer…"></textarea>
         </div>
+        <div class="input-group">
+          <label>Tag</label>
+          <div class="tag-option-group">
+            <label class="tag-option">
+              <input type="checkbox" id="quiz-create-tag-bac" value="bac">
+              <span>🎓 Bac</span>
+            </label>
+          </div>
+        </div>
         
         <div id="quiz-questions-container" style="margin-top:24px; display:flex; flex-direction:column; gap:20px;">
         </div>
@@ -404,6 +413,23 @@
           <textarea id="post-desc" placeholder="Un mot sur ce document…" rows="4" maxlength="300"></textarea>
           <div class="caption" style="text-align:right; margin-top:4px;">
             <span id="desc-counter">0</span>/300 caractères
+          </div>
+        </div>
+        <div class="input-group" id="group-post-tags">
+          <label>Tags</label>
+          <div class="tag-option-group">
+            <label class="tag-option">
+              <input type="checkbox" name="post-tag" value="bac">
+              <span>🎓 Bac</span>
+            </label>
+            <label class="tag-option">
+              <input type="checkbox" name="post-tag" value="exercices">
+              <span>📝 Exercices</span>
+            </label>
+            <label class="tag-option">
+              <input type="checkbox" name="post-tag" value="information">
+              <span>ℹ️ Information</span>
+            </label>
           </div>
         </div>
         <div class="input-group">
@@ -715,6 +741,12 @@
               <option value="admin">Administrateur</option>
               <option value="HS">Hors-Série</option>
             </select>
+            <select id="adm-filter-etab" onchange="renderAdminUsersTable()" style="padding:10px 16px; border-radius:9999px; border:1px solid var(--input-b); background:var(--input-bg); color:var(--ink); outline:none; font-size:14px; cursor:pointer;">
+              <option value="all">Tous les établissements</option>
+            </select>
+            <select id="adm-filter-classe" onchange="renderAdminUsersTable()" style="padding:10px 16px; border-radius:9999px; border:1px solid var(--input-b); background:var(--input-bg); color:var(--ink); outline:none; font-size:14px; cursor:pointer;">
+              <option value="all">Toutes les classes</option>
+            </select>
           </div>
           <button class="btn-pill" onclick="openUserModal(false)">+ Créer un compte</button>
         </div>
@@ -901,6 +933,10 @@
         <option value="fiches">Fiches</option>
         <option value="revisions">Révisions</option>
       </select>
+    </div>
+    <div class="input-group" id="filter-tags-group">
+      <label>Tags</label>
+      <div class="tag-option-group" id="filter-tags-options"></div>
     </div>
     <div class="input-group">
       <label>Trier par</label>
@@ -1110,6 +1146,15 @@
     <div class="input-group">
       <label>Précisions (facultatif)</label>
       <textarea id="quiz-ia-desc" placeholder="Niveau de difficulté, points précis à aborder..."></textarea>
+    </div>
+    <div class="input-group">
+      <label>Tag</label>
+      <div class="tag-option-group">
+        <label class="tag-option">
+          <input type="checkbox" id="quiz-ia-tag-bac" value="bac">
+          <span>🎓 Bac</span>
+        </label>
+      </div>
     </div>
     <div id="quiz-ia-loading" style="display:none; text-align:center; padding:16px;">
       <div class="spinner" style="margin:0 auto 10px;"></div>

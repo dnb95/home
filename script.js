@@ -191,9 +191,9 @@ return items.filter(item => {
   return true;
 });
 };
-window._coursFilter = { subject: 'all', order: 'recent' };
+window._coursFilter = { subject: 'all', tags: [], order: 'recent' };
 window._frFilter    = { subject: 'all', type: 'all', order: 'recent' };
-window._quizFilter  = { subject: 'all', type: 'all', order: 'recent' };
+window._quizFilter  = { subject: 'all', type: 'all', tags: [], order: 'recent' };
 
 window._pubSubjFilter = "all";
 window._pubTabActive  = "cours";
@@ -1754,6 +1754,14 @@ window.openSubjectInMatieres = (name) => {
   loadCoursFeed();
 };
 
+const TAG_DEFS = {
+  bac: { label: "Bac", icon: "🎓" },
+  exercices: { label: "Exercices", icon: "📝" },
+  information: { label: "Information", icon: "ℹ️" }
+};
+const getSelectedTags = (selector) => Array.from(document.querySelectorAll(selector + ':checked')).map(el => el.value);
+const renderContentTags = (tags = []) => (Array.isArray(tags) ? tags : []).filter(t => TAG_DEFS[t]).map(t => `<span class="content-tag">${TAG_DEFS[t].icon} ${TAG_DEFS[t].label}</span>`).join('');
+
 window.openFilterModal = (context) => {
   window._filterContext = context;
   const typeGroup = document.getElementById("filter-type-group");
@@ -1761,6 +1769,8 @@ window.openFilterModal = (context) => {
   const subjSelect = document.getElementById("filter-subject");
   const orderSelect = document.getElementById("filter-order");
   const typeSelect = document.getElementById("filter-type");
+  const tagsGroup = document.getElementById("filter-tags-group");
+  const tagsOptions = document.getElementById("filter-tags-options");
 
   let htmlSubjs = `<option value="all">Toutes les matières</option>`;
   Array.from(window.subjectsMap.entries()).sort((a,b) => a[0].localeCompare(b[0])).forEach(([name, icon]) => {
@@ -1770,21 +1780,26 @@ window.openFilterModal = (context) => {
 
   if (context === 'cours') {
     typeGroup.style.display = 'none';
+    tagsGroup.style.display = 'flex';
+    tagsOptions.innerHTML = Object.entries(TAG_DEFS).map(([value, tag]) => `<label class="tag-option"><input type="checkbox" value="${value}" ${window._coursFilter.tags.includes(value) ? 'checked' : ''}><span>${tag.icon} ${tag.label}</span></label>`).join('');
     subjSelect.value = window._coursFilter.subject;
     orderSelect.value = window._coursFilter.order;
   } else if (context === 'quiz') {
     typeGroup.style.display = 'flex';
+    tagsGroup.style.display = 'flex';
     typeLabel.innerText = "Type de quiz";
     typeSelect.innerHTML = `
       <option value="all">Tous</option>
       <option value="manuel">Classiques</option>
       <option value="ia">Générés par l'IA</option>
     `;
+    tagsOptions.innerHTML = `<label class="tag-option"><input type="checkbox" value="bac" ${window._quizFilter.tags.includes('bac') ? 'checked' : ''}><span>🎓 Bac</span></label>`;
     typeSelect.value = window._quizFilter.type;
     subjSelect.value = window._quizFilter.subject;
     orderSelect.value = window._quizFilter.order;
   } else {
     typeGroup.style.display = 'flex';
+    tagsGroup.style.display = 'none';
     typeLabel.innerText = "Type de document";
     typeSelect.innerHTML = `
       <option value="all">Tout</option>
@@ -1801,12 +1816,14 @@ window.openFilterModal = (context) => {
 window.applyFilters = () => {
   if (window._filterContext === 'cours') {
     window._coursFilter.subject = document.getElementById("filter-subject").value;
+    window._coursFilter.tags = getSelectedTags('#filter-tags-options input');
     window._coursFilter.order = document.getElementById("filter-order").value;
     closeModal("m-filters");
     loadCoursFeed();
   } else if (window._filterContext === 'quiz') {
     window._quizFilter.subject = document.getElementById("filter-subject").value;
     window._quizFilter.type = document.getElementById("filter-type").value;
+    window._quizFilter.tags = getSelectedTags('#filter-tags-options input');
     window._quizFilter.order = document.getElementById("filter-order").value;
     closeModal("m-filters");
     loadQuizFeed();
@@ -2095,6 +2112,7 @@ window.getPostHTML = (p, context) => {
               <span class="rbadge ${roleClass}">${liveRole}</span>
               <span class="type-tag ${p.type}" style="${tagBgClass}">${typeLabel}</span>
               <span class="subj-tag">${subjIcon} ${p.matiere}</span>
+              ${renderContentTags(p.tags)}
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
@@ -2161,6 +2179,7 @@ window.getQuizHTML = (q) => {
             <span class="rbadge ${roleClass}">${liveRole}</span>
             <span class="subj-tag">${subjIcon} ${q.matiere}</span>
             <span class="type-tag" style="background:var(--primary); color:#fff;">${q.isAI ? 'Quiz IA' : 'Quiz'}</span>
+            ${renderContentTags(q.tags)}
           </div>
         </div>
         ${canDel ? `<button class="btn-danger btn-sm" onclick="${q.isAI ? 'deleteAIQuiz' : 'deleteQuiz'}('${qId}')">Supprimer</button>` : ""}
@@ -2222,6 +2241,7 @@ if (window._coursFilter.subject !== "all") {
 window._coursUnsub = onSnapshot(q, snap => {
   let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   docs = window.filterVisibleContent(docs, 'post');
+  if (window._coursFilter.tags.length) docs = docs.filter(p => (Array.isArray(p.tags) ? p.tags : []).some(tag => window._coursFilter.tags.includes(tag)));
   if (window._coursFilter.order === 'likes') {
     docs.sort((a,b) => (b.likes || []).length - (a.likes || []).length);
   } else if (window._coursFilter.order === 'oldest') {
@@ -2393,10 +2413,13 @@ window.clearFile = () => {
 window.handlePostTypeChange = () => {
   const type = document.getElementById("post-type").value;
   const matiereGroup = document.getElementById("group-post-matiere");
+  const tagsGroup = document.getElementById("group-post-tags");
   if (type === "annonce") {
     matiereGroup.style.display = "none";
+    if (tagsGroup) tagsGroup.style.display = "none";
   } else {
     matiereGroup.style.display = "flex";
+    if (tagsGroup) tagsGroup.style.display = type === "cours" ? "flex" : "none";
   }
 };
 
@@ -2429,6 +2452,7 @@ window.handleCreatePost = async () => {
   }
   
   const desc = document.getElementById("post-desc").value.trim();
+  const tags = type === "cours" ? getSelectedTags('input[name="post-tag"]') : [];
   const urlInput = document.getElementById("post-url").value.trim();
   
   if (!title) {
@@ -2474,7 +2498,7 @@ window.handleCreatePost = async () => {
 
   const firstFile = filesArray[0] || {};
   const post = {
-    title, matiere, type, description: desc,
+    title, matiere, type, description: desc, tags,
     files: filesArray,
     fileData: firstFile.url || "",
     fileName: firstFile.name || "",
@@ -2495,6 +2519,7 @@ window.handleCreatePost = async () => {
     document.getElementById("post-title").value = ""; 
     document.getElementById("post-desc").value = ""; 
     document.getElementById("post-url").value = ""; 
+    document.querySelectorAll('input[name="post-tag"]').forEach(el => el.checked = false);
     clearFile(); 
     syncContrib(); 
     showToast("Partagé avec la classe ✓");
@@ -3450,6 +3475,7 @@ window.handleCreateManualQuiz = async () => {
   const title = document.getElementById("quiz-create-title").value.trim();
   const matiere = document.getElementById("quiz-create-matiere").value;
   const desc = document.getElementById("quiz-create-desc").value.trim();
+  const tags = document.getElementById("quiz-create-tag-bac")?.checked ? ["bac"] : [];
   
   if (!title || !matiere) { 
     showToast("Titre et matière requis."); 
@@ -3503,7 +3529,7 @@ window.handleCreateManualQuiz = async () => {
   }
 
   const quiz = {
-    title, matiere, description: desc,
+    title, matiere, description: desc, tags,
     questions, isAI: false,
     likes: [], 
     authorId: currentUser.username, 
@@ -3519,6 +3545,7 @@ window.handleCreateManualQuiz = async () => {
     await addDoc(collection(db, "quizzes"), quiz);
     document.getElementById("quiz-create-title").value = "";
     document.getElementById("quiz-create-desc").value = "";
+    document.getElementById("quiz-create-tag-bac").checked = false;
     document.getElementById("quiz-questions-container").innerHTML = "";
     quizQuestionCount = 0;
     
@@ -3546,6 +3573,7 @@ let combined = [...(window._liveQuizzesData || []), ...(window._liveAIQuizzesDat
 combined = window.filterVisibleContent(combined, 'quiz');
 if (window._quizFilter.type === 'manuel') combined = combined.filter(q => !q.isAI);
 if (window._quizFilter.type === 'ia') combined = combined.filter(q => q.isAI);
+if (window._quizFilter.tags.length) combined = combined.filter(q => (Array.isArray(q.tags) ? q.tags : []).some(tag => window._quizFilter.tags.includes(tag)));
 renderQuizFeedToContainer(combined, container, "Aucun quiz disponible", window._quizFilter.order);
 };
 
@@ -3629,6 +3657,7 @@ window.generateAIQuiz = async () => {
   const topic = document.getElementById("quiz-ia-topic").value.trim();
   const nbQuestions = Math.min(20, Math.max(1, parseInt(document.getElementById("quiz-ia-count").value) || 5));
   const desc = document.getElementById("quiz-ia-desc").value.trim();
+  const tags = document.getElementById("quiz-ia-tag-bac")?.checked ? ["bac"] : [];
 
   if (!topic || !matiere) { 
     showToast("Saisis un sujet principal et une matière."); 
@@ -3670,6 +3699,7 @@ RENVOIE UNIQUEMENT LE JSON.`;
       title: `[IA] : ${topic}`,
       matiere: matiere,
       description: desc,
+      tags,
       questions: quizData.questions,
       isAI: true,
       likes: [], 
@@ -3687,6 +3717,7 @@ RENVOIE UNIQUEMENT LE JSON.`;
     closeModal("m-ia-quiz");
     document.getElementById("quiz-ia-topic").value = "";
     document.getElementById("quiz-ia-desc").value = "";
+    document.getElementById("quiz-ia-tag-bac").checked = false;
     document.getElementById("quiz-ia-matiere-custom").value = "";
     document.getElementById("quiz-ia-matiere-custom").style.display = "none";
     document.getElementById("quiz-ia-matiere").value = Array.from(window.subjectsMap.keys())[0];
@@ -4076,6 +4107,24 @@ function syncAdminUsers() {
     snap.forEach(d => {
       window._allAdminUsers.push({ docId: d.id, ...d.data() });
     });
+    const etabSelect = document.getElementById("adm-filter-etab");
+    const classeSelect = document.getElementById("adm-filter-classe");
+    if (etabSelect) {
+      const current = etabSelect.value || "all";
+      const etabs = Array.from(new Set(window._allAdminUsers.map(u => u.etablissementId).filter(Boolean)))
+        .map(id => ({ id, nom: window.etabsMap.get(id)?.nom || id }))
+        .sort((a, b) => a.nom.localeCompare(b.nom));
+      etabSelect.innerHTML = `<option value="all">Tous les établissements</option>` + etabs.map(e => `<option value="${esc(e.id)}">${esc(e.nom)}</option>`).join("");
+      etabSelect.value = etabs.some(e => e.id === current) ? current : "all";
+    }
+    if (classeSelect) {
+      const current = classeSelect.value || "all";
+      const classes = Array.from(new Set(window._allAdminUsers.map(u => u.classeId).filter(Boolean)))
+        .map(id => ({ id, nom: window.classesMap.get(id)?.nom || window.classesMap.get(id)?.name || id }))
+        .sort((a, b) => a.nom.localeCompare(b.nom));
+      classeSelect.innerHTML = `<option value="all">Toutes les classes</option>` + classes.map(c => `<option value="${esc(c.id)}">${esc(c.nom)}</option>`).join("");
+      classeSelect.value = classes.some(c => c.id === current) ? current : "all";
+    }
     renderAdminUsersTable();
     const elMem = document.getElementById("stat-admin-members");
     if (elMem) elMem.innerText = window._allAdminUsers.length;
@@ -4088,13 +4137,17 @@ window.renderAdminUsersTable = () => {
   
   const searchVal = (document.getElementById("adm-filter-search")?.value || "").toLowerCase().trim();
   const roleVal = document.getElementById("adm-filter-role")?.value || "all";
+  const etabVal = document.getElementById("adm-filter-etab")?.value || "all";
+  const classeVal = document.getElementById("adm-filter-classe")?.value || "all";
   
   const filtered = window._allAdminUsers.filter(u => {
     const matchRole = roleVal === "all" || u.role === roleVal;
+    const matchEtab = etabVal === "all" || u.etablissementId === etabVal;
+    const matchClasse = classeVal === "all" || u.classeId === classeVal;
     const dName = (u.displayName || "").toLowerCase();
     const uName = (u.username || "").toLowerCase();
     const matchSearch = !searchVal || dName.includes(searchVal) || uName.includes(searchVal) || u.docId.toLowerCase().includes(searchVal);
-    return matchRole && matchSearch;
+    return matchRole && matchEtab && matchClasse && matchSearch;
   });
 
   if (filtered.length === 0) {

@@ -375,6 +375,10 @@
   .input-group input:focus,.input-group select:focus,.input-group textarea:focus{border-color:var(--primary)}
   .input-group select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236e6e73' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
   .input-group textarea{resize:vertical;min-height:90px}
+.tag-option-group{display:flex;flex-wrap:wrap;gap:8px}
+.tag-option{display:inline-flex!important;flex-direction:row!important;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--hl);border-radius:9999px;background:var(--filter-bg);color:var(--ink);font-size:13px!important;font-weight:600!important;text-transform:none!important;letter-spacing:0!important;cursor:pointer}
+.tag-option input{width:auto!important;margin:0;accent-color:var(--primary);cursor:pointer}
+.content-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--file-bg);color:var(--ink);border:1px solid var(--hl2);margin-right:4px}
   .drop-zone{border:2px dashed var(--hl);border-radius:14px;padding:28px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
   .drop-zone:hover{border-color:var(--primary);background:var(--primary-l)}
   .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;border:0;border-radius:0;padding:0;background:none;font-size:0}
