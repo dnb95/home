@@ -221,6 +221,112 @@ window._currentAudio = null;
 window._galleryImages = [];
 window._galleryIndex = 0;
 window._allAdminUsers = [];
+window._analyticsSessionId = null;
+window._analyticsSessionUserId = null;
+window._analyticsHeartbeatTimer = null;
+window._statisticsCharts = {};
+window._statisticsCache = { users: [], sessions: [], events: [], daily: [], hourly: [], concurrent: [] };
+
+const GA_MEASUREMENT_ID = window.DNB_GA_MEASUREMENT_ID || "";
+let _gaReady = false;
+
+function isAdminUser(user = currentUser) {
+  return !!user && (user.role === "admin" || (Array.isArray(user.subRoles) && user.subRoles.includes("admin")));
+}
+
+function analyticsSafeText(value, fallback = "") {
+  return String(value ?? fallback).slice(0, 160);
+}
+function analyticsTimezone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Inconnu"; } catch (_) { return "Inconnu"; }
+}
+function analyticsLocale() {
+  try { return navigator.language || "Inconnu"; } catch (_) { return "Inconnu"; }
+}
+function analyticsDevice() {
+  const w = Number(window.innerWidth || 0);
+  return w < 700 ? "mobile" : (w < 1100 ? "tablet" : "desktop");
+}
+function analyticsSessionIdForUser(user) {
+  if (!user?.id) return null;
+  if (window._analyticsSessionUserId === user.id && window._analyticsSessionId) return window._analyticsSessionId;
+  window._analyticsSessionUserId = user.id;
+  window._analyticsSessionId = `${user.id}_${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
+  return window._analyticsSessionId;
+}
+async function recordAnalyticsEvent(type, payload = {}) {
+  if (!currentUser?.id) return;
+  try {
+    await addDoc(collection(db, "analytics_events"), {
+      type: analyticsSafeText(type),
+      userId: analyticsSafeText(currentUser.id),
+      username: analyticsSafeText(currentUser.username || currentUser.id),
+      role: analyticsSafeText(currentUser.role || ""),
+      timestamp: Date.now(),
+      timezone: analyticsTimezone(),
+      locale: analyticsLocale(),
+      device: analyticsDevice(),
+      countryHint: analyticsLocale().split("-")[1] || "",
+      ...payload
+    });
+  } catch (error) {
+    console.debug("Analytics indisponibles :", error?.code || error?.message || error);
+  }
+}
+async function startAnalyticsSession(user) {
+  if (!user?.id) return;
+  const sessionId = analyticsSessionIdForUser(user);
+  const shouldStart = !window._analyticsHeartbeatTimer;
+  try {
+    await setDoc(doc(db, "analytics_sessions", sessionId), {
+      userId: analyticsSafeText(user.id),
+      username: analyticsSafeText(user.username || user.id),
+      role: analyticsSafeText(user.role || ""),
+      ...(shouldStart ? { startedAt: Date.now() } : {}),
+      lastSeenAt: Date.now(),
+      timezone: analyticsTimezone(),
+      locale: analyticsLocale(),
+      device: analyticsDevice(),
+      countryHint: analyticsLocale().split("-")[1] || ""
+    }, { merge: true });
+  } catch (error) {
+    console.debug("Session analytics indisponible :", error?.code || error?.message || error);
+  }
+  if (window._analyticsHeartbeatTimer) clearInterval(window._analyticsHeartbeatTimer);
+  window._analyticsHeartbeatTimer = setInterval(async () => {
+    if (!currentUser?.id || currentUser.id !== user.id) return;
+    try { await updateDoc(doc(db, "analytics_sessions", sessionId), { lastSeenAt: Date.now() }); } catch (_) {}
+  }, 60000);
+  if (shouldStart) recordAnalyticsEvent("login", { sessionId });
+}
+async function endAnalyticsSession() {
+  const id = window._analyticsSessionId;
+  if (!id) return;
+  if (window._analyticsHeartbeatTimer) clearInterval(window._analyticsHeartbeatTimer);
+  window._analyticsHeartbeatTimer = null;
+  try { await updateDoc(doc(db, "analytics_sessions", id), { lastSeenAt: Date.now(), endedAt: Date.now() }); } catch (_) {}
+  window._analyticsSessionId = null;
+  window._analyticsSessionUserId = null;
+}
+function initGoogleAnalytics() {
+  if (!GA_MEASUREMENT_ID || _gaReady) return;
+  _gaReady = true;
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA_MEASUREMENT_ID)}`;
+  document.head.appendChild(script);
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ window.dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag("js", new Date());
+  gtag("config", GA_MEASUREMENT_ID, { anonymize_ip: true, send_page_view: true });
+}
+function sendGoogleAnalyticsPageView(page) {
+  if (!GA_MEASUREMENT_ID || typeof window.gtag !== "function") return;
+  const safePage = analyticsSafeText(page || "accueil").replace(/[^a-z0-9_-]/gi, "_").slice(0, 80);
+  window.gtag("event", "page_view_app", { page_name: safePage });
+}
+
 
 function isAdminOrHSUser(user = currentUser) {
   return !!user && (
@@ -453,7 +559,7 @@ onSnapshot(doc(db, "settings", "site"), snap => {
 }, err => console.error("Erreur d'écoute du mode maintenance :", err));
 
 window.saveMaintenanceSettings = async (activate) => {
-  const isAdmin = currentUser && (currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')));
+  const isAdmin = isAdminUser(currentUser);
   if (!isAdmin) { showToast("Accès non autorisé."); return; }
 
   const msg = document.getElementById("adm-maintenance-message")?.value.trim() || "";
@@ -647,6 +753,112 @@ window.handleCookies = (accept) => {
   }
 };
 
+
+function formatStatsDate(ts) {
+  if (!ts) return "—";
+  return new Date(ts).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+function startOfLocalDay(date = new Date()) { const d = new Date(date); d.setHours(0,0,0,0); return d; }
+function statsDateKey(ts) { return new Date(ts).toLocaleDateString("fr-CA"); }
+function destroyStatsCharts() { Object.values(window._statisticsCharts || {}).forEach(chart => { try { chart.destroy(); } catch (_) {} }); window._statisticsCharts = {}; }
+function chartDefaults() {
+  const ink = getComputedStyle(document.body).color;
+  const muted = getComputedStyle(document.documentElement).getPropertyValue('--ink-m').trim() || ink;
+  return { responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{ legend:{display:true,labels:{color:ink,usePointStyle:true,boxWidth:8,padding:16}}, tooltip:{backgroundColor:'rgba(20,20,24,.92)',padding:10,cornerRadius:10,titleColor:'#fff',bodyColor:'#fff',displayColors:true} },
+    scales:{ x:{ticks:{color:muted,maxRotation:0},grid:{display:false}}, y:{beginAtZero:true,ticks:{precision:0,color:muted},grid:{color:'rgba(127,127,127,.12)'}} }
+  };
+}
+const STATS_CHART_COLORS = ['#007aff','#5856d6','#34c759','#ff9500','#ff3b30','#af52de','#5ac8fa'];
+function statsPalette(n){ return Array.from({length:n},(_,i)=>STATS_CHART_COLORS[i % STATS_CHART_COLORS.length]); }
+function makeDoughnutChart(canvasId, labels, values, legendId, totalId){
+  const canvas=document.getElementById(canvasId); if(!canvas || !window.Chart) return;
+  const safeVals=values.map(v=>Number(v)||0), total=safeVals.reduce((a,b)=>a+b,0); const colors=statsPalette(labels.length);
+  const center=document.getElementById(totalId); if(center) center.textContent=total;
+  const chart=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data:safeVals,backgroundColor:colors,borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>`${ctx.label}: ${ctx.raw}`}}}}});
+  const legend=document.getElementById(legendId); if(legend){ legend.innerHTML=labels.map((label,i)=>`<div class="stats-legend-item"><div class="stats-legend-label"><span class="stats-legend-dot" style="background:${colors[i]}"></span><span class="stats-legend-name">${esc(label)}</span></div><span class="stats-legend-value">${safeVals[i]}</span></div>`).join(''); }
+  return chart;
+}
+function buildHourlyConnectionData(events) {
+  const arr=Array(24).fill(0);
+  events.filter(e=>e.type==="login").forEach(e=>{ const h=new Date(e.timestamp).getHours(); if(h>=0&&h<24) arr[h]++; });
+  return arr;
+}
+function buildDailyData(events, rangeDays) {
+  const today=startOfLocalDay(), keys=[], map=new Map();
+  for(let i=rangeDays-1;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const k=statsDateKey(d.getTime());keys.push(k);map.set(k,{sessions:0,views:0});}
+  events.forEach(e=>{const k=statsDateKey(e.timestamp);if(!map.has(k))return;if(e.type==="login")map.get(k).sessions++;if(e.type==="page_view")map.get(k).views++;});
+  return {labels:keys.map(k=>new Date(`${k}T00:00:00`).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"})),sessions:keys.map(k=>map.get(k).sessions),views:keys.map(k=>map.get(k).views)};
+}
+function buildConcurrentByHour(sessions) {
+  const arr=Array(24).fill(0);
+  for(let hour=0;hour<24;hour++){arr[hour]=sessions.reduce((count,s)=>{const start=Number(s.startedAt||0),end=Number(s.endedAt||s.lastSeenAt||start);if(!start)return count;const d=new Date(start);d.setHours(hour,30,0,0);const t=d.getTime();return(start<=t&&end>=t)?count+1:count;},0);}
+  return arr;
+}
+window.renderStatisticsUsers=()=> {
+  const tb=document.getElementById("stats-users-tbody"); if(!tb)return;
+  const search=(document.getElementById("stats-user-search")?.value||"").trim().toLowerCase();
+  const countEl=document.getElementById("stats-user-count");
+  if(countEl) countEl.textContent=`${(window._statisticsCache.users||[]).length} utilisateurs`;
+  const users=(window._statisticsCache.users||[]).filter(u=>!search||String(u.username||"").toLowerCase().includes(search)||String(u.role||"").toLowerCase().includes(search));
+  if(!users.length){tb.innerHTML='<tr><td colspan="6" class="stats-empty">Aucun utilisateur trouvé.</td></tr>';return;}
+  tb.innerHTML=users.slice(0,500).map(u=>`<tr><td><strong>@${esc(u.username||u.id||"—")}</strong></td><td>${esc(u.role||"—")}</td><td>${formatStatsDate(u.lastLogin)}</td><td>${u.sessions||0}</td><td>${esc(u.lastPage||"—")}</td><td>${esc([u.timezone,u.countryHint].filter(Boolean).join(" · ")||"—")}</td></tr>`).join("");
+};
+function renderStatisticsTimezones(users){
+  const wrap=document.getElementById("stats-timezones");if(!wrap)return;
+  const counts=new Map();users.forEach(u=>{const tz=u.timezone||"Inconnu";counts.set(tz,(counts.get(tz)||0)+1);});
+  const entries=Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,20);
+  wrap.innerHTML=entries.length?entries.map(([tz,n])=>`<div class="stats-pill"><div><strong>${n}</strong><small>${esc(tz)}</small></div><span>◉</span></div>`).join(""):'<div class="stats-empty" style="width:100%;">Aucune donnée de lieu disponible.</div>';
+}
+function renderStatisticsPages(events){
+  const el=document.getElementById("stats-pages");if(!el)return;
+  const counts=new Map();events.filter(e=>e.type==="page_view").forEach(e=>{const p=e.page||"inconnu";counts.set(p,(counts.get(p)||0)+1);});
+  const rows=Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,18),max=rows[0]?.[1]||1;
+  el.innerHTML=rows.length?rows.map(([p,n])=>`<div class="stats-page-item"><strong>${esc(p)}</strong><div class="caption">${n} vue${n>1?"s":""}</div><div class="bar" style="width:${Math.max(8,Math.round(n/max*100))}%"></div></div>`).join(""):'<div class="stats-empty">Aucune donnée de navigation.</div>';
+}
+window.loadStatisticsDashboard=async()=>{
+  if(!isAdminUser(currentUser)){showToast("Accès non autorisé.");window.location.hash="#accueil";return;}
+  const status=document.getElementById("stats-status"),rangeDays=Math.max(1,Number(document.getElementById("stats-range")?.value||7)),since=Date.now()-rangeDays*86400000;
+  if(status)status.textContent="Chargement des statistiques…";
+  try{
+    const [usersSnap,sessionsSnap,eventsSnap]=await Promise.all([
+      getDocs(collection(db,"users")),
+      getDocs(query(collection(db,"analytics_sessions"),where("startedAt",">=",since))),
+      getDocs(query(collection(db,"analytics_events"),where("timestamp",">=",since)))
+    ]);
+    const users=[],sessions=[],events=[];usersSnap.forEach(d=>users.push({id:d.id,...d.data()}));sessionsSnap.forEach(d=>sessions.push({id:d.id,...d.data()}));eventsSnap.forEach(d=>events.push({id:d.id,...d.data()}));
+    const perUser=new Map();users.forEach(u=>perUser.set(u.id,{id:u.id,username:u.username||u.id,role:u.role||"—",sessions:0,lastLogin:0,lastPage:"—",timezone:"—",countryHint:""}));
+    sessions.forEach(s=>{const u=perUser.get(s.userId)||{id:s.userId,username:s.username||s.userId,role:s.role||"—",sessions:0,lastLogin:0,lastPage:"—",timezone:s.timezone||"—",countryHint:s.countryHint||""};u.sessions++;u.lastLogin=Math.max(u.lastLogin||0,Number(s.startedAt||0));u.timezone=s.timezone||u.timezone;u.countryHint=s.countryHint||u.countryHint;perUser.set(s.userId,u);});
+    events.filter(e=>e.type==="login").forEach(e=>{const u=perUser.get(e.userId)||{id:e.userId,username:e.username||e.userId,role:e.role||"—",sessions:0,lastLogin:0,lastPage:"—",timezone:e.timezone||"—",countryHint:e.countryHint||""};u.lastLogin=Math.max(u.lastLogin||0,Number(e.timestamp||0));u.timezone=e.timezone||u.timezone;u.countryHint=e.countryHint||u.countryHint;perUser.set(e.userId,u);});
+    events.filter(e=>e.type==="page_view").forEach(e=>{const u=perUser.get(e.userId);if(u&&Number(e.timestamp||0)>=Number(u.lastLogin||0))u.lastPage=e.page||u.lastPage;});
+    const userRows=Array.from(perUser.values()).sort((a,b)=>(b.lastLogin||0)-(a.lastLogin||0));
+    const hourly=buildHourlyConnectionData(events),concurrent=buildConcurrentByHour(sessions),daily=buildDailyData(events,rangeDays);
+    const liveCutoff=Date.now()-3*60*1000,live=sessions.filter(s=>Number(s.lastSeenAt||0)>=liveCutoff&&!s.endedAt).length,views=events.filter(e=>e.type==="page_view").length,peak=Math.max(0,...concurrent);
+    window._statisticsCache={users:userRows,sessions,events,hourly,concurrent,daily};
+    document.getElementById("stats-kpi-users").textContent=users.length;
+    document.getElementById("stats-kpi-sessions").textContent=sessions.length;
+    document.getElementById("stats-kpi-logins").textContent=events.filter(e=>e.type==="login").length;
+    document.getElementById("stats-kpi-peak").textContent=peak;
+    document.getElementById("stats-kpi-live").textContent=live;
+    document.getElementById("stats-kpi-views").textContent=views;
+    renderStatisticsUsers();renderStatisticsTimezones(userRows);renderStatisticsPages(events);destroyStatsCharts();
+    if(window.Chart){
+      const opts=chartDefaults();
+      window._statisticsCharts.hourly=new Chart(document.getElementById("stats-hourly-chart"),{type:"bar",data:{labels:Array.from({length:24},(_,i)=>`${String(i).padStart(2,"0")}h`),datasets:[{label:"Connexions",data:hourly,backgroundColor:"rgba(0,122,255,.72)",borderRadius:7,borderSkipped:false,maxBarThickness:20}]},options:opts});
+      window._statisticsCharts.concurrent=new Chart(document.getElementById("stats-concurrent-chart"),{type:"line",data:{labels:Array.from({length:24},(_,i)=>`${String(i).padStart(2,"0")}h`),datasets:[{label:"Connectés estimés",data:concurrent,borderColor:"#5856d6",backgroundColor:"rgba(88,86,214,.12)",pointRadius:2.5,pointHoverRadius:5,tension:.34,fill:true}]},options:opts});
+      window._statisticsCharts.daily=new Chart(document.getElementById("stats-daily-chart"),{type:"line",data:{labels:daily.labels,datasets:[{label:"Sessions",data:daily.sessions,borderColor:"#007aff",backgroundColor:"rgba(0,122,255,.08)",pointRadius:2,tension:.3},{label:"Pages vues",data:daily.views,borderColor:"#34c759",backgroundColor:"rgba(52,199,89,.06)",pointRadius:2,tension:.3}]},options:opts});
+      const roleCounts=new Map(),deviceCounts=new Map(); userRows.forEach(u=>{const role=u.role||"Inconnu";roleCounts.set(role,(roleCounts.get(role)||0)+1);}); sessions.forEach(ss=>{const device=ss.device||"Inconnu";deviceCounts.set(device,(deviceCounts.get(device)||0)+1);});
+      window._statisticsCharts.roles=makeDoughnutChart("stats-role-chart",Array.from(roleCounts.keys()),Array.from(roleCounts.values()),"stats-role-legend","stats-role-total");
+      window._statisticsCharts.devices=makeDoughnutChart("stats-device-chart",Array.from(deviceCounts.keys()),Array.from(deviceCounts.values()),"stats-device-legend",null);
+    }
+    if(status)status.textContent=`Données internes : ${rangeDays} jour${rangeDays>1?"s":""}. Dernière actualisation ${formatStatsDate(Date.now())}.`;
+  }catch(error){console.error("Erreur statistiques :",error);if(status)status.textContent="Impossible de charger les statistiques. Vérifie les règles Firestore pour analytics_events et analytics_sessions.";showToast("Statistiques indisponibles.");}
+};
+function statisticsExportPayload(){return{generatedAt:new Date().toISOString(),rangeDays:Number(document.getElementById("stats-range")?.value||7),summary:{users:document.getElementById("stats-kpi-users")?.textContent||"0",sessions:document.getElementById("stats-kpi-sessions")?.textContent||"0",logins:document.getElementById("stats-kpi-logins")?.textContent||"0",peakConcurrent:document.getElementById("stats-kpi-peak")?.textContent||"0",liveNow:document.getElementById("stats-kpi-live")?.textContent||"0",pageViews:document.getElementById("stats-kpi-views")?.textContent||"0"},hourlyConnections:window._statisticsCache.hourly||[],concurrentByHour:window._statisticsCache.concurrent||[],daily:window._statisticsCache.daily||{},users:window._statisticsCache.users||[],sessions:window._statisticsCache.sessions||[],events:window._statisticsCache.events||[]};}
+window.exportStatisticsJSON=()=>{if(!isAdminUser(currentUser))return showToast("Accès non autorisé.");const blob=new Blob([JSON.stringify(statisticsExportPayload(),null,2)],{type:"application/json;charset=utf-8"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`dnb-statistiques-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);};
+window.exportStatisticsPDF=()=>{if(!isAdminUser(currentUser))return showToast("Accès non autorisé.");if(!window.jspdf?.jsPDF)return showToast("Le module PDF n'est pas disponible.");const{jsPDF}=window.jspdf,p=statisticsExportPayload(),doc=new jsPDF({unit:"mm",format:"a4"});doc.setFontSize(20);doc.text("DnB Reviz — Rapport statistiques",14,18);doc.setFontSize(10);doc.text(`Généré le ${new Date().toLocaleString("fr-FR")} · Période: ${p.rangeDays} jour(s)`,14,25);let y=35;doc.setFontSize(12);[`Utilisateurs connus : ${p.summary.users}`,`Sessions : ${p.summary.sessions}`,`Connexions : ${p.summary.logins}`,`Pic de connectés estimé : ${p.summary.peakConcurrent}`,`Connectés maintenant : ${p.summary.liveNow}`,`Pages vues : ${p.summary.pageViews}`].forEach(t=>{doc.text(t,14,y);y+=7;});y+=4;doc.setFontSize(14);doc.text("Connexions par heure",14,y);y+=7;doc.setFontSize(10);for(let i=0;i<24;i+=4){const row=[0,1,2,3].map(j=>{const h=i+j;return`${String(h).padStart(2,"0")}h: ${p.hourlyConnections[h]||0}`;}).join("    ");doc.text(row,14,y);y+=6;}y+=4;doc.setFontSize(14);doc.text("Utilisateurs",14,y);y+=7;doc.setFontSize(9);(p.users||[]).slice(0,30).forEach(u=>{const line=`@${u.username||u.id} · ${u.role||"—"} · ${formatStatsDate(u.lastLogin)} · ${u.sessions||0} session(s) · ${[u.timezone,u.countryHint].filter(Boolean).join(" · ")||"—"}`;const wrapped=doc.splitTextToSize(line,180);if(y>275){doc.addPage();y=18;}doc.text(wrapped,14,y);y+=5*wrapped.length;});doc.save(`dnb-statistiques-${new Date().toISOString().slice(0,10)}.pdf`);};
+
 function handleHashChange() {
   let hash = window.location.hash.trim();
   if (!hash || hash === "#") {
@@ -659,7 +871,7 @@ function handleHashChange() {
   const target = decodeURIComponent(hash.substring(1)).toLowerCase().trim();
   const internalTargets = new Set([
     'accueil', 'classement', 'cours', 'fichesrev', 'quiz', 'creerquiz',
-    'messages', 'depot', 'pub-profil', 'profil', 'setting', 'admin'
+    'messages', 'depot', 'pub-profil', 'profil', 'setting', 'admin', 'statistiques'
   ]);
 
   if (target === 'matieres') {
@@ -691,6 +903,11 @@ function showInternalView(target) {
     syncAdminEtablissements(); 
     syncAdminClasses();  
   }
+  if (target === 'statistiques' && !isAdminUser(currentUser)) {
+    showToast("Accès non autorisé.");
+    window.location.hash = "#accueil";
+    return;
+  }
 
   document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
@@ -710,6 +927,8 @@ function showInternalView(target) {
   if (drawerBtn) drawerBtn.classList.add("active");
 
   window.scrollTo({ top: 0, behavior: "smooth" });
+  sendGoogleAnalyticsPageView(target);
+  recordAnalyticsEvent("page_view", { page: analyticsSafeText(target) });
 
   if (target === 'messages') loadDMChats();
   if (target === 'quiz') loadQuizFeed();
@@ -727,6 +946,7 @@ function showInternalView(target) {
   }
   if (target === 'depot') {
   setTimeout(initCharCounters, 100);}
+  if (target === 'statistiques') loadStatisticsDashboard();
 }
 
 signInAnonymously(auth).then(async () => {
@@ -775,6 +995,7 @@ document.getElementById("login-id").addEventListener("keydown", e => { if (e.key
 
 window.handleLogout = async () => {
   const previousUser = currentUser;
+  await endAnalyticsSession();
   currentUser = null;
   window.currentUser = null;
 
@@ -1295,6 +1516,8 @@ async function checkStreak(u) {
 function hydrateSession(u) {
   window.currentUser = u;
   localStorage.setItem("dnb_reviz_session", JSON.stringify(u));
+  initGoogleAnalytics();
+  startAnalyticsSession(u);
   registerOneSignalPushListener();
 
   document.getElementById("view-login").style.display = "none";
@@ -1348,6 +1571,7 @@ function hydrateSession(u) {
   const canDepot = u.role === "professeur" || u.role === "admin" || u.role === "HS" || (u.subRoles && (u.subRoles.includes("volontaire") || u.subRoles.includes("admin")));
 
   document.getElementById("tab-admin").classList.toggle("hidden", !isAdmin);
+  document.getElementById("tab-statistiques").classList.toggle("hidden", !isAdmin);
   document.getElementById("tab-depot").classList.toggle("hidden", !canDepot);
   document.getElementById("tab-creer-quiz").classList.toggle("hidden", !canDepot);
   
@@ -1355,11 +1579,13 @@ function hydrateSession(u) {
 
   const drawerDepot = document.getElementById("drawer-depot");
   const drawerAdmin = document.getElementById("drawer-admin");
+  const drawerStats = document.getElementById("drawer-statistiques");
   const drawerCreerQuiz = document.getElementById("drawer-creer-quiz");
   
   if (drawerDepot) drawerDepot.classList.toggle("hidden", !canDepot);
   if (drawerCreerQuiz) drawerCreerQuiz.classList.toggle("hidden", !canDepot);
   if (drawerAdmin) drawerAdmin.classList.toggle("hidden", !isAdmin);
+  if (drawerStats) drawerStats.classList.toggle("hidden", !isAdmin);
 
   document.getElementById("drawer-role").innerText = u.role;
   setDrawerAvatar(u.avatar, u.displayName || u.username);

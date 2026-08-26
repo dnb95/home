@@ -1,5 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr" data-theme="light">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YMJTRWHEK8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-YMJTRWHEK8');
+</script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -103,6 +111,7 @@
       <button class="nav-tab hidden"  data-target="depot"     id="tab-depot" onclick="switchTab('depot')">Déposer un cours</button>
       <button class="nav-tab hidden"  data-target="creerquiz" id="tab-creer-quiz" onclick="switchTab('creerquiz')">Créer un quiz</button>
       <button class="nav-tab hidden admin-only" data-target="admin" id="tab-admin" onclick="switchTab('admin')">Admin</button>
+      <button class="nav-tab hidden admin-only" data-target="statistiques" id="tab-statistiques" onclick="switchTab('statistiques')">Statistiques</button>
     </nav>
     <div class="header-right">
       <div class="avatar-btn" id="nav-avatar" onclick="toggleDropdown()">
@@ -154,6 +163,9 @@
         </button>
         <button class="drawer-btn hidden admin-only" id="drawer-admin" data-tab="admin" onclick="switchTab('admin');closeDrawer()">
           <span class="d-icon">🛠️</span> Administration
+        </button>
+        <button class="drawer-btn hidden admin-only" id="drawer-statistiques" data-tab="statistiques" onclick="switchTab('statistiques');closeDrawer()">
+          <span class="d-icon">📈</span> Statistiques
         </button>
       </div>
       <div class="drawer-foot">
@@ -841,6 +853,122 @@
 </div>
     </section>
 
+    <section id="page-statistiques" class="page-view admin-only hidden">
+      <div class="stats-hero">
+        <div class="stats-hero-main">
+          <div class="stats-eyebrow"><span class="stats-live-dot"></span> Espace administrateur</div>
+          <div class="ph-row stats-title-row">
+            <div>
+              <h1>Statistiques</h1>
+              <p class="tagline">Comprends l'activité de DnB Reviz en un coup d'œil.</p>
+            </div>
+            <div class="stats-toolbar">
+              <div class="stats-range-wrap">
+                <span>Analyse</span>
+                <select id="stats-range" class="stats-select" onchange="loadStatisticsDashboard()">
+                  <option value="1">Aujourd’hui</option>
+                  <option value="7" selected>7 jours</option>
+                  <option value="30">30 jours</option>
+                  <option value="90">90 jours</option>
+                </select>
+              </div>
+              <button class="btn-ghost stats-export-btn" type="button" onclick="exportStatisticsJSON()">↧ JSON</button>
+              <button class="btn-pill stats-export-btn" type="button" onclick="exportStatisticsPDF()">↧ PDF</button>
+            </div>
+          </div>
+          <div class="stats-hero-note">
+            <div class="stats-note-icon">⌁</div>
+            <div><strong>Vue privée ADMIN</strong><span>Les identifiants détaillés restent dans les données internes de ton site. Google Analytics ne reçoit pas ces identifiants.</span></div>
+          </div>
+        </div>
+        <div class="stats-hero-orb stats-orb-one"></div>
+        <div class="stats-hero-orb stats-orb-two"></div>
+      </div>
+
+      <div class="stats-kpi-grid">
+        <div class="stats-kpi-card stats-kpi-primary"><span class="stats-kpi-icon">👥</span><div><div class="caption">Utilisateurs connus</div><strong id="stats-kpi-users">0</strong><small>comptes suivis</small></div></div>
+        <div class="stats-kpi-card"><span class="stats-kpi-icon">◷</span><div><div class="caption">Sessions</div><strong id="stats-kpi-sessions">0</strong><small>sur la période</small></div></div>
+        <div class="stats-kpi-card"><span class="stats-kpi-icon">↗</span><div><div class="caption">Connexions</div><strong id="stats-kpi-logins">0</strong><small>entrées enregistrées</small></div></div>
+        <div class="stats-kpi-card"><span class="stats-kpi-icon">⌁</span><div><div class="caption">Pic de connexions</div><strong id="stats-kpi-peak">0</strong><small>au même moment</small></div></div>
+        <div class="stats-kpi-card stats-kpi-live"><span class="stats-kpi-icon"><i></i></span><div><div class="caption">Connectés maintenant</div><strong id="stats-kpi-live">0</strong><small>activité récente</small></div></div>
+        <div class="stats-kpi-card"><span class="stats-kpi-icon">▤</span><div><div class="caption">Pages vues</div><strong id="stats-kpi-views">0</strong><small>navigations internes</small></div></div>
+      </div>
+
+      <div class="stats-grid-2 stats-chart-grid-main">
+        <div class="stats-card stats-card-chart stats-card-featured">
+          <div class="stats-card-head">
+            <div><span class="stats-section-label">FRÉQUENTATION</span><h3>Connexions par heure</h3><p class="caption">Quand les utilisateurs se connectent le plus.</p></div>
+            <span class="stats-card-badge">24 h</span>
+          </div>
+          <div class="stats-chart-wrap stats-chart-tall"><canvas id="stats-hourly-chart"></canvas></div>
+        </div>
+        <div class="stats-card stats-card-chart">
+          <div class="stats-card-head">
+            <div><span class="stats-section-label">PRÉSENCE</span><h3>Utilisateurs connectés</h3><p class="caption">Estimation à partir des sessions actives et du heartbeat.</p></div>
+            <span class="stats-card-badge stats-card-badge-soft">live</span>
+          </div>
+          <div class="stats-chart-wrap stats-chart-tall"><canvas id="stats-concurrent-chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="stats-grid-2">
+        <div class="stats-card stats-card-chart">
+          <div class="stats-card-head">
+            <div><span class="stats-section-label">ÉVOLUTION</span><h3>Activité par jour</h3><p class="caption">Sessions et pages vues sur la période.</p></div>
+          </div>
+          <div class="stats-chart-wrap"><canvas id="stats-daily-chart"></canvas></div>
+        </div>
+        <div class="stats-card stats-card-chart">
+          <div class="stats-card-head">
+            <div><span class="stats-section-label">PROFIL</span><h3>Répartition des utilisateurs</h3><p class="caption">Rôles présents dans la base suivie.</p></div>
+          </div>
+          <div class="stats-split-chart">
+            <div class="stats-doughnut-wrap"><canvas id="stats-role-chart"></canvas><div class="stats-doughnut-center"><strong id="stats-role-total">0</strong><span>profils</span></div></div>
+            <div id="stats-role-legend" class="stats-legend"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid-2">
+        <div class="stats-card stats-card-chart">
+          <div class="stats-card-head">
+            <div><span class="stats-section-label">APPAREILS</span><h3>Appareils utilisés</h3><p class="caption">Mobile, tablette ou ordinateur.</p></div>
+          </div>
+          <div class="stats-split-chart stats-split-chart-device">
+            <div class="stats-doughnut-wrap"><canvas id="stats-device-chart"></canvas></div>
+            <div id="stats-device-legend" class="stats-legend"></div>
+          </div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-head">
+            <div><span class="stats-section-label">LOCALISATION APPROXIMATIVE</span><h3>Zones / fuseaux horaires</h3><p class="caption">Lieu déduit du fuseau ou de la locale du navigateur.</p></div>
+            <span class="stats-card-badge">indicatif</span>
+          </div>
+          <div id="stats-timezones" class="stats-pills"></div>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-card-head stats-users-head">
+          <div><span class="stats-section-label">DÉTAIL</span><h3>Utilisateurs & sessions</h3><p class="caption">Identifiants internes, dernière connexion et activité récente.</p></div>
+          <div class="stats-user-actions"><span class="stats-count-badge" id="stats-user-count">0 utilisateurs</span><input id="stats-user-search" class="stats-search" type="search" placeholder="Rechercher un identifiant…" oninput="renderStatisticsUsers()"></div>
+        </div>
+        <div class="stats-table-wrap">
+          <table class="stats-table">
+            <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Dernière connexion</th><th>Sessions</th><th>Dernière page</th><th>Zone</th></tr></thead>
+            <tbody id="stats-users-tbody"><tr><td colspan="6" class="stats-empty">Chargement…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="stats-card-head"><div><span class="stats-section-label">NAVIGATION</span><h3>Pages les plus consultées</h3><p class="caption">Les écrans les plus visités sur la période sélectionnée.</p></div></div>
+        <div id="stats-pages" class="stats-pages-grid"></div>
+      </div>
+
+      <div class="stats-footer-row"><p id="stats-status" class="caption"></p><button class="btn-ghost btn-sm" type="button" onclick="loadStatisticsDashboard()">↻ Actualiser</button></div>
+    </section>
+
     <footer class="site-footer">
       <p>DnB Reviz est un projet bénévole créé par Dan Bouillet pour aider les élèves à réviser.</p>
       <p>© 2026 Dan Bouillet (DnB Reviz). Tous droits réservés.</p>
@@ -1216,6 +1344,8 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@3.0.1/dist/jspdf.umd.min.js"></script>
 <script type="module" src="script.js"></script>
 </body>
 </html>
