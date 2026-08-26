@@ -420,6 +420,14 @@
           <label>Matière *</label>
           <select id="post-matiere"></select>
         </div>
+        <div class="input-group admin-only hidden" id="group-post-announcement-visibility" style="display:none;">
+          <label>Visibilité de l'annonce épinglée</label>
+          <select id="post-announcement-visibility">
+            <option value="tous">Tout le monde</option>
+            <option value="eleves">Uniquement les élèves</option>
+            <option value="professeurs">Uniquement les professeurs</option>
+          </select>
+        </div>
         <div class="input-group">
           <label>Description (facultatif)</label>
           <textarea id="post-desc" placeholder="Un mot sur ce document…" rows="4" maxlength="300"></textarea>

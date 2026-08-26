@@ -135,8 +135,6 @@ async function syncOneSignalUser(u) {
         return;
       }
 
-      // OneSignal est la seule source de vérité pour l'état Push.
-      // On ne force plus optOut/optIn à partir d'un champ Firebase.
       const subscription = OneSignal.User.PushSubscription;
       setLocalPushState(!!subscription?.optedIn, subscription?.id || null);
     });
@@ -232,6 +230,10 @@ let _gaReady = false;
 
 function isAdminUser(user = currentUser) {
   return !!user && (user.role === "admin" || (Array.isArray(user.subRoles) && user.subRoles.includes("admin")));
+}
+
+function isProfessorUser(user = currentUser) {
+  return !!user && user.role === "professeur";
 }
 
 function analyticsSafeText(value, fallback = "") {
@@ -344,7 +346,7 @@ function getStreakRankingUsers() {
   if (!allUsers.some(u => u.id === me.id)) allUsers.push(me);
 
   if (isAdminOrHSUser()) {
-    return allUsers;
+    return allUsers.filter(u => !isProfessorUser(u));
   }
 
   const myClasseId = currentUser.classeId || me.classeId || null;
@@ -355,7 +357,7 @@ function getStreakRankingUsers() {
   }
 
   return allUsers.filter(u => {
-    if (!u || u.classeId !== myClasseId) return false;
+    if (!u || isProfessorUser(u) || u.classeId !== myClasseId) return false;
     if (myEtabId && u.etablissementId && u.etablissementId !== myEtabId) return false;
     return true;
   });
@@ -813,7 +815,8 @@ function renderStatisticsTimezones(users){
 }
 function renderStatisticsPages(events){
   const el=document.getElementById("stats-pages");if(!el)return;
-  const counts=new Map();events.filter(e=>e.type==="page_view").forEach(e=>{const p=e.page||"inconnu";counts.set(p,(counts.get(p)||0)+1);});
+  const hiddenPages=new Set(["admin","statistiques"]);
+  const counts=new Map();events.filter(e=>e.type==="page_view"&&!hiddenPages.has(String(e.page||"").toLowerCase())).forEach(e=>{const p=e.page||"inconnu";counts.set(p,(counts.get(p)||0)+1);});
   const rows=Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,18),max=rows[0]?.[1]||1;
   el.innerHTML=rows.length?rows.map(([p,n])=>`<div class="stats-page-item"><strong>${esc(p)}</strong><div class="caption">${n} vue${n>1?"s":""}</div><div class="bar" style="width:${Math.max(8,Math.round(n/max*100))}%"></div></div>`).join(""):'<div class="stats-empty">Aucune donnée de navigation.</div>';
 }
@@ -1288,7 +1291,7 @@ function startStreakMinuteTimer() {
 async function confirmPendingStreak() {
   const state = window._streakState;
 
-  if (!currentUser || !state?.pending || state.confirming) return;
+  if (!currentUser || isProfessorUser(currentUser) || !state?.pending || state.confirming) return;
 
   const today = getTodayStr();
 
@@ -1406,7 +1409,11 @@ async function breakStreakForMissedDay(u) {
 }
 
 async function checkStreak(u) {
-  if (!u || !currentUser || currentUser.id !== u.id) return;
+  if (!u || !currentUser || currentUser.id !== u.id || isProfessorUser(currentUser)) {
+    stopStreakTimer();
+    stopStreakDayTimer();
+    return;
+  }
 
   stopStreakTimer();
   stopStreakDayTimer();
@@ -1522,6 +1529,8 @@ function hydrateSession(u) {
 
   document.getElementById("view-login").style.display = "none";
   document.getElementById("view-app").style.display = "block";
+  const streakCard = document.getElementById("home-streak-card");
+  if (streakCard) streakCard.style.display = isProfessorUser(u) ? "none" : "";
   checkStreak(u).catch(error => console.error("Erreur du système de série :", error));
   window.applyMaintenanceUI();
   loadTheme();
@@ -2425,6 +2434,15 @@ window.getQuizHTML = (q) => {
     </div>`;
 };
 
+function isAnnouncementVisibleToCurrentUser(post) {
+  const visibility = post?.announcementVisibility || "tous";
+  if (visibility === "tous" || !currentUser) return true;
+  if (isAdminOrHSUser()) return true;
+  if (visibility === "professeurs") return isProfessorUser(currentUser);
+  if (visibility === "eleves") return !isProfessorUser(currentUser);
+  return true;
+}
+
 function loadPinnedAnnonces() {
   if (window._pinnedUnsub) { window._pinnedUnsub(); window._pinnedUnsub = null; }
   const zone = document.getElementById("pinned-annonces-zone");
@@ -2437,6 +2455,7 @@ function loadPinnedAnnonces() {
       return;
     }
     let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    docs = docs.filter(isAnnouncementVisibleToCurrentUser);
     docs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
     
     let html = `<div class="pinned-post-wrapper">
@@ -2640,12 +2659,15 @@ window.handlePostTypeChange = () => {
   const type = document.getElementById("post-type").value;
   const matiereGroup = document.getElementById("group-post-matiere");
   const tagsGroup = document.getElementById("group-post-tags");
+  const visibilityGroup = document.getElementById("group-post-announcement-visibility");
   if (type === "annonce") {
     matiereGroup.style.display = "none";
     if (tagsGroup) tagsGroup.style.display = "none";
+    if (visibilityGroup) visibilityGroup.style.display = "flex";
   } else {
     matiereGroup.style.display = "flex";
     if (tagsGroup) tagsGroup.style.display = type === "cours" ? "flex" : "none";
+    if (visibilityGroup) visibilityGroup.style.display = "none";
   }
 };
 
@@ -2667,6 +2689,9 @@ const getYouTubeEmbedUrl = (url) => {
 window.handleCreatePost = async () => {
   const title = document.getElementById("post-title").value.trim();
   const type = document.getElementById("post-type").value;
+  const announcementVisibility = type === "annonce"
+    ? (document.getElementById("post-announcement-visibility")?.value || "tous")
+    : "tous";
   
   let matiere = "Annonces";
   if (type !== "annonce") {
@@ -2734,6 +2759,7 @@ window.handleCreatePost = async () => {
     authorDisplayName: currentUser.displayName || currentUser.username,
     authorAvatar: currentUser.avatar || "",
     authorRole: currentUser.role || "élève",
+    announcementVisibility,
     etablissementId: currentUser.etablissementId || "",
     classeId: currentUser.classeId || "",
     likes: [], comments: [], timestamp: Date.now(),
@@ -2744,7 +2770,9 @@ window.handleCreatePost = async () => {
     
     document.getElementById("post-title").value = ""; 
     document.getElementById("post-desc").value = ""; 
-    document.getElementById("post-url").value = ""; 
+    document.getElementById("post-url").value = "";
+    const announcementVisibilityEl = document.getElementById("post-announcement-visibility");
+    if (announcementVisibilityEl) announcementVisibilityEl.value = "tous";
     document.querySelectorAll('input[name="post-tag"]').forEach(el => el.checked = false);
     clearFile(); 
     syncContrib(); 
