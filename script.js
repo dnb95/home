@@ -30,7 +30,7 @@ let loginFailedAttempts = 0;
 let loginLockedUntil = 0;
 
 
-function withOneSignal(callback, timeoutMs = 15000) {
+function withOneSignal(callback, timeoutMs = 30000) {
   const ready = window.dnbOneSignalReady || new Promise((resolve, reject) => {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async function(OneSignal) {
@@ -1757,8 +1757,75 @@ window.handleForcePwd = async () => {
   currentUser.isTempPassword = false;
   if (e) currentUser.email = e;
   saveSessionLocally(currentUser);
-  closeModal("m-force-pwd"); 
+  closeModal("m-force-pwd");
   showToast(e ? "Mot de passe mis à jour ✓ Pense à activer les notifications dans les paramètres." : "Mot de passe mis à jour ✓");
+
+  // Le pré-prompt maison apparaît uniquement après la définition du mot de passe définitif.
+  setTimeout(() => showPushConsentPrompt(currentUser), 250);
+};
+
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandaloneWebApp() {
+  return window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
+}
+
+async function showPushConsentPrompt(user = currentUser) {
+  if (!user?.id) return;
+  const modal = document.getElementById("m-push-consent");
+  const text = document.getElementById("push-consent-text");
+  if (!modal) return;
+
+  const shownKey = `dnb_push_consent_prompt_${user.id}`;
+  if (localStorage.getItem(shownKey) === "1") return;
+
+  try {
+    const state = await getOneSignalPushState();
+    if (!state.supported || state.optedIn || state.permission === "denied") {
+      localStorage.setItem(shownKey, "1");
+      return;
+    }
+  } catch (error) {
+    console.warn("État OneSignal indisponible pour le pré-prompt :", error);
+  }
+
+  if (text && isIOSDevice() && !isStandaloneWebApp()) {
+    text.textContent = "Sur iPhone/iPad, ajoute d'abord DnB Reviz à l'écran d'accueil puis ouvre l'application depuis son icône. Tu pourras ensuite activer les notifications.";
+  }
+
+  modal.dataset.userId = String(user.id);
+  modal.classList.add("active");
+}
+
+window.handlePushConsent = async (accepted) => {
+  const modal = document.getElementById("m-push-consent");
+  const userId = modal?.dataset.userId || currentUser?.id;
+  closeModal("m-push-consent");
+
+  if (!userId || !currentUser?.id) return;
+
+  const shownKey = `dnb_push_consent_prompt_${userId}`;
+
+  if (!accepted) {
+    localStorage.setItem(shownKey, "1");
+    return;
+  }
+
+  if (isIOSDevice() && !isStandaloneWebApp()) {
+    showToast("Sur iPhone/iPad, ajoute DnB Reviz à l'écran d'accueil puis ouvre l'app pour activer les notifications.");
+    return;
+  }
+
+  localStorage.setItem(shownKey, "1");
+
+  try {
+    await togglePushNotifs(true);
+  } catch (error) {
+    console.error("Activation Push depuis le pré-prompt impossible :", error);
+  }
 };
 
 async function uploadToCloudinary(file) {
@@ -1917,11 +1984,11 @@ window.togglePushNotifs = async (enabled) => {
       await OneSignal.login(String(currentUser.id));
       registerOneSignalPushListener();
 
-      if (!OneSignal.Notifications.permission) {
+      if (OneSignal.Notifications.permission !== "granted") {
         await OneSignal.Notifications.requestPermission();
       }
 
-      if (!OneSignal.Notifications.permission) {
+      if (OneSignal.Notifications.permission !== "granted") {
         throw new Error("PUSH_NOT_GRANTED");
       }
 

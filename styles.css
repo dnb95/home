@@ -497,6 +497,7 @@
   .login-logo img{height:44px;margin-bottom:12px}
   .login-logo h1{font-size:32px}
   .login-logo p{color:var(--ink-m);font-size:16px;margin-top:6px}
+  .login-trust-note{font-size:12px !important;line-height:1.5;max-width:340px;margin:10px auto 0;color:var(--ink-m);}
   
   .hidden{display:none!important}
   .mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}.mt-4{margin-top:32px}

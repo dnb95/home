@@ -34,26 +34,16 @@
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.dnbOneSignalReady = new Promise((resolve, reject) => {
-    OneSignalDeferred.push(async function(OneSignal) {
+    const timeout = setTimeout(() => reject(new Error("ONESIGNAL_TIMEOUT")), 30000);
+    window.OneSignalDeferred.push(async function(OneSignal) {
       try {
         await OneSignal.init({
-          appId: "d0900059-082b-458f-9bb1-8798546b8010",
-          promptOptions: {
-            slidedown: {
-              prompts: [
-                {
-                  type: "push",
-                  autoPrompt: false
-                }
-              ]
-            }
-          },
-          welcomeNotification: {
-            disable: true
-          }
+          appId: "d0900059-082b-458f-9bb1-8798546b8010"
         });
+        clearTimeout(timeout);
         resolve(OneSignal);
       } catch (error) {
+        clearTimeout(timeout);
         reject(error);
       }
     });
@@ -89,17 +79,19 @@
 <div id="view-login" class="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png" alt="DnB">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/DnB_website.png" alt="Logo DnB Reviz">
       <h1>DnB Reviz</h1>
       <p>Avant-première - bêta.</p>
+      <p class="login-trust-note">Application scolaire indépendante créée par Dan Bouillet. Ce site n'est pas une page de connexion Google, Microsoft ou ENT.</p>
     </div>
     <div class="input-group">
       <label>Identifiant</label>
       <input type="text" id="login-id" placeholder="prenom.nom" autocomplete="username">
     </div>
     <div class="input-group">
-      <label>Mot de passe</label>
-      <input type="password" id="login-pwd" placeholder="••/••/••••" autocomplete="current-password">
+      <label>Mot de passe DnB Reviz</label>
+      <input type="password" id="login-pwd" placeholder="Ton mot de passe DnB Reviz" autocomplete="current-password" aria-describedby="login-security-note">
+      <p id="login-security-note" class="caption mt-1">N’utilise pas le mot de passe d’un autre service. Ton compte DnB Reviz est créé par l’administrateur de la classe.</p>
     </div>
     <button onclick="handleLogin()" class="btn-pill mt-2" style="width:100%;justify-content:center;padding:13px">Se connecter</button>
     <p class="caption mt-2" style="text-align:center">Si tu n'as pas de compte, contactez nous.</p>
@@ -1139,6 +1131,17 @@
   <div class="mbox">
     <h2 id="m-follows-title">Abonnés</h2>
     <div style="display:flex;flex-direction:column;gap:4px" id="follows-list-box"></div>
+  </div>
+</div>
+
+<div id="m-push-consent" class="moverlay">
+  <div class="mbox">
+    <h2>🔔 Activer les notifications ?</h2>
+    <p id="push-consent-text" class="caption mt-1" style="margin-bottom:20px">Reçois les rappels et informations importantes de DnB Reviz directement sur cet appareil.</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn-ghost" type="button" onclick="handlePushConsent(false)">Non, merci</button>
+      <button class="btn-pill" type="button" onclick="handlePushConsent(true)">Oui, activer</button>
+    </div>
   </div>
 </div>
 
