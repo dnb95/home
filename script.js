@@ -30,8 +30,17 @@ let loginFailedAttempts = 0;
 let loginLockedUntil = 0;
 
 
-function withOneSignal(callback, timeoutMs = 5000) {
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
+function withOneSignal(callback, timeoutMs = 15000) {
+  const ready = window.dnbOneSignalReady || new Promise((resolve, reject) => {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      try {
+        resolve(OneSignal);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
 
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -41,7 +50,7 @@ function withOneSignal(callback, timeoutMs = 5000) {
       reject(new Error("ONESIGNAL_TIMEOUT"));
     }, timeoutMs);
 
-    window.OneSignalDeferred.push(async function(OneSignal) {
+    ready.then(async (OneSignal) => {
       if (settled) return;
       try {
         const result = await callback(OneSignal);
@@ -55,6 +64,11 @@ function withOneSignal(callback, timeoutMs = 5000) {
         clearTimeout(timer);
         reject(error);
       }
+    }).catch(error => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(error);
     });
   });
 }
@@ -2746,7 +2760,7 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
   }, 50);
 }
 function loadAnnonces() {
-  const isAdmin = currentUser.role === "admin" || (currentUser.subRoles && currentUser.subRoles.includes("admin"));
+  const isAdmin = currentUser?.role === "admin" || (currentUser?.subRoles && currentUser.subRoles.includes("admin"));
   const zone = document.getElementById("annonces-zone"); 
   if (!zone) return;
 

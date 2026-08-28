@@ -33,21 +33,28 @@
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "d0900059-082b-458f-9bb1-8798546b8010",
-      promptOptions: {
-        slidedown: {
-          prompts: [
-            {
-              type: "push",
-              autoPrompt: false
+  window.dnbOneSignalReady = new Promise((resolve, reject) => {
+    OneSignalDeferred.push(async function(OneSignal) {
+      try {
+        await OneSignal.init({
+          appId: "d0900059-082b-458f-9bb1-8798546b8010",
+          promptOptions: {
+            slidedown: {
+              prompts: [
+                {
+                  type: "push",
+                  autoPrompt: false
+                }
+              ]
             }
-          ]
-        }
-      },
-      welcomeNotification: {
-        disable: true
+          },
+          welcomeNotification: {
+            disable: true
+          }
+        });
+        resolve(OneSignal);
+      } catch (error) {
+        reject(error);
       }
     });
   });
