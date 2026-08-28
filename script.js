@@ -24,6 +24,12 @@ const GROQ_MODEL   = "openai/gpt-oss-120b";
 
 const ADMIN_PUSH_ENDPOINT = "https://groqrelay.greninja71144.workers.dev/onesignal";
 
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_LOCK_MS = 30000;
+let loginFailedAttempts = 0;
+let loginLockedUntil = 0;
+
+
 function withOneSignal(callback, timeoutMs = 5000) {
   window.OneSignalDeferred = window.OneSignalDeferred || [];
 
@@ -67,7 +73,7 @@ function setLocalPushState(enabled, subscriptionId = null) {
   currentUser.oneSignalSubscriptionId = subscriptionId || null;
 
   try {
-    localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+    saveSessionLocally(currentUser);
   } catch (error) {
     console.warn("Impossible de mettre à jour la session locale :", error);
   }
@@ -144,6 +150,19 @@ async function syncOneSignalUser(u) {
 }
 
 window.currentUser = null;
+
+function saveSessionLocally(user = currentUser) {
+  if (!user) return;
+  try {
+    const safe = { ...user };
+    delete safe.password;
+    delete safe.authPassword;
+    localStorage.setItem("dnb_reviz_session", JSON.stringify(safe));
+  } catch (error) {
+    console.warn("Impossible de sauvegarder la session locale :", error);
+  }
+}
+
 window.usersMap    = new Map();
 window.subjectsMap = new Map();
 window.etabsMap = new Map();
@@ -230,6 +249,13 @@ let _gaReady = false;
 
 function isAdminUser(user = currentUser) {
   return !!user && (user.role === "admin" || (Array.isArray(user.subRoles) && user.subRoles.includes("admin")));
+}
+
+const PASSWORD_REQUIREMENTS_TEXT = "8 caractères minimum, avec 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial.";
+const PASSWORD_SPECIAL_RE = /[^A-Za-z0-9]/;
+function isStrongPassword(password) {
+  return typeof password === "string" && password.length >= 8 &&
+    /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password) && PASSWORD_SPECIAL_RE.test(password);
 }
 
 function isProfessorUser(user = currentUser) {
@@ -970,6 +996,13 @@ signInAnonymously(auth).then(async () => {
 }).catch(console.error);
 
 window.handleLogin = async () => {
+  const now = Date.now();
+  if (loginLockedUntil > now) {
+    const seconds = Math.ceil((loginLockedUntil - now) / 1000);
+    showToast(`Trop de tentatives. Réessaie dans ${seconds}s.`);
+    return;
+  }
+
   const id  = document.getElementById("login-id").value.trim().toLowerCase();
   const pwd = document.getElementById("login-pwd").value.trim();
   if (!id || !pwd) {
@@ -977,20 +1010,38 @@ window.handleLogin = async () => {
     return;
   }
 
-  const q = query(collection(db, "users"), where("username", "==", id));
-  const snap = await getDocs(q);    
-  if (snap.empty) {
-    showToast("Identifiant introuvable.");
-    return;
+  try {
+    const q = query(collection(db, "users"), where("username", "==", id));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      loginFailedAttempts += 1;
+      if (loginFailedAttempts >= LOGIN_MAX_ATTEMPTS) {
+        loginLockedUntil = Date.now() + LOGIN_LOCK_MS;
+        loginFailedAttempts = 0;
+      }
+      showToast("Identifiant ou mot de passe incorrect.");
+      return;
+    }
+
+    const d = snap.docs[0];
+    const u = { id: d.id, ...d.data() };
+    if (u.password !== pwd) {
+      loginFailedAttempts += 1;
+      if (loginFailedAttempts >= LOGIN_MAX_ATTEMPTS) {
+        loginLockedUntil = Date.now() + LOGIN_LOCK_MS;
+        loginFailedAttempts = 0;
+      }
+      showToast("Identifiant ou mot de passe incorrect.");
+      return;
+    }
+
+    loginFailedAttempts = 0;
+    loginLockedUntil = 0;
+    hydrateSession(u);
+  } catch (error) {
+    console.error(error);
+    showToast("Impossible de se connecter pour le moment.");
   }
-  const d = snap.docs[0];
-  const u = { id: d.id, ...d.data() };
-  
-  if (u.password !== pwd) {
-    showToast("Mot de passe incorrect.");
-    return;
-  }
-  hydrateSession(u);
 };
 
 document.getElementById("login-pwd").addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
@@ -1341,7 +1392,7 @@ async function confirmPendingStreak() {
   currentUser.lastActiveDate = today;
   currentUser.lastStreakConfirmedAt = confirmedAt;
 
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
   clearStreakWatch();
 
   window._streakState = {
@@ -1399,7 +1450,7 @@ async function breakStreakForMissedDay(u) {
   currentUser.lastActiveDate = null;
   currentUser.lastStreakConfirmedAt = null;
 
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
 
   if (lostStreak > 0) {
     animateStreakExtinguish(lostStreak);
@@ -1522,7 +1573,8 @@ async function checkStreak(u) {
 
 function hydrateSession(u) {
   window.currentUser = u;
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(u));
+  saveSessionLocally(u);
+  updateRichTextToolbarVisibility();
   initGoogleAnalytics();
   startAnalyticsSession(u);
   registerOneSignalPushListener();
@@ -1676,8 +1728,8 @@ function setDrawerAvatar(data, name) {
 
 window.handleForcePwd = async () => {
   const p = document.getElementById("force-pwd").value.trim();
-  if (p.length < 4) {
-    showToast("Min. 4 caractères.");
+  if (!isStrongPassword(p)) {
+    showToast(PASSWORD_REQUIREMENTS_TEXT);
     return;
   }
   const emailInput = document.getElementById("force-email");
@@ -1690,26 +1742,36 @@ window.handleForcePwd = async () => {
   currentUser.password = p; 
   currentUser.isTempPassword = false;
   if (e) currentUser.email = e;
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
   closeModal("m-force-pwd"); 
   showToast(e ? "Mot de passe mis à jour ✓ Pense à activer les notifications dans les paramètres." : "Mot de passe mis à jour ✓");
 };
 
 async function uploadToCloudinary(file) {
+  if (!file) throw new Error("Fichier manquant");
+  if (file.size > 25 * 1024 * 1024) throw new Error("Fichier trop volumineux");
+
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-  fd.append("resource_type", "auto"); 
-  
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, {
-    method: "POST",
-    body: fd
-  });
-  
-  if (!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.secure_url; 
+  fd.append("resource_type", "auto");
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`, {
+      method: "POST",
+      body: fd,
+      signal: controller.signal
+    });
+    if (!res.ok) throw new Error(`Cloudinary HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    if (!data.secure_url || !/^https:\/\//i.test(data.secure_url)) throw new Error("URL Cloudinary invalide");
+    return data.secure_url;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 window.uploadAvatar = (e) => {
@@ -1727,7 +1789,7 @@ window.uploadAvatar = (e) => {
       
       updateDoc(doc(db, "users", currentUser.id), { avatar: b64 }).then(() => {
         currentUser.avatar = b64;
-        localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+        saveSessionLocally(currentUser);
         setAvatar(b64, currentUser.displayName); 
         showToast("Photo mise à jour ✓");
       });
@@ -1766,7 +1828,7 @@ window.saveProfile = async () => {
   await updateDoc(doc(db, "users", currentUser.id), updates);
   
   Object.assign(currentUser, updates);
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
   
   const myBadge = getBadge(currentUser);
   document.getElementById("drop-name").innerHTML = d + myBadge;
@@ -1789,13 +1851,13 @@ window.goToMyLikes = () => {
 window.toggleAllowMsgs = async (val) => {
   await updateDoc(doc(db, "users", currentUser.id), { allowMessages: val });
   currentUser.allowMessages = val;
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
 };
 
 window.toggleEmailNotifs = async (val) => {
   await updateDoc(doc(db, "users", currentUser.id), { emailNotifs: val });
   currentUser.emailNotifs = val;
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
 };
 
 window.togglePushNotifs = async (enabled) => {
@@ -1885,7 +1947,7 @@ window.saveEmailSettings = async () => {
   const e = document.getElementById("setting-email").value.trim();
   await updateDoc(doc(db, "users", currentUser.id), { email: e });
   currentUser.email = e;
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
   showToast("Adresse email sauvegardée ✓");
 };
 
@@ -1915,11 +1977,14 @@ async function syncContrib() {
 
 window.changePassword = async () => {
   const p = document.getElementById("setting-pwd").value.trim(); 
-  if (!p) return;
+  if (!isStrongPassword(p)) {
+    showToast(PASSWORD_REQUIREMENTS_TEXT);
+    return;
+  }
   
   await updateDoc(doc(db, "users", currentUser.id), { password: p, isTempPassword: false });
   currentUser.password = p;
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
   document.getElementById("setting-pwd").value = "";
   showToast("Mot de passe changé ✓");
 };
@@ -1961,27 +2026,151 @@ function loadMatieres() {
     selQuizIA.innerHTML += `<option value="autre">Autre (préciser...)</option>`;
   });
 }
+function sanitizeRichText(html) {
+  const parser = new DOMParser();
+  const source = parser.parseFromString(String(html || ""), "text/html");
+  const allowed = new Set(["STRONG", "B", "EM", "I", "U", "SPAN", "FONT", "BR"]);
+  const normalizeColor = value => {
+    const v = String(value || "").trim().toLowerCase();
+    if (!v) return "";
+    if (/^#[0-9a-f]{3,8}$/.test(v) || /^(rgb|hsl)a?\([0-9a-z, .%()-]+\)$/.test(v) || /^[a-z]{3,20}$/.test(v)) return v;
+    return "";
+  };
+
+  const cleanNode = node => {
+    Array.from(node.childNodes).forEach(child => {
+      if (child.nodeType === Node.TEXT_NODE) return;
+      if (child.nodeType !== Node.ELEMENT_NODE) {
+        child.remove();
+        return;
+      }
+
+      const tag = child.tagName;
+      if (!allowed.has(tag)) {
+        const parent = child.parentNode;
+        while (child.firstChild) parent.insertBefore(child.firstChild, child);
+        child.remove();
+        return;
+      }
+
+      const spanColor = tag === "SPAN" ? normalizeColor(child.style?.color) : "";
+      const fontColor = tag === "FONT" ? normalizeColor(child.getAttribute("color")) : "";
+
+      Array.from(child.attributes).forEach(attr => child.removeAttribute(attr.name));
+      if (tag === "SPAN") {
+        if (spanColor) child.style.color = spanColor;
+      } else if (tag === "FONT") {
+        if (fontColor) child.setAttribute("color", fontColor);
+        else {
+          const parent = child.parentNode;
+          while (child.firstChild) parent.insertBefore(child.firstChild, child);
+          child.remove();
+          return;
+        }
+      }
+      cleanNode(child);
+    });
+  };
+
+  cleanNode(source.body);
+  return source.body.innerHTML;
+}
+
+function richTextPlainLength(editor) {
+  return String(editor?.textContent || "").length;
+}
+
+function limitRichText(editor, maxLength = 350) {
+  if (!editor) return;
+  let current = richTextPlainLength(editor);
+  if (current <= maxLength) return;
+  let excess = current - maxLength;
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (let i = nodes.length - 1; i >= 0 && excess > 0; i--) {
+    const node = nodes[i];
+    const removeCount = Math.min(excess, node.nodeValue.length);
+    node.nodeValue = node.nodeValue.slice(0, node.nodeValue.length - removeCount);
+    excess -= removeCount;
+  }
+}
+
+function syncRichTextDescription() {
+  const editor = document.getElementById("post-desc-editor");
+  const hidden = document.getElementById("post-desc");
+  const counter = document.getElementById("desc-counter");
+  if (!editor || !hidden) return;
+  limitRichText(editor, 350);
+  const cleaned = sanitizeRichText(editor.innerHTML);
+  if (cleaned !== editor.innerHTML) editor.innerHTML = cleaned;
+  hidden.value = cleaned;
+  if (counter) counter.textContent = richTextPlainLength(editor);
+}
+
+function updateRichTextToolbarVisibility() {
+  const toolbar = document.getElementById("post-desc-toolbar");
+  if (!toolbar) return;
+  const isProfessorOrAdmin = isProfessorUser(currentUser) || currentUser?.role === "admin" || currentUser?.subRoles?.includes("admin");
+  toolbar.classList.toggle("hidden", !isProfessorOrAdmin);
+}
+
+window.applyRichTextCommand = (command, value = null) => {
+  const editor = document.getElementById("post-desc-editor");
+  if (!editor) return;
+  editor.focus();
+  document.execCommand(command, false, value);
+  syncRichTextDescription();
+};
+
+window.toggleRichTextColorMenu = () => {
+  const palette = document.getElementById("post-desc-color-palette");
+  if (palette) palette.classList.toggle("hidden");
+};
+
+window.applyRichTextColor = color => {
+  window.applyRichTextCommand("foreColor", color);
+  const palette = document.getElementById("post-desc-color-palette");
+  if (palette) palette.classList.add("hidden");
+};
+
+function initRichTextDescription() {
+  const editor = document.getElementById("post-desc-editor");
+  const hidden = document.getElementById("post-desc");
+  if (!editor || !hidden || editor.dataset.ready === "true") return;
+  editor.dataset.ready = "true";
+
+  editor.addEventListener("input", syncRichTextDescription);
+  editor.addEventListener("paste", event => {
+    event.preventDefault();
+    const text = event.clipboardData?.getData("text/plain") || "";
+    document.execCommand("insertText", false, text);
+    syncRichTextDescription();
+  });
+
+  document.querySelectorAll("#post-desc-toolbar button").forEach(button => {
+    button.addEventListener("mousedown", event => event.preventDefault());
+  });
+
+  syncRichTextDescription();
+}
+
 function initCharCounters() {
   const titleInput = document.getElementById('post-title');
-  const descInput = document.getElementById('post-desc');
   const titleCounter = document.getElementById('title-counter');
-  const descCounter = document.getElementById('desc-counter');
 
-  if (titleInput && titleCounter) {
+  if (titleInput && titleCounter && !titleInput.dataset.counterReady) {
+    titleInput.dataset.counterReady = "true";
     const updateTitle = () => {
       titleCounter.textContent = titleInput.value.length;
     };
     titleInput.addEventListener('input', updateTitle);
-    updateTitle(); 
+    updateTitle();
   }
 
-  if (descInput && descCounter) {
-    const updateDesc = () => {
-      descCounter.textContent = descInput.value.length;
-    };
-    descInput.addEventListener('input', updateDesc);
-    updateDesc();
-  }
+  initRichTextDescription();
+  updateRichTextToolbarVisibility();
+  syncRichTextDescription();
 }
 window.openSubjectInMatieres = (name) => {
   window._coursFilter.subject = name; 
@@ -2090,10 +2279,11 @@ window.navCarousel = (id, dir) => {
   if (item.kind === "image") {
     stage.innerHTML = `<img class="carousel-media-content" src="${esc(item.url)}" alt="Aperçu" onclick="event.stopPropagation(); openGalleryModal([${media.filter(m => m.kind === 'image').map(m => `'${esc(m.url)}'`).join(',')}], ${media.filter((m, i) => m.kind === 'image' && i < idx).length})">`;
   } else if (item.kind === "video") {
-    stage.innerHTML = `<video class="carousel-media-content carousel-video" src="${esc(item.url)}" controls playsinline preload="metadata"></video>`;
+    stage.innerHTML = customMp4PlayerHTML(item.url, `carousel-${id}-${idx}`);
   } else if (item.kind === "youtube") {
     stage.innerHTML = `<iframe class="carousel-media-content carousel-youtube" src="${esc(item.embedUrl)}" title="Vidéo YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
   }
+  if (item.kind === "video") initCustomMp4Players(stage);
   if (badgeEl) badgeEl.innerText = `${idx + 1} / ${media.length}`;
 };
 
@@ -2243,7 +2433,7 @@ window.getPostHTML = (p, context) => {
     if (item.kind === "image") {
       singleContent = `<img class="carousel-media-content" src="${esc(item.url)}" alt="Aperçu" onclick="openGalleryModal(['${esc(item.url)}'], 0)">`;
     } else if (item.kind === "video") {
-      singleContent = `<video class="carousel-media-content carousel-video" src="${esc(item.url)}" controls playsinline preload="metadata"></video>`;
+      singleContent = `${customMp4PlayerHTML(item.url, `single-${pId}-${index}`)}`;
     } else {
       singleContent = `<iframe class="carousel-media-content carousel-youtube" src="${esc(item.embedUrl)}" title="Vidéo YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     }
@@ -2253,7 +2443,7 @@ window.getPostHTML = (p, context) => {
     const first = mediaItems[0];
     let firstContent = "";
     if (first.kind === "image") firstContent = `<img class="carousel-media-content" src="${esc(first.url)}" alt="Aperçu" onclick="openGalleryModal(['${esc(first.url)}'], 0)">`;
-    else if (first.kind === "video") firstContent = `<video class="carousel-media-content carousel-video" src="${esc(first.url)}" controls playsinline preload="metadata"></video>`;
+    else if (first.kind === "video") firstContent = `${customMp4PlayerHTML(first.url, `first-${pId}-${context}`)}`;
     else firstContent = `<iframe class="carousel-media-content carousel-youtube" src="${esc(first.embedUrl)}" title="Vidéo YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     mediaBox = `
       <div class="post-carousel" id="carousel-${context}-${pId}" data-index="0" data-media="${mediaJson}">
@@ -2308,7 +2498,7 @@ window.getPostHTML = (p, context) => {
         
         repliesHTML += `
         <div class="cmt-reply">
-          <a href="#${r.userId}" class="cmt-user">${rName}${rBadge}</a> : ${r.text}
+          <a href="#${r.userId}" class="cmt-user">${escapeHTML(rName)}${rBadge}</a> : ${escapeHTML(r.text || "")}
           ${canDelRep ? `<div class="cmt-actions"><button class="del" onclick="delCmt('${pId}','${cmtId}','${rId}')">Supprimer</button></div>` : ''}
         </div>`;
       });
@@ -2318,7 +2508,7 @@ window.getPostHTML = (p, context) => {
     <div class="cmt-block ${c.isPinned ? 'pinned' : ''}">
       <div class="cmt-header">
         <div class="cmt-row">
-          ${c.isPinned ? '📌 ' : ''}<a href="#${c.userId}" class="cmt-user">${cmtName}${cmtBadge}</a> : ${c.text}
+          ${c.isPinned ? '📌 ' : ''}<a href="#${c.userId}" class="cmt-user">${escapeHTML(cmtName)}${cmtBadge}</a> : ${escapeHTML(c.text || "")}
         </div>
       </div>
       <div class="cmt-actions">
@@ -2342,7 +2532,7 @@ window.getPostHTML = (p, context) => {
         <div class="post-header">
           <a href="#${p.authorId}" class="post-av">${avContent}</a>
           <div style="flex:1;min-width:0">
-            <a href="#${p.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
+            <a href="#${p.authorId}" class="post-author-name">${escapeHTML(liveName)}${authorBadge}</a>
             <div class="post-meta">
               <span class="rbadge ${roleClass}">${liveRole}</span>
               <span class="type-tag ${p.type}" style="${tagBgClass}">${typeLabel}</span>
@@ -2358,7 +2548,7 @@ window.getPostHTML = (p, context) => {
         <div>
           <div>
   <div class="post-title">${p.title.length > 50 ? p.title.substring(0, 47) + '...' : p.title}</div>
-  ${p.description ? `<p class="post-desc">${p.description}</p>` : ""}
+  ${p.description ? `<div class="post-desc">${sanitizeRichText(p.description)}</div>` : ""}
 </div>
         ${fileChips}
         ${mediaBox}
@@ -2409,7 +2599,7 @@ window.getQuizHTML = (q) => {
       <div class="post-header">
         <a href="#${q.authorId}" class="post-av">${avContent}</a>
         <div style="flex:1;min-width:0">
-          <a href="#${q.authorId}" class="post-author-name">${liveName}${authorBadge}</a>
+          <a href="#${q.authorId}" class="post-author-name">${escapeHTML(liveName)}${authorBadge}</a>
           <div class="post-meta">
             <span class="rbadge ${roleClass}">${liveRole}</span>
             <span class="subj-tag">${subjIcon} ${q.matiere}</span>
@@ -2466,6 +2656,7 @@ function loadPinnedAnnonces() {
     });
     html += `</div></div>`;
     zone.innerHTML = html;
+    initCustomMp4Players(zone);
   });
 }
 
@@ -2547,6 +2738,7 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
   postsArray.forEach(p => {
     container.innerHTML += window.getPostHTML(p, context);
   });
+  initCustomMp4Players(container);
   setTimeout(() => {
   window.checkDescriptionHeight();
 }, 50);
@@ -2686,6 +2878,131 @@ const getYouTubeEmbedUrl = (url) => {
   } catch(e) { return null; }
 };
 
+const SVG_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.2v13.6a1 1 0 0 0 1.53.85l10.1-6.8a1 1 0 0 0 0-1.66l-10.1-6.8A1 1 0 0 0 8 5.2Z" fill="currentColor"/></svg>';
+const SVG_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5A1.5 1.5 0 0 1 8.5 4h1A1.5 1.5 0 0 1 11 5.5v13A1.5 1.5 0 0 1 9.5 20h-1A1.5 1.5 0 0 1 7 18.5v-13Zm6 0A1.5 1.5 0 0 1 14.5 4h1A1.5 1.5 0 0 1 17 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-13Z" fill="currentColor"/></svg>';
+const SVG_VOLUME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm11.5 0.5a1 1 0 0 0-1.4 1.4c.6.6.9 1.1.9 2.1s-.3 1.5-.9 2.1a1 1 0 1 0 1.4 1.4c1-1 1.5-2.2 1.5-3.5s-.5-2.5-1.5-3.5Zm2.4-2.4a1 1 0 0 0-1.4 1.4c1.3 1.3 2 3 2 4.6s-.7 3.3-2 4.6a1 1 0 0 0 1.4 1.4c1.7-1.7 2.6-3.8 2.6-6s-.9-4.3-2.6-6Z" fill="currentColor"/></svg>';
+const SVG_FULLSCREEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H5a1 1 0 0 0-1 1v3h2V6h2V4Zm8 0h3a1 1 0 0 1 1 1v3h-2V6h-2V4ZM4 16h2v2h2v2H5a1 1 0 0 1-1-1v-3Zm16 0v3a1 1 0 0 1-1 1h-3v-2h2v-2h2Z" fill="currentColor"/></svg>';
+
+function customMp4PlayerHTML(url, id) {
+  return `<div class="custom-mp4-player" data-video-id="${id}" data-video-url="${esc(url)}">
+    <video class="custom-mp4-video" src="${esc(url)}" playsinline preload="metadata"></video>
+    <button type="button" class="custom-mp4-center" aria-label="Lire / mettre en pause">${SVG_PLAY}</button>
+    <div class="custom-mp4-controls" aria-label="Contrôles vidéo">
+      <input class="custom-mp4-progress" type="range" min="0" max="1000" value="0" step="1" aria-label="Position de la vidéo">
+      <div class="custom-mp4-bottom">
+        <button type="button" class="custom-mp4-action custom-mp4-toggle" aria-label="Lire / mettre en pause">${SVG_PLAY}</button>
+        <span class="custom-mp4-time">0:00 / 0:00</span>
+        <div class="custom-mp4-spacer"></div>
+        <button type="button" class="custom-mp4-action custom-mp4-volume-icon" aria-label="Activer ou couper le son">${SVG_VOLUME}</button>
+        <input class="custom-mp4-volume" type="range" min="0" max="1" value="1" step="0.01" aria-label="Volume">
+        <button type="button" class="custom-mp4-action custom-mp4-fullscreen" aria-label="Plein écran">${SVG_FULLSCREEN}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function formatVideoTime(seconds) {
+  if (!Number.isFinite(seconds)) return "0:00";
+  const total = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(total / 60);
+  const secs = String(total % 60).padStart(2, "0");
+  return `${minutes}:${secs}`;
+}
+
+function refreshCustomMp4Player(player) {
+  const video = player?.querySelector(".custom-mp4-video");
+  if (!video) return;
+  const progress = player.querySelector(".custom-mp4-progress");
+  const time = player.querySelector(".custom-mp4-time");
+  const icons = player.querySelectorAll(".custom-mp4-toggle, .custom-mp4-center");
+  const ratio = video.duration ? video.currentTime / video.duration : 0;
+  if (progress) progress.value = String(Math.round(ratio * 1000));
+  if (time) time.textContent = `${formatVideoTime(video.currentTime)} / ${formatVideoTime(video.duration)}`;
+  icons.forEach(icon => icon.innerHTML = video.paused ? SVG_PLAY : SVG_PAUSE);
+}
+
+function setCustomMp4ControlsVisible(player, visible) {
+  if (!player) return;
+  player.classList.toggle("controls-hidden", !visible);
+}
+
+function armCustomMp4Controls(player) {
+  if (!player) return;
+  clearTimeout(player._hideTimer);
+  setCustomMp4ControlsVisible(player, true);
+  player._hideTimer = setTimeout(() => {
+    const video = player.querySelector(".custom-mp4-video");
+    if (video && !video.paused) setCustomMp4ControlsVisible(player, false);
+  }, 2000);
+}
+
+function toggleCustomMp4(video, player) {
+  if (!video) return;
+  if (video.paused) video.play().catch(() => {});
+  else video.pause();
+  refreshCustomMp4Player(player);
+  armCustomMp4Controls(player);
+}
+
+function initCustomMp4Players(root = document) {
+  root.querySelectorAll(".custom-mp4-player").forEach(player => {
+    if (player.dataset.ready === "true") return;
+    player.dataset.ready = "true";
+    const video = player.querySelector(".custom-mp4-video");
+    const center = player.querySelector(".custom-mp4-center");
+    const toggle = player.querySelector(".custom-mp4-toggle");
+    const volume = player.querySelector(".custom-mp4-volume");
+    const volumeIcon = player.querySelector(".custom-mp4-volume-icon");
+    const progress = player.querySelector(".custom-mp4-progress");
+    const fullscreen = player.querySelector(".custom-mp4-fullscreen");
+    if (!video) return;
+
+    video.pause();
+    video.currentTime = 0;
+    video.volume = 1;
+    video.muted = false;
+
+    const activity = () => armCustomMp4Controls(player);
+    ["pointermove", "pointerdown", "touchstart"].forEach(eventName => player.addEventListener(eventName, activity, { passive: true }));
+    center?.addEventListener("click", event => { event.stopPropagation(); toggleCustomMp4(video, player); });
+    toggle?.addEventListener("click", event => { event.stopPropagation(); toggleCustomMp4(video, player); });
+    volumeIcon?.addEventListener("click", event => {
+      event.stopPropagation();
+      video.muted = !video.muted;
+      if (!video.muted && video.volume === 0) video.volume = 0.5;
+      if (volume) volume.value = String(video.muted ? 0 : video.volume);
+      armCustomMp4Controls(player);
+    });
+    volume?.addEventListener("input", event => {
+      video.muted = false;
+      video.volume = Number(event.target.value);
+      refreshCustomMp4Player(player);
+      armCustomMp4Controls(player);
+    });
+    progress?.addEventListener("input", event => {
+      if (!video.duration) return;
+      video.currentTime = (Number(event.target.value) / 1000) * video.duration;
+      refreshCustomMp4Player(player);
+      armCustomMp4Controls(player);
+    });
+    fullscreen?.addEventListener("click", async event => {
+      event.stopPropagation();
+      try {
+        if (document.fullscreenElement === player) await document.exitFullscreen();
+        else if (player.requestFullscreen) await player.requestFullscreen();
+      } catch (_) {}
+      armCustomMp4Controls(player);
+    });
+    video.addEventListener("loadedmetadata", () => refreshCustomMp4Player(player));
+    video.addEventListener("timeupdate", () => refreshCustomMp4Player(player));
+    video.addEventListener("play", () => { refreshCustomMp4Player(player); armCustomMp4Controls(player); });
+    video.addEventListener("pause", () => { refreshCustomMp4Player(player); setCustomMp4ControlsVisible(player, true); });
+    video.addEventListener("ended", () => { refreshCustomMp4Player(player); setCustomMp4ControlsVisible(player, true); });
+    refreshCustomMp4Player(player);
+    setCustomMp4ControlsVisible(player, true);
+  });
+}
+
 window.handleCreatePost = async () => {
   const title = document.getElementById("post-title").value.trim();
   const type = document.getElementById("post-type").value;
@@ -2702,7 +3019,8 @@ window.handleCreatePost = async () => {
     }
   }
   
-  const desc = document.getElementById("post-desc").value.trim();
+  syncRichTextDescription();
+  const desc = sanitizeRichText(document.getElementById("post-desc").value || "");
   const tags = type === "cours" ? getSelectedTags('input[name="post-tag"]') : [];
   const urlInput = document.getElementById("post-url").value.trim();
   
@@ -2769,7 +3087,10 @@ window.handleCreatePost = async () => {
     await addDoc(collection(db, "posts"), post);
     
     document.getElementById("post-title").value = ""; 
-    document.getElementById("post-desc").value = ""; 
+    document.getElementById("post-desc").value = "";
+    const postDescEditor = document.getElementById("post-desc-editor");
+    if (postDescEditor) postDescEditor.innerHTML = "";
+    syncRichTextDescription(); 
     document.getElementById("post-url").value = "";
     const announcementVisibilityEl = document.getElementById("post-announcement-visibility");
     if (announcementVisibilityEl) announcementVisibilityEl.value = "tous";
@@ -3271,7 +3592,7 @@ window.toggleFollowCurrentProfile = async () => {
   }
 
   currentUser.following = myFollowing; 
-  localStorage.setItem("dnb_reviz_session", JSON.stringify(currentUser));
+  saveSessionLocally(currentUser);
   
   const fBtn = document.getElementById("pub-follow-btn");
   if (fBtn) { 

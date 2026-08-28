@@ -1028,3 +1028,202 @@
 @media (max-width:850px){.stats-title-row{flex-direction:column;align-items:flex-start}.stats-toolbar{width:100%;justify-content:flex-start}.stats-user-actions{width:100%;justify-content:flex-end}.stats-search{width:100%}.stats-users-head{align-items:flex-start}.stats-split-chart,.stats-split-chart-device{grid-template-columns:1fr}.stats-doughnut-wrap{width:180px;height:180px}.stats-legend{max-width:420px;width:100%;margin:0 auto}.stats-pills{grid-template-columns:1fr 1fr}}
 @media (max-width:750px){.stats-hero{padding:20px 16px 18px;border-radius:20px}.stats-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stats-kpi-card{padding:12px}.stats-kpi-card strong{font-size:23px}.stats-kpi-icon{width:30px;height:30px;border-radius:9px;font-size:14px}.stats-grid-2{grid-template-columns:1fr;gap:0}.stats-card{padding:15px;border-radius:17px;margin-bottom:12px}.stats-card-head{flex-direction:column;gap:8px}.stats-chart-wrap,.stats-chart-tall{height:245px}.stats-pills{grid-template-columns:1fr 1fr}.stats-users-head{gap:12px}.stats-user-actions{flex-direction:column;align-items:stretch}.stats-count-badge{align-self:flex-start}.stats-search{width:100%}.stats-footer-row{align-items:flex-start;flex-direction:column}.stats-toolbar{gap:7px}.stats-range-wrap{flex:1;min-width:145px}.stats-export-btn{flex:0 0 auto}.stats-hero-note{padding:10px}.stats-hero-orb{display:none}}
 @media (max-width:430px){.stats-kpi-grid{grid-template-columns:1fr 1fr}.stats-kpi-card{gap:8px}.stats-kpi-card .caption{font-size:9px}.stats-kpi-card small{font-size:10px}.stats-kpi-card strong{font-size:21px}.stats-pills{grid-template-columns:1fr}.stats-toolbar{width:100%}.stats-range-wrap{width:100%;flex:none}.stats-export-btn{flex:1}.stats-title-row .tagline{margin-top:4px}}
+
+
+/* Description riche dans Déposer un cours */
+.depot-description-group { position: relative; }
+#post-desc { display:none !important; }
+.richtext-editor {
+  min-height: 110px;
+  padding: 12px 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-b);
+  border-radius: 12px 12px 0 0;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+  font-family: inherit;
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.richtext-editor:focus { border-color: var(--primary); }
+.richtext-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-m);
+  opacity: .72;
+  pointer-events: none;
+}
+.richtext-editor strong, .richtext-editor b { font-weight: 800; }
+.richtext-editor em, .richtext-editor i { font-style: italic; }
+.richtext-editor u { text-decoration: underline; }
+.richtext-toolbar {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  min-height:46px;
+  padding:6px 8px;
+  border:1px solid var(--input-b);
+  border-top:0;
+  border-radius:0 0 12px 12px;
+  background:var(--filter-bg);
+}
+.richtext-toolbar button {
+  width:32px;
+  height:32px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid transparent;
+  border-radius:8px;
+  background:transparent;
+  color:var(--ink-m);
+  cursor:pointer;
+  padding:6px;
+}
+.richtext-toolbar button:hover,
+.richtext-toolbar button:focus-visible {
+  background:var(--primary-l);
+  color:var(--primary);
+  border-color:var(--hl);
+  outline:none;
+}
+.richtext-toolbar svg { width:18px; height:18px; display:block; }
+.richtext-color-wrap { position:relative; }
+.richtext-color-palette {
+  position:absolute;
+  left:0;
+  bottom:42px;
+  display:grid;
+  grid-template-columns:repeat(3, 30px);
+  gap:6px;
+  padding:8px;
+  background:var(--card-bg);
+  border:1px solid var(--hl);
+  border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+  z-index:20;
+}
+.richtext-color-swatch {
+  width:26px !important;
+  height:26px !important;
+  border:2px solid var(--card-bg) !important;
+  box-shadow:0 0 0 1px var(--hl);
+  background:var(--swatch) !important;
+  border-radius:50% !important;
+  padding:0 !important;
+}
+.richtext-color-swatch:hover { transform:none; }
+
+/* Lecteur MP4 personnalisé */
+.custom-mp4-player {
+  position:relative;
+  width:100%;
+  overflow:hidden;
+  border-radius:14px;
+  background:#000;
+  line-height:0;
+}
+.custom-mp4-video {
+  display:block;
+  width:100%;
+  height:auto;
+  max-height:520px;
+  object-fit:contain;
+  background:#000;
+  cursor:pointer;
+}
+.custom-mp4-center {
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:68px;
+  height:68px;
+  transform:translate(-50%, -50%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:0;
+  border-radius:50%;
+  background:rgba(0,0,0,.56);
+  color:#fff;
+  padding:17px;
+  cursor:pointer;
+  z-index:4;
+  transition:none !important;
+  animation:none !important;
+}
+.custom-mp4-center:hover,
+.custom-mp4-center:focus,
+.custom-mp4-center:active {
+  transform:translate(-50%, -50%) !important;
+  transition:none !important;
+  animation:none !important;
+}
+.custom-mp4-center svg { width:100%; height:100%; display:block; }
+.custom-mp4-controls {
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:10px 12px 11px;
+  background:linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,0));
+  opacity:1;
+  transition:opacity .16s ease;
+  z-index:3;
+}
+.custom-mp4-player.controls-hidden .custom-mp4-controls { opacity:0; pointer-events:none; }
+.custom-mp4-progress,
+.custom-mp4-volume {
+  appearance:none;
+  width:100%;
+  height:4px;
+  padding:0;
+  border:0;
+  border-radius:999px;
+  background:rgba(255,255,255,.3);
+  outline:none;
+  cursor:pointer;
+}
+.custom-mp4-progress::-webkit-slider-thumb,
+.custom-mp4-volume::-webkit-slider-thumb {
+  appearance:none;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  border:0;
+  background:#fff;
+}
+.custom-mp4-progress::-moz-range-thumb,
+.custom-mp4-volume::-moz-range-thumb {
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  border:0;
+  background:#fff;
+}
+.custom-mp4-bottom {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:7px;
+  color:#fff;
+}
+.custom-mp4-action {
+  width:30px;
+  height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:0;
+  background:transparent;
+  color:#fff;
+  padding:5px;
+  cursor:pointer;
+}
+.custom-mp4-action svg { width:100%; height:100%; display:block; }
+.custom-mp4-time { font-size:12px; font-weight:600; color:rgba(255,255,255,.92); white-space:nowrap; }
+.custom-mp4-spacer { flex:1; }
+.custom-mp4-volume { width:92px; }
+.custom-mp4-player:fullscreen { width:100vw; height:100vh; border-radius:0; display:flex; align-items:center; justify-content:center; }
+.custom-mp4-player:fullscreen .custom-mp4-video { width:100%; height:100%; max-height:none; }
