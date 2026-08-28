@@ -1172,7 +1172,8 @@
   transition:opacity .16s ease;
   z-index:3;
 }
-.custom-mp4-player.controls-hidden .custom-mp4-controls { opacity:0; pointer-events:none; }
+.custom-mp4-player.controls-hidden .custom-mp4-controls,
+.custom-mp4-player.controls-hidden .custom-mp4-center { opacity:0; pointer-events:none; }
 .custom-mp4-progress,
 .custom-mp4-volume {
   appearance:none;

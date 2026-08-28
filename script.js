@@ -2740,8 +2740,10 @@ function renderFeedFromDocs(postsArray, container, emptyMsg, sortOrder = 'recent
   });
   initCustomMp4Players(container);
   setTimeout(() => {
-  window.checkDescriptionHeight();
-}, 50);
+    if (typeof window.checkDescriptionHeight === "function") {
+      window.checkDescriptionHeight();
+    }
+  }, 50);
 }
 function loadAnnonces() {
   const isAdmin = currentUser.role === "admin" || (currentUser.subRoles && currentUser.subRoles.includes("admin"));
@@ -2988,11 +2990,24 @@ function initCustomMp4Players(root = document) {
     fullscreen?.addEventListener("click", async event => {
       event.stopPropagation();
       try {
-        if (document.fullscreenElement === player) await document.exitFullscreen();
-        else if (player.requestFullscreen) await player.requestFullscreen();
+        const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+        if (fullscreenElement === player) {
+          if (document.exitFullscreen) await document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } else if (player.requestFullscreen) {
+          await player.requestFullscreen();
+        } else if (player.webkitRequestFullscreen) {
+          player.webkitRequestFullscreen();
+        } else if (video.webkitEnterFullscreen) {
+          video.webkitEnterFullscreen();
+        }
       } catch (_) {}
       armCustomMp4Controls(player);
     });
+    document.addEventListener("fullscreenchange", () => refreshCustomMp4Player(player));
+    document.addEventListener("webkitfullscreenchange", () => refreshCustomMp4Player(player));
+    video.addEventListener("webkitbeginfullscreen", () => setCustomMp4ControlsVisible(player, false));
+    video.addEventListener("webkitendfullscreen", () => setCustomMp4ControlsVisible(player, true));
     video.addEventListener("loadedmetadata", () => refreshCustomMp4Player(player));
     video.addEventListener("timeupdate", () => refreshCustomMp4Player(player));
     video.addEventListener("play", () => { refreshCustomMp4Player(player); armCustomMp4Controls(player); });
