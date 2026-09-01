@@ -11,7 +11,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://cdn.jsdelivr.net https://cdn.onesignal.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https:; connect-src 'self' https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://*.firebaseapp.com; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://www.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https:; connect-src 'self' https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://*.firebaseapp.com; form-action 'self';">
 <title>DnB Reviz</title>
 <meta property="og:title" content="DnB Reviz" />
 <meta property="og:image" content="https://iili.io/CR2iW9n.png" />
@@ -30,25 +30,6 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="https://i.ibb.co/tPpXJLTz/Dn-BChrome.png">
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  window.dnbOneSignalReady = new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("ONESIGNAL_TIMEOUT")), 30000);
-    window.OneSignalDeferred.push(async function(OneSignal) {
-      try {
-        await OneSignal.init({
-          appId: "d0900059-082b-458f-9bb1-8798546b8010"
-        });
-        clearTimeout(timeout);
-        resolve(OneSignal);
-      } catch (error) {
-        clearTimeout(timeout);
-        reject(error);
-      }
-    });
-  });
-</script>
 <script>
   try {
     if (window.top !== window.self) window.top.location = window.self.location.href;
@@ -714,21 +695,6 @@
         </div>
 
         <div class="settings-sec">
-          <h3>🔔 Notifications Push</h3>
-          <div class="setting-row">
-            <div>
-              <div class="setting-label">Recevoir des notifications push</div>
-              <div class="setting-desc">Alertes directement sur cet appareil, même quand l'onglet est fermé</div>
-            </div>
-            <label class="tog">
-              <input type="checkbox" id="tog-push-notif" onchange="togglePushNotifs(this.checked)">
-              <div class="tog-track"></div>
-              <div class="tog-thumb"></div>
-            </label>
-          </div>
-        </div>
-
-        <div class="settings-sec">
           <h3>📜 Historique Quiz IA</h3>
           <p class="setting-desc" style="margin-bottom:12px;">Retrouve ici les quiz que tu as générés avec l'IA.</p>
           <div id="settings-ai-quiz-history" style="display:flex; flex-direction:column; gap:10px; max-height:300px; overflow-y:auto;">
@@ -778,7 +744,6 @@
           <span id="admin-mod-dot" style="display:none; width:10px; height:10px; background:var(--danger); border-radius:50%; position:absolute; top:8px; right:6px;"></span>
         </button>
         <button class="tk-tab" data-adm-tab="maintenance" onclick="switchAdminTab('maintenance')" style="padding:12px 20px; font-size:16px;">Maintenance</button>
-        <button class="tk-tab" data-adm-tab="notifications" onclick="switchAdminTab('notifications')" style="padding:12px 20px; font-size:16px;">Notifications</button>
       </div>
 
       <div id="adm-view-membres" class="adm-tab-content">
@@ -872,22 +837,6 @@
       <textarea id="adm-maintenance-message" rows="3" placeholder="DnB Reviz est actuellement en maintenance. Nous serons de retour très bientôt, merci de ta patience !" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--hl); font-family:inherit; outline:none; background:var(--input-bg); color:var(--ink); resize:vertical;"></textarea>
     </div>
     <button class="btn-pill mt-2" onclick="saveMaintenanceSettings(document.getElementById('adm-maintenance-toggle').checked)">Enregistrer le message</button>
-  </div>
-</div>
-<div id="adm-view-notifications" class="adm-tab-content" style="display:none;">
-  <div class="settings-sec" style="max-width:560px;">
-    <h3>🔔 Envoyer une notification push</h3>
-    <p class="setting-desc" style="margin-bottom:16px;">Envoyée à tous les membres ayant activé les notifications push dans leurs paramètres.</p>
-    <div class="input-group">
-      <label>Titre</label>
-      <input type="text" id="adm-push-title" placeholder="Ex : Nouveau quiz disponible !" maxlength="65" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--hl); font-family:inherit; outline:none; background:var(--input-bg); color:var(--ink);">
-    </div>
-    <div class="input-group mt-2">
-      <label>Message</label>
-      <textarea id="adm-push-body" rows="3" maxlength="200" placeholder="Le contenu de la notification..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--hl); font-family:inherit; outline:none; background:var(--input-bg); color:var(--ink); resize:vertical;"></textarea>
-    </div>
-    <button class="btn-pill mt-2" id="adm-push-send-btn" onclick="sendAdminPushNotification()">Envoyer la notification</button>
-    <p id="adm-push-status" class="setting-desc" style="margin-top:10px;"></p>
   </div>
 </div>
     </section>
@@ -996,6 +945,32 @@
           <table class="stats-table">
             <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Dernière connexion</th><th>Sessions</th><th>Dernière page</th><th>Zone</th></tr></thead>
             <tbody id="stats-users-tbody"><tr><td colspan="6" class="stats-empty">Chargement…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="stats-card" style="margin-top:20px;">
+        <div class="stats-card-head stats-users-head">
+          <div><span class="stats-section-label">TEMPS TOTAL · ADMIN</span><h3>Classement des élèves</h3><p class="caption">Temps actif cumulé sur DnB Reviz depuis la mise en place de cette collecte.</p></div>
+          <span class="stats-card-badge">cumulatif</span>
+        </div>
+        <div class="stats-table-wrap">
+          <table class="stats-table">
+            <thead><tr><th>Rang</th><th>Élève</th><th>Temps total</th><th>Sessions</th><th>Pages</th><th>Quiz terminés</th><th>Quiz IA générés</th><th>Dernière activité</th></tr></thead>
+            <tbody id="stats-lifetime-ranking-tbody"><tr><td colspan="8" class="stats-empty">Chargement…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="stats-card" style="margin-top:20px;">
+        <div class="stats-card-head stats-users-head">
+          <div><span class="stats-section-label">ACTIVITÉ · PÉRIODE</span><h3>Engagement par élève</h3><p class="caption">Temps actif, navigation, quiz et interactions enregistrées sur la période sélectionnée.</p></div>
+          <div class="stats-user-actions"><input id="stats-activity-search" class="stats-search" type="search" placeholder="Rechercher un élève…" oninput="renderActivityRanking()"></div>
+        </div>
+        <div class="stats-table-wrap">
+          <table class="stats-table">
+            <thead><tr><th>Rang</th><th>Élève</th><th>Temps</th><th>Sessions</th><th>Pages</th><th>Quiz démarrés</th><th>Quiz terminés</th><th>Quiz IA générés</th><th>Recherches</th><th>Dernière activité</th></tr></thead>
+            <tbody id="stats-activity-ranking-tbody"><tr><td colspan="10" class="stats-empty">Chargement…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1134,16 +1109,6 @@
   </div>
 </div>
 
-<div id="m-push-consent" class="moverlay">
-  <div class="mbox">
-    <h2>🔔 Activer les notifications ?</h2>
-    <p id="push-consent-text" class="caption mt-1" style="margin-bottom:20px">Reçois les rappels et informations importantes de DnB Reviz directement sur cet appareil.</p>
-    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
-      <button class="btn-ghost" type="button" onclick="handlePushConsent(false)">Non, merci</button>
-      <button class="btn-pill" type="button" onclick="handlePushConsent(true)">Oui, activer</button>
-    </div>
-  </div>
-</div>
 
 <div id="m-force-pwd" class="moverlay">
   <div class="mbox">

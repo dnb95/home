@@ -397,6 +397,7 @@
   .contrib-pill-top strong{color:var(--primary-f);font-size:16px;font-weight:800}
   
   .pub-main-info{display:flex;flex-direction:column;gap:6px}
+  #pub-tab-quiz-ia{padding-top:16px;}
   .pub-name-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .pub-name-line h1{font-size:32px;line-height:1; display:flex; align-items:center;}
   .pub-uname{font-size:15px;color:var(--ink-m);font-weight:500}

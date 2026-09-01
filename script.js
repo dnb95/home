@@ -22,7 +22,6 @@ window.emailjs.init("2VkygefcXxbSOlhFX");
 const GROQ_API_URL = "https://groqrelay.greninja71144.workers.dev";
 const GROQ_MODEL   = "openai/gpt-oss-120b"; 
 
-const ADMIN_PUSH_ENDPOINT = "https://groqrelay.greninja71144.workers.dev/onesignal";
 
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_LOCK_MS = 30000;
@@ -30,138 +29,6 @@ let loginFailedAttempts = 0;
 let loginLockedUntil = 0;
 
 
-function withOneSignal(callback, timeoutMs = 30000) {
-  const ready = window.dnbOneSignalReady || new Promise((resolve, reject) => {
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async function(OneSignal) {
-      try {
-        resolve(OneSignal);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
-
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      reject(new Error("ONESIGNAL_TIMEOUT"));
-    }, timeoutMs);
-
-    ready.then(async (OneSignal) => {
-      if (settled) return;
-      try {
-        const result = await callback(OneSignal);
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(result);
-      } catch (error) {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        reject(error);
-      }
-    }).catch(error => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      reject(error);
-    });
-  });
-}
-
-let oneSignalPushListenerRegistered = false;
-
-function setPushToggleState(enabled) {
-  const checkbox = document.getElementById("tog-push-notif");
-  if (checkbox) checkbox.checked = !!enabled;
-}
-
-function setLocalPushState(enabled, subscriptionId = null) {
-  if (!currentUser) return;
-
-  currentUser.pushEnabled = !!enabled;
-  currentUser.oneSignalSubscriptionId = subscriptionId || null;
-
-  try {
-    saveSessionLocally(currentUser);
-  } catch (error) {
-    console.warn("Impossible de mettre à jour la session locale :", error);
-  }
-
-  setPushToggleState(enabled);
-}
-
-function registerOneSignalPushListener() {
-  if (oneSignalPushListenerRegistered) return;
-  oneSignalPushListenerRegistered = true;
-
-  withOneSignal(async (OneSignal) => {
-    OneSignal.User.PushSubscription.addEventListener("change", (event) => {
-      const subscription = event?.current || OneSignal.User.PushSubscription;
-      const optedIn = !!subscription?.optedIn;
-      const subscriptionId = subscription?.id || null;
-
-      setLocalPushState(optedIn, subscriptionId);
-    });
-  }).catch(error => {
-    oneSignalPushListenerRegistered = false;
-    console.error("Erreur d'initialisation du listener OneSignal :", error);
-  });
-}
-
-async function getOneSignalPushState() {
-  return withOneSignal(async (OneSignal) => {
-    const subscription = OneSignal.User.PushSubscription;
-    return {
-      supported: OneSignal.Notifications.isPushSupported(),
-      optedIn: !!subscription?.optedIn,
-      subscriptionId: subscription?.id || null,
-      permission: OneSignal.Notifications.permission || null
-    };
-  });
-}
-
-async function waitForOneSignalSubscription(timeoutMs = 5000) {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < timeoutMs) {
-    const state = await getOneSignalPushState();
-
-    if (state.optedIn && state.subscriptionId) {
-      return state;
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 250));
-  }
-
-  return getOneSignalPushState();
-}
-
-async function syncOneSignalUser(u) {
-  if (!u?.id) return;
-
-  try {
-    await withOneSignal(async (OneSignal) => {
-      await OneSignal.login(String(u.id));
-      registerOneSignalPushListener();
-
-      const supported = OneSignal.Notifications.isPushSupported();
-      if (!supported) {
-        setLocalPushState(false, null);
-        return;
-      }
-
-      const subscription = OneSignal.User.PushSubscription;
-      setLocalPushState(!!subscription?.optedIn, subscription?.id || null);
-    });
-  } catch (error) {
-    console.error("Erreur de synchronisation du compte OneSignal :", error);
-  }
-}
 
 window.currentUser = null;
 
@@ -255,8 +122,11 @@ window._allAdminUsers = [];
 window._analyticsSessionId = null;
 window._analyticsSessionUserId = null;
 window._analyticsHeartbeatTimer = null;
+window._activityState = null;
+window._activityTimer = null;
+window._activityFlushTimer = null;
 window._statisticsCharts = {};
-window._statisticsCache = { users: [], sessions: [], events: [], daily: [], hourly: [], concurrent: [] };
+window._statisticsCache = { users: [], sessions: [], events: [], daily: [], hourly: [], concurrent: [], activity: [], activityLifetime: [] };
 
 const GA_MEASUREMENT_ID = window.DNB_GA_MEASUREMENT_ID || "";
 let _gaReady = false;
@@ -296,6 +166,19 @@ function analyticsSessionIdForUser(user) {
   window._analyticsSessionId = `${user.id}_${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
   return window._analyticsSessionId;
 }
+function activityStorageKey(userId) { return `dnb_activity_${String(userId || "")}`; }
+function createActivityState(user) { const now=Date.now(); return { userId:String(user?.id||""), username:String(user?.username||user?.id||""), role:String(user?.role||""), sessionId:`${String(user?.id||"")}_${now}`, durationMs:0, pageViews:0, quizStarts:0, quizCompletes:0, aiQuizGenerations:0, searches:0, likes:0, comments:0, shares:0, postsViewed:0, postsCreated:0, lastPage:"", lastActivity:now, lastTick:now }; }
+function loadActivityState(user) { const fresh=createActivityState(user); try { const raw=localStorage.getItem(activityStorageKey(user?.id)); if(!raw)return fresh; const old=JSON.parse(raw); return { ...fresh, ...old, sessionId:fresh.sessionId, lastTick:Date.now() }; } catch(_) { return fresh; } }
+function saveActivityState() { const st=window._activityState; if(!st?.userId)return; try{localStorage.setItem(activityStorageKey(st.userId),JSON.stringify(st));}catch(_){} }
+function tickActivity() { const st=window._activityState; if(!st||!currentUser?.id||currentUser.id!==st.userId)return; const now=Date.now(); const delta=Math.max(0,now-Number(st.lastTick||now)); if(document.visibilityState==="visible") st.durationMs+=Math.min(delta,120000); st.lastTick=now; st.lastActivity=now; saveActivityState(); }
+async function flushActivity(reason="periodic") { const st=window._activityState; if(!st?.userId)return; tickActivity(); const payload={...st,flushReason:String(reason),timestamp:Date.now()}; delete payload.lastTick; try { await setDoc(doc(db,"analytics_activity",`${st.userId}_${st.sessionId}`),payload,{merge:true}); localStorage.removeItem(activityStorageKey(st.userId)); } catch(error) { saveActivityState(); console.debug("Activité non synchronisée :",error?.code||error?.message||error); } }
+function initLocalActivityTracking(user) { if(!user?.id)return; if(window._activityState?.userId===String(user.id) && window._activityState.sessionId) return; if(window._activityTimer)clearInterval(window._activityTimer); if(window._activityFlushTimer)clearInterval(window._activityFlushTimer); window._activityState=loadActivityState(user); window._activityTimer=setInterval(tickActivity,15000); window._activityFlushTimer=setInterval(()=>void flushActivity("interval"),60000); tickActivity(); }
+function trackActivityPage(page) { const st=window._activityState;if(!st)return;st.lastPage=String(page||"");st.pageViews++;st.lastActivity=Date.now();saveActivityState(); }
+function trackActivityEvent(type) { const st=window._activityState;if(!st)return; const k=String(type||""); if(k==="quiz_start")st.quizStarts++; else if(k==="quiz_complete")st.quizCompletes++; else if(k==="ai_quiz_generated")st.aiQuizGenerations++; else if(k==="search")st.searches++; else if(k==="like")st.likes++; else if(k==="comment")st.comments++; else if(k==="share")st.shares++; else if(k==="post_view")st.postsViewed++; else if(k==="post_create")st.postsCreated++; st.lastActivity=Date.now();saveActivityState(); }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") void flushActivity("hidden"); else if(window._activityState) window._activityState.lastTick=Date.now(); });
+window.addEventListener("pagehide",()=>void flushActivity("pagehide"));
+window.addEventListener("beforeunload",()=>tickActivity());
+
 async function recordAnalyticsEvent(type, payload = {}) {
   if (!currentUser?.id) return;
   try {
@@ -317,6 +200,7 @@ async function recordAnalyticsEvent(type, payload = {}) {
 }
 async function startAnalyticsSession(user) {
   if (!user?.id) return;
+  initLocalActivityTracking(user);
   const sessionId = analyticsSessionIdForUser(user);
   const shouldStart = !window._analyticsHeartbeatTimer;
   try {
@@ -342,6 +226,7 @@ async function startAnalyticsSession(user) {
   if (shouldStart) recordAnalyticsEvent("login", { sessionId });
 }
 async function endAnalyticsSession() {
+  await flushActivity("logout");
   const id = window._analyticsSessionId;
   if (!id) return;
   if (window._analyticsHeartbeatTimer) clearInterval(window._analyticsHeartbeatTimer);
@@ -619,55 +504,6 @@ window.saveMaintenanceSettings = async (activate) => {
   }
 };
 
-window.sendAdminPushNotification = async () => {
-  const isAdmin = currentUser && (currentUser.role === 'admin' || (currentUser.subRoles && currentUser.subRoles.includes('admin')));
-  if (!isAdmin) { showToast("Accès non autorisé."); return; }
-
-  const title = document.getElementById("adm-push-title")?.value.trim() || "";
-  const body  = document.getElementById("adm-push-body")?.value.trim() || "";
-  const statusEl = document.getElementById("adm-push-status");
-  const btn = document.getElementById("adm-push-send-btn");
-
-  if (!title || !body) {
-    showToast("Renseigne un titre et un message.");
-    return;
-  }
-
-  if (btn) { btn.disabled = true; btn.innerText = "Envoi en cours..."; }
-  if (statusEl) statusEl.innerText = "";
-
-  try {
-    const res = await fetch(ADMIN_PUSH_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        app_id: "d0900059-082b-458f-9bb1-8798546b8010",
-        title,
-        body,
-        url: "https://dnb95.github.io/home/"
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Erreur serveur");
-
-    if (data.sent > 0) {
-      showToast(`Notification envoyée à ${data.sent} abonné(s) ✓`);
-      if (statusEl) statusEl.innerText = `${data.sent} notification(s) envoyée(s) ✓`;
-    } else {
-      showToast("Aucun utilisateur n'a activé les notifications push.");
-      if (statusEl) statusEl.innerText = "Aucun utilisateur n'est actuellement abonné aux notifications push.";
-    }
-
-    document.getElementById("adm-push-title").value = "";
-    document.getElementById("adm-push-body").value = "";
-  } catch (e) {
-    console.error("Erreur notification push :", e);
-    showToast("Erreur lors de l'envoi de la notification.");
-    if (statusEl) statusEl.innerText = e?.message ? `Erreur : ${e.message}` : "Une erreur est survenue lors de l'envoi.";
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerText = "Envoyer la notification"; }
-  }
-};
 
 async function migrateOldPosts() {
 try {
@@ -860,32 +696,39 @@ function renderStatisticsPages(events){
   const rows=Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,18),max=rows[0]?.[1]||1;
   el.innerHTML=rows.length?rows.map(([p,n])=>`<div class="stats-page-item"><strong>${esc(p)}</strong><div class="caption">${n} vue${n>1?"s":""}</div><div class="bar" style="width:${Math.max(8,Math.round(n/max*100))}%"></div></div>`).join(""):'<div class="stats-empty">Aucune donnée de navigation.</div>';
 }
+function formatActivityDuration(ms){const min=Math.max(0,Math.round(Number(ms||0)/60000));const h=Math.floor(min/60),m=min%60;return h?`${h}h ${String(m).padStart(2,"0")}min`:`${m} min`;}
+function aggregateActivity(docs,users,since=0){const map=new Map();const ensure=(id,f={})=>{const k=String(id||f.id||"");if(!k)return null;if(!map.has(k))map.set(k,{id:k,username:f.username||k,role:f.role||"",durationMs:0,sessions:0,pageViews:0,quizStarts:0,quizCompletes:0,aiQuizGenerations:0,searches:0,likes:0,comments:0,shares:0,postsViewed:0,postsCreated:0,lastActivity:0});return map.get(k);};users.forEach(u=>ensure(u.id,u));docs.forEach(a=>{const r=ensure(a.userId,a);if(!r)return;const ts=Number(a.timestamp||0);r.lastActivity=Math.max(r.lastActivity,ts);if(ts<since)return;r.sessions++;r.durationMs+=Number(a.durationMs||0);r.pageViews+=Number(a.pageViews||0);r.quizStarts+=Number(a.quizStarts||0);r.quizCompletes+=Number(a.quizCompletes||0);r.aiQuizGenerations+=Number(a.aiQuizGenerations||0);r.searches+=Number(a.searches||0);r.likes+=Number(a.likes||0);r.comments+=Number(a.comments||0);r.shares+=Number(a.shares||0);r.postsViewed+=Number(a.postsViewed||0);r.postsCreated+=Number(a.postsCreated||0);});return [...map.values()];}
+function renderLifetimeActivityRanking(){const tb=document.getElementById("stats-lifetime-ranking-tbody");if(!tb)return;const rows=[...(window._statisticsCache.activityLifetime||[])].filter(r=>r.role!=="professeur"&&r.role!=="admin").sort((a,b)=>b.durationMs-a.durationMs);tb.innerHTML=rows.length?rows.slice(0,200).map((r,i)=>`<tr><td><strong>#${i+1}</strong></td><td><strong>@${esc(r.username||r.id)}</strong></td><td>${formatActivityDuration(r.durationMs)}</td><td>${r.sessions}</td><td>${r.pageViews}</td><td>${r.quizCompletes}</td><td>${r.aiQuizGenerations}</td><td>${formatStatsDate(r.lastActivity)}</td></tr>`).join(""):'<tr><td colspan="8" class="stats-empty">Aucune donnée.</td></tr>';}
+function renderActivityRanking(){const tb=document.getElementById("stats-activity-ranking-tbody");if(!tb)return;const q=(document.getElementById("stats-activity-search")?.value||"").toLowerCase().trim();const rows=[...(window._statisticsCache.activity||[])].filter(r=>r.role!=="professeur"&&r.role!=="admin"&&(!q||String(r.username||"").toLowerCase().includes(q))).sort((a,b)=>b.durationMs-a.durationMs);tb.innerHTML=rows.length?rows.slice(0,200).map((r,i)=>`<tr><td><strong>#${i+1}</strong></td><td><strong>@${esc(r.username||r.id)}</strong></td><td>${formatActivityDuration(r.durationMs)}</td><td>${r.sessions}</td><td>${r.pageViews}</td><td>${r.quizStarts}</td><td>${r.quizCompletes}</td><td>${r.aiQuizGenerations}</td><td>${r.searches}</td><td>${formatStatsDate(r.lastActivity)}</td></tr>`).join(""):'<tr><td colspan="10" class="stats-empty">Aucune donnée.</td></tr>';}
+
 window.loadStatisticsDashboard=async()=>{
   if(!isAdminUser(currentUser)){showToast("Accès non autorisé.");window.location.hash="#accueil";return;}
   const status=document.getElementById("stats-status"),rangeDays=Math.max(1,Number(document.getElementById("stats-range")?.value||7)),since=Date.now()-rangeDays*86400000;
   if(status)status.textContent="Chargement des statistiques…";
   try{
-    const [usersSnap,sessionsSnap,eventsSnap]=await Promise.all([
+    const [usersSnap,sessionsSnap,eventsSnap,activitySnap]=await Promise.all([
       getDocs(collection(db,"users")),
       getDocs(query(collection(db,"analytics_sessions"),where("startedAt",">=",since))),
-      getDocs(query(collection(db,"analytics_events"),where("timestamp",">=",since)))
+      getDocs(query(collection(db,"analytics_events"),where("timestamp",">=",since))),
+      getDocs(collection(db,"analytics_activity"))
     ]);
-    const users=[],sessions=[],events=[];usersSnap.forEach(d=>users.push({id:d.id,...d.data()}));sessionsSnap.forEach(d=>sessions.push({id:d.id,...d.data()}));eventsSnap.forEach(d=>events.push({id:d.id,...d.data()}));
+    const users=[],sessions=[],events=[],activityDocs=[];usersSnap.forEach(d=>users.push({id:d.id,...d.data()}));sessionsSnap.forEach(d=>sessions.push({id:d.id,...d.data()}));eventsSnap.forEach(d=>events.push({id:d.id,...d.data()}));activitySnap.forEach(d=>activityDocs.push({id:d.id,...d.data()}));
     const perUser=new Map();users.forEach(u=>perUser.set(u.id,{id:u.id,username:u.username||u.id,role:u.role||"—",sessions:0,lastLogin:0,lastPage:"—",timezone:"—",countryHint:""}));
     sessions.forEach(s=>{const u=perUser.get(s.userId)||{id:s.userId,username:s.username||s.userId,role:s.role||"—",sessions:0,lastLogin:0,lastPage:"—",timezone:s.timezone||"—",countryHint:s.countryHint||""};u.sessions++;u.lastLogin=Math.max(u.lastLogin||0,Number(s.startedAt||0));u.timezone=s.timezone||u.timezone;u.countryHint=s.countryHint||u.countryHint;perUser.set(s.userId,u);});
     events.filter(e=>e.type==="login").forEach(e=>{const u=perUser.get(e.userId)||{id:e.userId,username:e.username||e.userId,role:e.role||"—",sessions:0,lastLogin:0,lastPage:"—",timezone:e.timezone||"—",countryHint:e.countryHint||""};u.lastLogin=Math.max(u.lastLogin||0,Number(e.timestamp||0));u.timezone=e.timezone||u.timezone;u.countryHint=e.countryHint||u.countryHint;perUser.set(e.userId,u);});
     events.filter(e=>e.type==="page_view").forEach(e=>{const u=perUser.get(e.userId);if(u&&Number(e.timestamp||0)>=Number(u.lastLogin||0))u.lastPage=e.page||u.lastPage;});
     const userRows=Array.from(perUser.values()).sort((a,b)=>(b.lastLogin||0)-(a.lastLogin||0));
+    const activity=aggregateActivity(activityDocs,users,since),activityLifetime=aggregateActivity(activityDocs,users,0);
     const hourly=buildHourlyConnectionData(events),concurrent=buildConcurrentByHour(sessions),daily=buildDailyData(events,rangeDays);
     const liveCutoff=Date.now()-3*60*1000,live=sessions.filter(s=>Number(s.lastSeenAt||0)>=liveCutoff&&!s.endedAt).length,views=events.filter(e=>e.type==="page_view").length,peak=Math.max(0,...concurrent);
-    window._statisticsCache={users:userRows,sessions,events,hourly,concurrent,daily};
+    window._statisticsCache={users:userRows,sessions,events,hourly,concurrent,daily,activity,activityLifetime};
     document.getElementById("stats-kpi-users").textContent=users.length;
     document.getElementById("stats-kpi-sessions").textContent=sessions.length;
     document.getElementById("stats-kpi-logins").textContent=events.filter(e=>e.type==="login").length;
     document.getElementById("stats-kpi-peak").textContent=peak;
     document.getElementById("stats-kpi-live").textContent=live;
     document.getElementById("stats-kpi-views").textContent=views;
-    renderStatisticsUsers();renderStatisticsTimezones(userRows);renderStatisticsPages(events);destroyStatsCharts();
+    renderStatisticsUsers();renderStatisticsTimezones(userRows);renderStatisticsPages(events);renderLifetimeActivityRanking();renderActivityRanking();destroyStatsCharts();
     if(window.Chart){
       const opts=chartDefaults();
       window._statisticsCharts.hourly=new Chart(document.getElementById("stats-hourly-chart"),{type:"bar",data:{labels:Array.from({length:24},(_,i)=>`${String(i).padStart(2,"0")}h`),datasets:[{label:"Connexions",data:hourly,backgroundColor:"rgba(0,122,255,.72)",borderRadius:7,borderSkipped:false,maxBarThickness:20}]},options:opts});
@@ -898,7 +741,7 @@ window.loadStatisticsDashboard=async()=>{
     if(status)status.textContent=`Données internes : ${rangeDays} jour${rangeDays>1?"s":""}. Dernière actualisation ${formatStatsDate(Date.now())}.`;
   }catch(error){console.error("Erreur statistiques :",error);if(status)status.textContent="Impossible de charger les statistiques. Vérifie les règles Firestore pour analytics_events et analytics_sessions.";showToast("Statistiques indisponibles.");}
 };
-function statisticsExportPayload(){return{generatedAt:new Date().toISOString(),rangeDays:Number(document.getElementById("stats-range")?.value||7),summary:{users:document.getElementById("stats-kpi-users")?.textContent||"0",sessions:document.getElementById("stats-kpi-sessions")?.textContent||"0",logins:document.getElementById("stats-kpi-logins")?.textContent||"0",peakConcurrent:document.getElementById("stats-kpi-peak")?.textContent||"0",liveNow:document.getElementById("stats-kpi-live")?.textContent||"0",pageViews:document.getElementById("stats-kpi-views")?.textContent||"0"},hourlyConnections:window._statisticsCache.hourly||[],concurrentByHour:window._statisticsCache.concurrent||[],daily:window._statisticsCache.daily||{},users:window._statisticsCache.users||[],sessions:window._statisticsCache.sessions||[],events:window._statisticsCache.events||[]};}
+function statisticsExportPayload(){return{generatedAt:new Date().toISOString(),rangeDays:Number(document.getElementById("stats-range")?.value||7),summary:{users:document.getElementById("stats-kpi-users")?.textContent||"0",sessions:document.getElementById("stats-kpi-sessions")?.textContent||"0",logins:document.getElementById("stats-kpi-logins")?.textContent||"0",peakConcurrent:document.getElementById("stats-kpi-peak")?.textContent||"0",liveNow:document.getElementById("stats-kpi-live")?.textContent||"0",pageViews:document.getElementById("stats-kpi-views")?.textContent||"0"},hourlyConnections:window._statisticsCache.hourly||[],concurrentByHour:window._statisticsCache.concurrent||[],daily:window._statisticsCache.daily||{},users:window._statisticsCache.users||[],sessions:window._statisticsCache.sessions||[],events:window._statisticsCache.events||[],activity:window._statisticsCache.activity||[],activityLifetime:window._statisticsCache.activityLifetime||[]};}
 window.exportStatisticsJSON=()=>{if(!isAdminUser(currentUser))return showToast("Accès non autorisé.");const blob=new Blob([JSON.stringify(statisticsExportPayload(),null,2)],{type:"application/json;charset=utf-8"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`dnb-statistiques-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);};
 window.exportStatisticsPDF=()=>{if(!isAdminUser(currentUser))return showToast("Accès non autorisé.");if(!window.jspdf?.jsPDF)return showToast("Le module PDF n'est pas disponible.");const{jsPDF}=window.jspdf,p=statisticsExportPayload(),doc=new jsPDF({unit:"mm",format:"a4"});doc.setFontSize(20);doc.text("DnB Reviz — Rapport statistiques",14,18);doc.setFontSize(10);doc.text(`Généré le ${new Date().toLocaleString("fr-FR")} · Période: ${p.rangeDays} jour(s)`,14,25);let y=35;doc.setFontSize(12);[`Utilisateurs connus : ${p.summary.users}`,`Sessions : ${p.summary.sessions}`,`Connexions : ${p.summary.logins}`,`Pic de connectés estimé : ${p.summary.peakConcurrent}`,`Connectés maintenant : ${p.summary.liveNow}`,`Pages vues : ${p.summary.pageViews}`].forEach(t=>{doc.text(t,14,y);y+=7;});y+=4;doc.setFontSize(14);doc.text("Connexions par heure",14,y);y+=7;doc.setFontSize(10);for(let i=0;i<24;i+=4){const row=[0,1,2,3].map(j=>{const h=i+j;return`${String(h).padStart(2,"0")}h: ${p.hourlyConnections[h]||0}`;}).join("    ");doc.text(row,14,y);y+=6;}y+=4;doc.setFontSize(14);doc.text("Utilisateurs",14,y);y+=7;doc.setFontSize(9);(p.users||[]).slice(0,30).forEach(u=>{const line=`@${u.username||u.id} · ${u.role||"—"} · ${formatStatsDate(u.lastLogin)} · ${u.sessions||0} session(s) · ${[u.timezone,u.countryHint].filter(Boolean).join(" · ")||"—"}`;const wrapped=doc.splitTextToSize(line,180);if(y>275){doc.addPage();y=18;}doc.text(wrapped,14,y);y+=5*wrapped.length;});doc.save(`dnb-statistiques-${new Date().toISOString().slice(0,10)}.pdf`);};
 
@@ -972,6 +815,7 @@ function showInternalView(target) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   sendGoogleAnalyticsPageView(target);
   recordAnalyticsEvent("page_view", { page: analyticsSafeText(target) });
+  trackActivityPage(target);
 
   if (target === 'messages') loadDMChats();
   if (target === 'quiz') loadQuizFeed();
@@ -996,7 +840,7 @@ signInAnonymously(auth).then(async () => {
   const s = localStorage.getItem("dnb_reviz_session");
   if (s) {
     const cached = JSON.parse(s);
-    hydrateSession(cached);
+    hydrateSession(cached, { skipStreakCheck: true });
     try {
       const freshSnap = await getDoc(doc(db, "users", cached.id));
       if (freshSnap.exists()) {
@@ -1071,31 +915,6 @@ window.handleLogout = async () => {
     localStorage.removeItem("dnb_reviz_session");
   } catch (error) {
     console.warn("Impossible de supprimer la session locale :", error);
-  }
-
-  try {
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    const cleanup = withOneSignal(async (OneSignal) => {
-      try {
-        if (OneSignal.User?.PushSubscription?.optOut) {
-          await OneSignal.User.PushSubscription.optOut();
-        }
-      } catch (error) {
-        console.warn("Impossible de désactiver temporairement le Push à la déconnexion :", error);
-      }
-
-      try {
-        if (OneSignal.logout) {
-          await OneSignal.logout();
-        }
-      } catch (error) {
-        console.warn("Impossible de déconnecter l'identité OneSignal :", error);
-      }
-    }, 1200);
-
-    cleanup.catch(error => console.warn("Nettoyage OneSignal ignoré :", error));
-  } catch (error) {
-    console.warn("Nettoyage OneSignal indisponible :", error);
   }
 
   try {
@@ -1585,19 +1404,18 @@ async function checkStreak(u) {
   scheduleNextStreakDay();
 }
 
-function hydrateSession(u) {
+function hydrateSession(u, options = {}) {
   window.currentUser = u;
   saveSessionLocally(u);
   updateRichTextToolbarVisibility();
   initGoogleAnalytics();
   startAnalyticsSession(u);
-  registerOneSignalPushListener();
 
   document.getElementById("view-login").style.display = "none";
   document.getElementById("view-app").style.display = "block";
   const streakCard = document.getElementById("home-streak-card");
   if (streakCard) streakCard.style.display = isProfessorUser(u) ? "none" : "";
-  checkStreak(u).catch(error => console.error("Erreur du système de série :", error));
+  if (!options.skipStreakCheck) checkStreak(u).catch(error => console.error("Erreur du système de série :", error));
   window.applyMaintenanceUI();
   loadTheme();
 
@@ -1634,10 +1452,6 @@ function hydrateSession(u) {
   }
   if (document.getElementById("tog-email-notif")) {
     document.getElementById("tog-email-notif").checked = !!u.emailNotifs;
-  }
-  if (document.getElementById("tog-push-notif")) {
-    setPushToggleState(false);
-    syncOneSignalUser(u).catch(error => console.error("Erreur de synchronisation Push :", error));
   }
   if (document.getElementById("setting-email")) {
     document.getElementById("setting-email").value = u.email || "";
@@ -1758,75 +1572,11 @@ window.handleForcePwd = async () => {
   if (e) currentUser.email = e;
   saveSessionLocally(currentUser);
   closeModal("m-force-pwd");
-  showToast(e ? "Mot de passe mis à jour ✓ Pense à activer les notifications dans les paramètres." : "Mot de passe mis à jour ✓");
+  showToast("Mot de passe mis à jour ✓");
 
   // Le pré-prompt maison apparaît uniquement après la définition du mot de passe définitif.
-  setTimeout(() => showPushConsentPrompt(currentUser), 250);
 };
 
-function isIOSDevice() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-}
-
-function isStandaloneWebApp() {
-  return window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
-}
-
-async function showPushConsentPrompt(user = currentUser) {
-  if (!user?.id) return;
-  const modal = document.getElementById("m-push-consent");
-  const text = document.getElementById("push-consent-text");
-  if (!modal) return;
-
-  const shownKey = `dnb_push_consent_prompt_${user.id}`;
-  if (localStorage.getItem(shownKey) === "1") return;
-
-  try {
-    const state = await getOneSignalPushState();
-    if (!state.supported || state.optedIn || state.permission === "denied") {
-      localStorage.setItem(shownKey, "1");
-      return;
-    }
-  } catch (error) {
-    console.warn("État OneSignal indisponible pour le pré-prompt :", error);
-  }
-
-  if (text && isIOSDevice() && !isStandaloneWebApp()) {
-    text.textContent = "Sur iPhone/iPad, ajoute d'abord DnB Reviz à l'écran d'accueil puis ouvre l'application depuis son icône. Tu pourras ensuite activer les notifications.";
-  }
-
-  modal.dataset.userId = String(user.id);
-  modal.classList.add("active");
-}
-
-window.handlePushConsent = async (accepted) => {
-  const modal = document.getElementById("m-push-consent");
-  const userId = modal?.dataset.userId || currentUser?.id;
-  closeModal("m-push-consent");
-
-  if (!userId || !currentUser?.id) return;
-
-  const shownKey = `dnb_push_consent_prompt_${userId}`;
-
-  if (!accepted) {
-    localStorage.setItem(shownKey, "1");
-    return;
-  }
-
-  if (isIOSDevice() && !isStandaloneWebApp()) {
-    showToast("Sur iPhone/iPad, ajoute DnB Reviz à l'écran d'accueil puis ouvre l'app pour activer les notifications.");
-    return;
-  }
-
-  localStorage.setItem(shownKey, "1");
-
-  try {
-    await togglePushNotifs(true);
-  } catch (error) {
-    console.error("Activation Push depuis le pré-prompt impossible :", error);
-  }
-};
 
 async function uploadToCloudinary(file) {
   if (!file) throw new Error("Fichier manquant");
@@ -1941,88 +1691,6 @@ window.toggleEmailNotifs = async (val) => {
   saveSessionLocally(currentUser);
 };
 
-window.togglePushNotifs = async (enabled) => {
-  const checkbox = document.getElementById("tog-push-notif");
-
-  if (!currentUser) {
-    setPushToggleState(false);
-    return;
-  }
-
-  if (!enabled) {
-    try {
-      await withOneSignal(async (OneSignal) => {
-        if (!OneSignal.Notifications.isPushSupported()) {
-          throw new Error("PUSH_NOT_SUPPORTED");
-        }
-
-        await OneSignal.login(String(currentUser.id));
-        registerOneSignalPushListener();
-
-        if (OneSignal.User?.PushSubscription?.optOut) {
-          await OneSignal.User.PushSubscription.optOut();
-        }
-      });
-
-      const state = await getOneSignalPushState();
-      setLocalPushState(false, state.subscriptionId || null);
-      showToast("Notifications push désactivées");
-    } catch (e) {
-      console.error("Erreur de désactivation Push OneSignal :", e);
-      setPushToggleState(true);
-      showToast("Impossible de désactiver les notifications push.");
-    }
-    return;
-  }
-
-  try {
-    await withOneSignal(async (OneSignal) => {
-      if (!OneSignal.Notifications.isPushSupported()) {
-        throw new Error("PUSH_NOT_SUPPORTED");
-      }
-
-      await OneSignal.login(String(currentUser.id));
-      registerOneSignalPushListener();
-
-      if (OneSignal.Notifications.permission !== "granted") {
-        await OneSignal.Notifications.requestPermission();
-      }
-
-      if (OneSignal.Notifications.permission !== "granted") {
-        throw new Error("PUSH_NOT_GRANTED");
-      }
-
-      if (OneSignal.User?.PushSubscription?.optIn) {
-        await OneSignal.User.PushSubscription.optIn();
-      }
-    });
-
-    const state = await waitForOneSignalSubscription(5000);
-    const optedIn = !!state.optedIn;
-    const subscriptionId = state.subscriptionId || null;
-
-    if (!optedIn || !subscriptionId) {
-      throw new Error("PUSH_NOT_GRANTED");
-    }
-
-    setLocalPushState(true, subscriptionId);
-    showToast("Notifications push activées ✓");
-  } catch (e) {
-    console.error("Erreur Push OneSignal :", e);
-
-    if (checkbox) checkbox.checked = false;
-
-    if (e?.message === "PUSH_NOT_SUPPORTED") {
-      showToast("Ton navigateur ne supporte pas les notifications push.");
-    } else if (e?.message === "PUSH_NOT_GRANTED") {
-      showToast("Notifications non activées. Autorise les notifications pour ce site dans les paramètres du navigateur.");
-    } else if (e?.message === "ONESIGNAL_TIMEOUT") {
-      showToast("Le service de notifications n'est pas disponible pour le moment.");
-    } else {
-      showToast("Erreur lors de la configuration des notifications push.");
-    }
-  }
-};
 
 window.saveEmailSettings = async () => {
   const e = document.getElementById("setting-email").value.trim();
@@ -3181,6 +2849,7 @@ window.handleCreatePost = async () => {
 
   try {
     await addDoc(collection(db, "posts"), post);
+    trackActivityEvent("post_create");
     
     document.getElementById("post-title").value = ""; 
     document.getElementById("post-desc").value = "";
@@ -3237,6 +2906,7 @@ window.toggleLike = async (postId) => {
     likes = likes.filter(u => u !== currentUser.username); 
   } else {
     likes.push(currentUser.username);
+    trackActivityEvent("like");
   }
   
   await updateDoc(ref, { likes });
@@ -3253,6 +2923,7 @@ window.toggleQuizLike = async (quizId, isAI) => {
     likes = likes.filter(u => u !== currentUser.username); 
   } else {
     likes.push(currentUser.username);
+    trackActivityEvent("like");
   }
   
   await updateDoc(ref, { likes });
@@ -4384,6 +4055,7 @@ RENVOIE UNIQUEMENT LE JSON.`;
     };
 
     const docRef = await addDoc(collection(db, "ai_quizzes"), newQuiz);
+    trackActivityEvent("ai_quiz_generated");
     
     closeModal("m-ia-quiz");
     document.getElementById("quiz-ia-topic").value = "";
@@ -4492,6 +4164,7 @@ window.startQuiz = (alreadyOpen = false) => {
   document.getElementById("btn-next-question").style.display = "block";
   
   renderCurrentQuestion();
+  trackActivityEvent("quiz_start");
 };
 
 window.renderCurrentQuestion = () => {
@@ -4563,6 +4236,7 @@ window.submitQuiz = async () => {
   
   document.getElementById("quiz-result-msg").innerText = `${msg} (répondu en ${timeTaken}s)`;
   openModal('m-quiz-result');
+  trackActivityEvent("quiz_complete");
 
   const colName = window._currentQuizData.isAI ? "ai_quizzes" : "quizzes";
   const currentCount = window._currentQuizData.attemptsCount || 0;
